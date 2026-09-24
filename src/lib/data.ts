@@ -6,7 +6,7 @@ import { z } from "zod";
 
 import type { Tables } from "./database.types";
 import { monthOf } from "./format";
-import { PLAN_LIMITS } from "./plans";
+import { FORM_SLUG_PATTERN, PLAN_LIMITS } from "./plans";
 import { createClient } from "./supabase/server";
 import type { Analysis, Feedback, Plan, Theme, ThemeKind, ThemeStatus, Workspace } from "./types";
 
@@ -196,6 +196,8 @@ export async function getTheme(workspaceId: string, themeId: string) {
 
 // Public: read by anonymous visitors through a database function that returns only what the form shows.
 export async function getPublicForm(slug: string) {
+  // Slugs come from the URL: anything else cannot exist.
+  if (!FORM_SLUG_PATTERN.test(slug)) return null;
   const supabase = await createClient();
   const rows = unwrap(await supabase.rpc("get_public_form", { slug }));
   const form = rows[0];
@@ -234,7 +236,7 @@ async function summarizeAnalysis(workspaceId: string, analysis: Analysis): Promi
   });
 }
 
-async function channelCounts(workspaceId: string) {
+export async function channelCounts(workspaceId: string) {
   const supabase = await createClient();
   const rows = unwrap(await supabase.from("feedback_channels").select("*").eq("workspace_id", workspaceId));
   return rows

@@ -1,8 +1,10 @@
 "use server"
 
+import { headers } from "next/headers"
 import { z } from "zod"
 import { getCurrentWorkspace } from "@/lib/data"
-import { FEEDBACK_MAX_LENGTH } from "@/lib/plans"
+import { FEEDBACK_MAX_LENGTH, FORM_SLUG_PATTERN } from "@/lib/plans"
+import { sendPublicFeedback } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
 
 // Server actions validate every input with an explicit schema, then write as the signed-in user:
@@ -30,8 +32,9 @@ export async function updateTheme(input: z.input<typeof themeUpdateSchema>) {
 }
 
 const feedbackSubmissionSchema = z.object({
-  slug: z.string().min(1).max(100),
-  text: z.string().trim().min(1).max(FEEDBACK_MAX_LENGTH),
+  slug: z.string().regex(FORM_SLUG_PATTERN),
+  // Postgres text cannot hold NUL characters.
+  text: z.string().transform((t) => t.replaceAll("\0", "")).pipe(z.string().trim().min(1).max(FEEDBACK_MAX_LENGTH)),
   email: z.union([z.literal(""), z.email().max(254)]),
   // Hidden anti-bot field: people leave it empty.
   website: z.string().max(0),
@@ -39,7 +42,7 @@ const feedbackSubmissionSchema = z.object({
 
 export type SubmitFeedbackResult =
   | { ok: true }
-  | { ok: false; reason: "invalid_email" | "invalid" | "unavailable" }
+  | { ok: false; reason: "invalid_email" | "invalid" | "unavailable" | "rate_limited" }
 
 export async function submitFeedback(
   input: z.input<typeof feedbackSubmissionSchema>
@@ -51,15 +54,11 @@ export async function submitFeedback(
     const emailIssue = parsed.error.issues.some((i) => i.path[0] === "email")
     return { ok: false, reason: emailIssue ? "invalid_email" : "invalid" }
   }
-  // The database function checks the link, the Free limit and fixes the channel.
-  // Rate limits (10/min per IP, 300/h per workspace) are not built yet.
-  const supabase = await createClient()
-  const { data, error } = await supabase.rpc("submit_public_feedback", {
-    slug: parsed.data.slug,
-    feedback_text: parsed.data.text,
-    email: parsed.data.email,
-  })
-  if (error) throw error
-  if (data === "ok") return { ok: true }
-  return { ok: false, reason: data === "invalid" ? "invalid" : "unavailable" }
+  // The database function checks the link, the rate limits and the Free limit, and fixes the channel.
+  // Vercel sets these headers itself, so the visitor cannot choose their IP.
+  const requestHeaders = await headers()
+  const clientIp =
+    requestHeaders.get("x-real-ip") ?? requestHeaders.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown"
+  const result = await sendPublicFeedback({ ...parsed.data, clientIp })
+  return result === "ok" ? { ok: true } : { ok: false, reason: result }
 }

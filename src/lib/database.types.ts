@@ -329,8 +329,18 @@ export type Database = {
           workspace_name: string
         }[]
       }
+      import_feedback: {
+        Args: { dry_run?: boolean; rows: Json; ws: string }
+        Returns: string[]
+      }
+      regenerate_form_link: { Args: { ws: string }; Returns: string }
       submit_public_feedback: {
-        Args: { email?: string; feedback_text: string; slug: string }
+        Args: {
+          client_ip: string
+          email: string
+          feedback_text: string
+          slug: string
+        }
         Returns: string
       }
     }

@@ -1,14 +1,16 @@
 import Link from "next/link"
 import { CopyLinkButton } from "@/components/copy-link-button"
-import { FakeQr } from "@/components/fake-qr"
+import { LimitWarning } from "@/components/limit-warning"
 import { Page, PageHeader, PageLede, PageMore, PageTitle } from "@/components/page"
 import { Quote } from "@/components/quote"
+import { QrCode } from "@/components/qr-code"
 import { StatusMenu } from "@/components/status-menu"
 import { ThemeRow } from "@/components/theme-row"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardActions, CardBody, CardMeta, CardText, CardTitle } from "@/components/ui/card"
 import { ChipCount, chipVariants, FilterBar, FilterBarSep } from "@/components/ui/chip"
 import { getCurrentWorkspace, getDashboard, getUsage, type StatusFilter, type Usage } from "@/lib/data"
+import { getOrigin } from "@/lib/origin"
 import { formatDate, formatMonth, KIND_PLURALS } from "@/lib/format"
 import type { ThemeKind, Workspace } from "@/lib/types"
 
@@ -29,7 +31,8 @@ export default async function ThemesPage({ searchParams }: PageProps<"/themes">)
     getUsage(workspace.id),
   ])
 
-  if (dashboard.feedbackCount === 0) return <EmptyNoFeedback workspace={workspace} />
+  if (dashboard.feedbackCount === 0)
+    return <EmptyNoFeedback workspace={workspace} origin={await getOrigin()} />
 
   const limitReached = usage.feedbackLimit !== null && usage.feedbackCount >= usage.feedbackLimit
   const { analysis } = dashboard
@@ -110,7 +113,7 @@ export default async function ThemesPage({ searchParams }: PageProps<"/themes">)
   )
 }
 
-function EmptyNoFeedback({ workspace }: { workspace: Workspace }) {
+function EmptyNoFeedback({ workspace, origin }: { workspace: Workspace; origin: string }) {
   const formPath = `/f/${workspace.formSlug}`
   return (
     <Page>
@@ -132,14 +135,15 @@ function EmptyNoFeedback({ workspace }: { workspace: Workspace }) {
               </CardText>
               <CardMeta>
                 <Link href={formPath} className="hover:underline">
-                  voce.app{formPath}
+                  {new URL(origin).host}
+                  {formPath}
                 </Link>
               </CardMeta>
               <CardActions>
                 <CopyLinkButton path={formPath} />
               </CardActions>
             </CardBody>
-            <FakeQr seed={workspace.formSlug} />
+            <QrCode url={`${origin}${formPath}`} />
           </Card>
           <Card>
             <CardTitle>Importa un CSV</CardTitle>
@@ -148,14 +152,18 @@ function EmptyNoFeedback({ workspace }: { workspace: Workspace }) {
               righe.
             </CardText>
             <CardActions>
-              <Button variant="secondary">Scegli il file</Button>
+              <Link href="/collect#csv" className={buttonVariants({ variant: "secondary" })}>
+                Scegli il file
+              </Link>
             </CardActions>
           </Card>
           <Card>
             <CardTitle>Incolla un feedback</CardTitle>
             <CardText>Copiato da un&apos;email, da Slack o dalle tue note, uno alla volta.</CardText>
             <CardActions>
-              <Button variant="secondary">Incolla un testo</Button>
+              <Link href="/collect#manual" className={buttonVariants({ variant: "secondary" })}>
+                Incolla un testo
+              </Link>
             </CardActions>
           </Card>
         </div>
@@ -209,21 +217,6 @@ function EmptyNoAnalysis({
         ))}
       </div>
     </>
-  )
-}
-
-function LimitWarning({ usage }: { usage: Usage }) {
-  return (
-    <Card variant="soft" layout="row" className="mb-8">
-      <div>
-        <CardTitle>Hai raggiunto {usage.feedbackLimit} feedback, il limite del piano Free</CardTitle>
-        <CardText>
-          Il modulo pubblico non accetta nuovi feedback. Con Pro i feedback sono illimitati e le
-          analisi diventano 100 al mese.
-        </CardText>
-      </div>
-      <Button>Passa a Pro</Button>
-    </Card>
   )
 }
 

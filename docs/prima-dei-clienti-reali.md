@@ -8,7 +8,9 @@ Cose da risolvere prima di aprire Voce a clienti reali. Finché siamo in modalit
 
 ## Modulo pubblico
 
-- **Limiti di invio** (10 al minuto per IP, 300 all'ora per workspace) non ancora costruiti. Oggi la funzione del database che salva i feedback del modulo si può chiamare anche direttamente, senza passare dall'app: così si salta il campo anti-bot e, con il link in mano, uno script può riempire in pochi secondi i 100 posti di un workspace Free. I limiti vanno messi nella funzione del database, oppure la funzione va resa chiamabile solo dal server.
+- **Chiave segreta su Vercel.** Il modulo pubblico ora salva passando dal server con `SUPABASE_SECRET_KEY`: senza questa variabile su Vercel il modulo non funziona.
+- **IP del visitatore.** Il limite per IP si fida di `x-real-ip` e `x-forwarded-for`, che Vercel imposta da sé. Se l'app gira dietro un altro proxy, va verificato che quelle intestazioni non arrivino dal visitatore.
+- **Tentativi del modulo.** Per i limiti si salva un hash con chiave dell'IP (la chiave è `SUPABASE_SECRET_KEY`, il database non la conosce). Le righe più vecchie di un'ora si cancellano al primo invio successivo: se un modulo non riceve più invii restano lì. Da citare nel registro dei trattamenti, o da pulire con un job programmato.
 
 ## Database in produzione
 

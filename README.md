@@ -14,7 +14,7 @@ In `.env.local` (mai nel repository) servono tre chiavi, prese da `supabase stat
 ```
 NEXT_PUBLIC_SUPABASE_URL=            # API_URL
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY= # PUBLISHABLE_KEY
-SUPABASE_SECRET_KEY=                 # SECRET_KEY, solo per i test
+SUPABASE_SECRET_KEY=                 # SECRET_KEY: solo lato server, per il modulo pubblico e i test
 ```
 
 Poi `pnpm dev` e apri `http://localhost:3000`.

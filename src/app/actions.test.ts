@@ -1,9 +1,11 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import { admin, anon, createTestUser, deleteTestUsers, type TestUser } from "@/test/supabase"
 
 // Actions write for real: they run on a fresh test user, so the seed stays as it is.
-const session = vi.hoisted(() => ({ client: null as unknown }))
+const session = vi.hoisted(() => ({ client: null as unknown, ip: "" }))
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => session.client }))
+// The visitor IP the server sees. A new one per test: the per-IP limit is shared by every test file.
+vi.mock("next/headers", () => ({ headers: async () => new Headers({ "x-real-ip": session.ip }) }))
 
 const { submitFeedback, updateTheme } = await import("./actions")
 
@@ -40,6 +42,10 @@ describe("submitFeedback", () => {
     session.client = anon()
   })
 
+  beforeEach(() => {
+    session.ip = crypto.randomUUID()
+  })
+
   it("saves a valid feedback, with or without email, as Modulo pubblico", async () => {
     expect(await submitFeedback(valid())).toEqual({ ok: true })
     expect(await submitFeedback({ ...valid(), email: "giulia@esempio.it" })).toEqual({ ok: true })
@@ -56,13 +62,80 @@ describe("submitFeedback", () => {
     expect(await submitFeedback({ ...valid(), text: "a".repeat(2000) })).toEqual({ ok: true })
   })
 
-  it("rejects a malformed email", async () => {
+  it("drops NUL characters and rejects a slug that cannot exist", async () => {
+    expect(await submitFeedback({ ...valid(), text: "Con\u0000 NUL" })).toEqual({ ok: true })
+    const { data } = await admin.from("feedback").select("id").eq("workspace_id", user.workspaceId).eq("text", "Con NUL")
+    expect(data).toHaveLength(1)
+    expect(await submitFeedback({ ...valid(), text: "\u0000" })).toEqual({ ok: false, reason: "invalid" })
+    expect(await submitFeedback({ ...valid(), slug: "x\u0000y" })).toEqual({ ok: false, reason: "invalid" })
+  })
+
+    it("rejects a malformed email", async () => {
     expect(await submitFeedback({ ...valid(), email: "giulia@" })).toEqual({ ok: false, reason: "invalid_email" })
   })
 
   it("is unavailable for full, disabled and unknown forms", async () => {
     for (const slug of ["ordinalo-7fq2", "spento-a1b2", "nope"])
       expect(await submitFeedback({ ...valid(), slug })).toEqual({ ok: false, reason: "unavailable" })
+  })
+
+  it("accepts 10 submissions a minute from the same IP, then asks to wait", async () => {
+    const results = []
+    for (let i = 0; i < 11; i++) results.push(await submitFeedback({ ...valid(), text: `Invio ripetuto ${i}` }))
+    expect(results.slice(0, 10)).toEqual(Array(10).fill({ ok: true }))
+    expect(results[10]).toEqual({ ok: false, reason: "rate_limited" })
+    const { count } = await admin
+      .from("feedback")
+      .select("id", { count: "exact", head: true })
+      .eq("workspace_id", user.workspaceId)
+      .like("text", "Invio ripetuto%")
+    expect(count).toBe(10)
+    // Another visitor is not blocked by the first one.
+    session.ip = crypto.randomUUID()
+    expect(await submitFeedback({ ...valid(), text: "Un altro visitatore" })).toEqual({ ok: true })
+  })
+
+  it("accepts 300 submissions an hour per workspace, from any IP", async () => {
+    const busy = await createTestUser("busy")
+    try {
+      // Pro, so the Free limit does not get in the way of the count.
+      await admin.from("subscriptions").update({ plan: "pro" }).eq("workspace_id", busy.workspaceId)
+      const send = (i: number) => {
+        session.ip = crypto.randomUUID()
+        return submitFeedback({ ...valid(), slug: busy.formSlug, text: `Feedback ${i}` })
+      }
+      for (let i = 0; i < 300; i += 30)
+        expect(await Promise.all(Array.from({ length: 30 }, (_, j) => send(i + j)))).toEqual(Array(30).fill({ ok: true }))
+      expect(await send(300)).toEqual({ ok: false, reason: "rate_limited" })
+      const { count } = await admin.from("feedback").select("id", { count: "exact", head: true }).eq("workspace_id", busy.workspaceId)
+      expect(count).toBe(300)
+    } finally {
+      await deleteTestUsers([busy])
+    }
+  })
+
+  it("keeps rejecting the 101st feedback of a Free workspace", async () => {
+    const full = await createTestUser("full")
+    try {
+      const rows = Array.from({ length: 99 }, (_, i) => ({ workspace_id: full.workspaceId, text: `F ${i}`, channel: "Supporto" }))
+      await admin.from("feedback").insert(rows)
+      expect(await submitFeedback({ ...valid(), slug: full.formSlug, text: "Il numero 100" })).toEqual({ ok: true })
+      expect(await submitFeedback({ ...valid(), slug: full.formSlug, text: "Il numero 101" })).toEqual({
+        ok: false,
+        reason: "unavailable",
+      })
+      const { count } = await admin.from("feedback").select("id", { count: "exact", head: true }).eq("workspace_id", full.workspaceId)
+      expect(count).toBe(100)
+    } finally {
+      await deleteTestUsers([full])
+    }
+  })
+
+  it("stops at once when the PM turns the link off", async () => {
+    await admin.from("workspaces").update({ form_enabled: false }).eq("id", user.workspaceId)
+    expect(await submitFeedback(valid())).toEqual({ ok: false, reason: "unavailable" })
+    await admin.from("workspaces").update({ form_enabled: true }).eq("id", user.workspaceId)
+    expect(await submitFeedback(valid())).toEqual({ ok: true })
   })
 
   it("rejects a malformed payload without crashing", async () => {

@@ -28,7 +28,7 @@ export function PublicForm({
   const [email, setEmail] = useState("")
   const [website, setWebsite] = useState("")
   const [status, setStatus] = useState<Status>("writing")
-  const [error, setError] = useState<"invalid_email" | "invalid" | null>(null)
+  const [error, setError] = useState<"invalid_email" | "invalid" | "rate_limited" | null>(null)
   const [pending, startTransition] = useTransition()
 
   if (status === "unavailable") return <FormUnavailable workspaceName={workspaceName} />
@@ -155,7 +155,17 @@ export function PublicForm({
             onChange={(e) => setWebsite(e.target.value)}
           />
         </div>
-        <Button type="submit" size="lg" className="mt-auto w-full" disabled={!text.trim() || pending}>
+        {error === "rate_limited" && (
+          <FieldError role="alert" className="mt-auto text-center">
+            Troppi invii in poco tempo. Riprova tra qualche minuto.
+          </FieldError>
+        )}
+        <Button
+          type="submit"
+          size="lg"
+          className={cn("w-full", error !== "rate_limited" && "mt-auto")}
+          disabled={!text.trim() || pending}
+        >
           {pending ? "Invio…" : "Invia"}
         </Button>
         <FormFoot className="-mt-2">Raccolto con Voce. Non serve un account.</FormFoot>

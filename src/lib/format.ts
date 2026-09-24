@@ -48,3 +48,10 @@ export function monthOf(date: Date) {
 export function formatNumber(n: number) {
   return number.format(n);
 }
+
+const isoDay = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome" });
+
+// The day on the Italian calendar, like received_at: "2026-09-25"
+export function isoDateOf(date: Date) {
+  return isoDay.format(date);
+}

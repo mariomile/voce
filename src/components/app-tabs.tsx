@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation"
 const TABS = [
   { href: "/themes", label: "Temi" },
   { href: "/feedback", label: "Feedback" },
+  { href: "/collect", label: "Raccolta" },
 ]
 
 // Kit: .tabs, .tab with aria-current="page"

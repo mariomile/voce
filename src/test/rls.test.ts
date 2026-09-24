@@ -135,6 +135,33 @@ describe("a user cannot change another workspace", () => {
     expect(count).toBe(1)
   })
 
+  it("cannot import feedback into B's workspace, not even as a dry run", async () => {
+    const rows = [{ text: "Feedback di B", channel: "Supporto", customer: null, received_at: null }]
+    for (const dry_run of [true, false]) {
+      const { error } = await a.client.rpc("import_feedback", { ws: b.workspaceId, rows, dry_run })
+      expect(error?.code).toBe("42501")
+    }
+    const { count } = await admin.from("feedback").select("id", { count: "exact", head: true }).eq("workspace_id", b.workspaceId)
+    expect(count).toBe(1)
+  })
+
+  it("cannot skip the server checks by calling the import directly", async () => {
+    const row = { text: "Diretto", channel: "Supporto", customer: null, received_at: null }
+    for (const bad of [{ received_at: "2999-01-01" }, { received_at: "0001-01-01" }, { text: "\n\t " }]) {
+      const { error } = await a.client.rpc("import_feedback", { ws: a.workspaceId, rows: [{ ...row, ...bad }] })
+      expect(error?.message).toBe("invalid_rows")
+    }
+    const { count } = await admin.from("feedback").select("id", { count: "exact", head: true }).eq("text", "Diretto")
+    expect(count).toBe(0)
+  })
+
+    it("cannot give B's form a new link", async () => {
+    const { error } = await a.client.rpc("regenerate_form_link", { ws: b.workspaceId })
+    expect(error?.code).toBe("42501")
+    const { data } = await admin.from("workspaces").select("form_slug").eq("id", b.workspaceId).single()
+    expect(data!.form_slug).toBe(b.formSlug)
+  })
+
   it("cannot join B's workspace", async () => {
     const { error } = await a.client
       .from("workspace_members")
@@ -185,6 +212,7 @@ describe("plan and billing", () => {
     const { error } = await untyped(a.client).schema("private").rpc("feedback_limit", { ws: a.workspaceId })
     expect(error).not.toBeNull()
     expect((await untyped(a.client).schema("private").rpc("my_workspace_ids")).error).not.toBeNull()
+    expect((await untyped(a.client).schema("private").from("form_attempts").select("*")).error).not.toBeNull()
   })
 })
 
@@ -264,7 +292,12 @@ describe("Free limit of 100 feedback", () => {
   it("closes the public form", async () => {
     const { data: form } = await anon().rpc("get_public_form", { slug: full.formSlug })
     expect(form).toEqual([{ workspace_name: "Prova full", question: "Cosa vuoi dire al team di Prova full?", accepting: false }])
-    const { data } = await anon().rpc("submit_public_feedback", { slug: full.formSlug, feedback_text: "Ciao" })
+    const { data } = await admin.rpc("submit_public_feedback", {
+      slug: full.formSlug,
+      feedback_text: "Ciao",
+      email: "",
+      client_ip: crypto.randomUUID(),
+    })
     expect(data).toBe("unavailable")
   })
 })
@@ -286,13 +319,26 @@ describe("anonymous visitor", () => {
     expect(data).toEqual([{ workspace_name: "Prova b", question: "Cosa vuoi dire al team di Prova b?", accepting: true }])
   })
 
-  it("sends feedback through the form, with the channel fixed", async () => {
-    const { data } = await anon().rpc("submit_public_feedback", {
-      slug: b.formSlug,
-      feedback_text: "  Dal modulo pubblico  ",
-      email: "giulia@esempio.it",
-    })
-    expect(data).toBe("ok")
+  it("cannot send feedback through the form function: only the server can", async () => {
+    const args = { slug: b.formSlug, feedback_text: "Ciao", email: "", client_ip: "1.2.3.4" }
+    expect((await anon().rpc("submit_public_feedback", args)).error?.code).toBe("42501")
+    expect((await a.client.rpc("submit_public_feedback", args)).error?.code).toBe("42501")
+  })
+
+  it("cannot import feedback or change a form link", async () => {
+    const rows = [{ text: "Intruso", channel: "Supporto", customer: null, received_at: null }]
+    expect((await anon().rpc("import_feedback", { ws: b.workspaceId, rows })).error?.code).toBe("42501")
+    expect((await anon().rpc("regenerate_form_link", { ws: b.workspaceId })).error?.code).toBe("42501")
+  })
+})
+
+// The server calls the form function with the secret key and the IP it sees.
+describe("public form function", () => {
+  const send = async (feedback_text: string, email = "", slug = b.formSlug) =>
+    (await admin.rpc("submit_public_feedback", { slug, feedback_text, email, client_ip: crypto.randomUUID() })).data
+
+  it("saves the feedback with the channel fixed", async () => {
+    expect(await send("  Dal modulo pubblico  ", "giulia@esempio.it")).toBe("ok")
     const { data: saved } = await admin
       .from("feedback")
       .select("text, channel, email")
@@ -301,22 +347,20 @@ describe("anonymous visitor", () => {
     expect(saved).toEqual([{ text: "Dal modulo pubblico", channel: "Modulo pubblico", email: "giulia@esempio.it" }])
   })
 
-  it("the form function validates on its own", async () => {
-    const send = async (feedback_text: string, email?: string) =>
-      (await anon().rpc("submit_public_feedback", { slug: b.formSlug, feedback_text, email })).data
+  it("validates on its own", async () => {
     expect(await send("   ")).toBe("invalid")
     expect(await send("a".repeat(2001))).toBe("invalid")
     expect(await send("Ciao", "non-una-email")).toBe("invalid")
     expect(await send("Ciao", "")).toBe("ok")
   })
 
-  it("gets nothing from a disabled or unknown link", async () => {
+  it("gives nothing to a disabled or unknown link", async () => {
     await admin.from("workspaces").update({ form_enabled: false }).eq("id", b.workspaceId)
     const { data: form } = await anon().rpc("get_public_form", { slug: b.formSlug })
     expect(form).toEqual([])
-    const { data } = await anon().rpc("submit_public_feedback", { slug: b.formSlug, feedback_text: "Ciao" })
-    expect(data).toBe("unavailable")
+    expect(await send("Ciao")).toBe("unavailable")
     expect((await anon().rpc("get_public_form", { slug: "non-esiste" })).data).toEqual([])
+    expect(await send("Ciao", "", "non-esiste")).toBe("unavailable")
     await admin.from("workspaces").update({ form_enabled: true }).eq("id", b.workspaceId)
   })
 })
