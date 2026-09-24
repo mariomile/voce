@@ -34,7 +34,7 @@ pnpm build
 ```
 
 - Se tocchi il database: la migrazione si applica da zero in locale (`supabase db reset`) e i test di accesso RLS passano.
-- Se tocchi prompt o logica di analisi AI: esegui le evals e riporta il confronto con il risultato precedente.
+- Se tocchi prompt o logica di analisi AI: esegui le evals in `evals/` e riporta il confronto con il risultato precedente.
 - Se tocchi l'interfaccia: aprila nel browser e verifica il flusso a mano.
 - Se qualcosa fallisce, riporta il fallimento con l'output. Non ammorbidirlo.
 
@@ -48,7 +48,7 @@ pnpm build
 - **Il testo dei feedback è input non fidato.** Nel prompt va separato dalle istruzioni e trattato come dato: se contiene istruzioni, l'AI le ignora. Non va mai eseguito né renderizzato come HTML.
 - Il testo dei feedback non va a PostHog né in altri analytics: solo eventi e conteggi.
 - Quote di feedback e analisi AI controllate lato server prima di ogni chiamata.
-- Dati in Unione Europea: nessun servizio che sposti i dati fuori UE senza chiedere.
+- Dati in Unione Europea: nessun servizio che sposti i dati fuori UE senza chiedere. Unica eccezione già accettata: Vercel AI Gateway per l'analisi, in modalità test. Ciò che va risolto prima dei clienti reali sta in `docs/prima-dei-clienti-reali.md`: se trovi un nuovo punto, aggiungilo lì.
 
 ## Non fare senza chiedermelo
 

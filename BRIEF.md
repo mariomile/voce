@@ -63,3 +63,35 @@ Nessun utente può vedere o modificare i dati di un altro workspace, nemmeno chi
 
 - Attivazione: quota di nuovi workspace che eseguono la prima analisi AI entro 24 ore dalla registrazione.
 - Qualità: i temi proposti dall'AI sono riconoscibili e utili per chi conosce i feedback. Questo va misurato con valutazioni dedicate (evals), non a sensazione.
+
+## Decisioni
+
+Scelte di dettaglio prese il 2026-09-25. Dove precisano il resto del brief, valgono queste.
+
+### Analisi AI
+
+1. **Ogni analisi riparte da zero.** Usa tutti i feedback degli ultimi 90 giorni (massimo 500) e produce un nuovo insieme di temi. Priorità e stato passano in automatico ai nuovi temi con lo stesso titolo: per questo l'AI riceve i titoli dei temi esistenti e li riusa quando il tema è lo stesso.
+2. **Un feedback può stare in più temi, massimo 3.** In questa versione il PM non modifica i temi a mano: imposta priorità e stato, e può scartarli.
+3. **Modello:** Claude tramite Vercel AI Gateway. Il modello si legge da una variabile d'ambiente, con default `anthropic/claude-sonnet-5`. L'elaborazione in UE non è garantita: è tra le cose da risolvere prima dei clienti reali (`docs/prima-dei-clienti-reali.md`).
+4. **Evals** in `evals/`: un set sintetico di 60 feedback su un prodotto finto, con i temi attesi scritti a mano. Per ora bastano controlli automatici: ogni tema ha almeno 2 feedback esistenti collegati e le citazioni compaiono davvero nei feedback. La valutazione della qualità si approfondisce dopo.
+
+### Piani e limiti
+
+5. **Il limite Free di 100 feedback è totale, non mensile.** Il feedback numero 101 inviato dal modulo pubblico viene rifiutato con un messaggio gentile; il PM vede un avviso per passare a Pro.
+6. **Se un workspace torna Free**, i dati restano tutti leggibili, ma non entrano nuovi feedback oltre i 100 e le analisi tornano a 3 al mese.
+
+### Raccolta dei feedback
+
+7. **Modulo pubblico:** testo obbligatorio, email facoltativa. Testo massimo 2.000 caratteri. Limiti: 10 invii al minuto per IP, 300 all'ora per workspace. Un campo nascosto anti-bot, niente captcha per ora.
+8. **Link pubblico:** il PM può disattivarlo e generarne uno nuovo.
+9. **CSV:** colonna `testo` obbligatoria, colonne facoltative `canale`, `cliente`, `data`. Massimo 1 MB e 2.000 righe. I duplicati esatti nello stesso workspace vengono ignorati.
+10. **Canale di origine:** si salva per ogni feedback e si può filtrare.
+
+### Workspace e utenti
+
+11. **Oggi owner e utente coincidono.** Il modello dati prepara solo i team futuri.
+
+### Fuori scope in modalità test
+
+12. **Legale e fiscale** restano fuori scope finché siamo in modalità test. Si tiene traccia di cosa manca in `docs/prima-dei-clienti-reali.md`.
+13. **Eventi di analytics:** si definiscono nel passo dedicato agli analytics.
