@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voce, direzione B: Voci</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400..800&family=Literata:ital,opsz,wght@0,7..72,400..700;1,7..72,400..600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --carta: #FFFFFF;
+    --velo: #F3F3F0;
+    --inchiostro: #1E2127;
+    --grigio: #5F6470;
+    --tenue: #9095A0;
+    --linea: #E4E4DF;
+    --giallo: #FFE45C;
+    --giallo-chiaro: #FFF4B8;
+    --problema: #B8322A;
+    --opportunita: #2A56C6;
+    --apprezzamento: #2B7D52;
+    --serif: "Literata", Georgia, serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Hanken Grotesk", system-ui, sans-serif;
+    color: var(--inchiostro);
+    background: #CFD0CB;
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input, textarea { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--inchiostro); outline-offset: 2px; }
+
+  /* La frase che conta, evidenziata come su carta */
+  mark {
+    color: inherit;
+    background: linear-gradient(transparent 12%, var(--giallo) 12%, var(--giallo) 88%, transparent 88%);
+    padding: 0 2px; margin: 0 -2px;
+    -webkit-box-decoration-break: clone; box-decoration-break: clone;
+  }
+
+  /* ---------- Presentazione (non fa parte del prodotto) ---------- */
+  .board { padding: 48px 48px 96px; overflow-x: auto; }
+  .board-head { max-width: 1280px; margin: 0 0 40px; }
+  .board-head h1 { font-size: 32px; font-weight: 700; margin: 0 0 8px; letter-spacing: -0.015em; }
+  .board-head p { margin: 0 0 4px; max-width: 72ch; color: #3A3D44; line-height: 1.5; }
+  .board-head a { color: inherit; }
+  .caption { font-size: 14px; color: #3A3D44; margin: 48px 0 12px; }
+  .caption strong { color: var(--inchiostro); }
+
+  /* ---------- Frame desktop ---------- */
+  .desk {
+    width: 1280px; min-height: 800px;
+    background: var(--carta);
+    border-radius: 10px; overflow: hidden;
+    box-shadow: 0 30px 60px -30px rgba(30,33,39,.35);
+  }
+  .bar {
+    display: flex; align-items: center; gap: 28px;
+    height: 60px; padding: 0 40px;
+    border-bottom: 1px solid var(--linea);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; }
+  .brand i { width: 24px; height: 24px; border-radius: 50%; background: var(--inchiostro); color: var(--giallo); font-style: normal; display: grid; place-items: center; font-size: 13px; font-weight: 800; }
+  .tabs { display: flex; gap: 22px; font-size: 15px; }
+  .tabs a { color: var(--grigio); text-decoration: none; padding: 19px 0 17px; border-bottom: 2px solid transparent; }
+  .tabs a[aria-current="page"] { color: var(--inchiostro); font-weight: 600; border-color: var(--inchiostro); }
+  .quota { margin-left: auto; font-size: 13.5px; color: var(--grigio); }
+  .quota b { color: var(--inchiostro); font-weight: 600; }
+
+  .page { max-width: 1120px; margin: 0 auto; padding: 44px 40px 56px; }
+  .intro { display: flex; justify-content: space-between; align-items: flex-end; gap: 40px; margin-bottom: 28px; }
+  .intro h2 { font-size: 34px; line-height: 1.15; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 10px; }
+  .intro p { margin: 0; font-size: 16px; line-height: 1.55; color: var(--grigio); max-width: 62ch; }
+  .intro p b { color: var(--inchiostro); font-weight: 600; }
+  .btn {
+    border: 0; border-radius: 999px; cursor: pointer;
+    padding: 11px 20px; font-size: 15px; font-weight: 600;
+    background: var(--inchiostro); color: #fff; white-space: nowrap;
+  }
+  .btn.soft { background: var(--velo); color: var(--inchiostro); }
+  .btn.yellow { background: var(--giallo); color: var(--inchiostro); }
+
+  .filters { display: flex; gap: 8px; align-items: center; padding-bottom: 20px; border-bottom: 1px solid var(--inchiostro); }
+  .chip { border: 0; background: var(--velo); border-radius: 999px; padding: 7px 14px; font-size: 14px; cursor: pointer; color: var(--grigio); }
+  .chip[aria-pressed="true"] { background: var(--inchiostro); color: #fff; font-weight: 600; }
+  .chip span { opacity: .6; margin-left: 4px; }
+  .filters .sep { width: 1px; height: 20px; background: var(--linea); margin: 0 6px; }
+  .chip.menu::after { content: ""; display: inline-block; margin-left: 8px; width: 5px; height: 5px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-3px) rotate(45deg); }
+  .chip.menu b { color: var(--inchiostro); font-weight: 600; }
+
+  /* Un tema */
+  .theme {
+    display: grid; grid-template-columns: 148px 1fr 168px; gap: 36px;
+    padding: 32px 0; border-bottom: 1px solid var(--linea);
+  }
+  .vol .n { font-size: 48px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+  .vol .l { font-size: 14px; color: var(--grigio); margin-top: 4px; }
+  .wave { display: flex; align-items: flex-end; gap: 3px; height: 36px; margin-top: 16px; }
+  .wave i { flex: 1; background: #C4C6C0; border-radius: 1px; min-height: 2px; }
+  .wave i:nth-last-child(-n+2) { background: var(--inchiostro); }
+  .vol .w { font-size: 12.5px; color: var(--tenue); margin-top: 6px; line-height: 1.4; }
+  .kind { font-size: 14px; font-weight: 600; margin: 0 0 6px; }
+  .kind.p { color: var(--problema); }
+  .kind.o { color: var(--opportunita); }
+  .kind.a { color: var(--apprezzamento); }
+  .theme h3 { font-size: 23px; line-height: 1.25; margin: 0 0 8px; font-weight: 700; letter-spacing: -0.01em; }
+  .theme .sum { font-size: 15.5px; line-height: 1.55; color: var(--grigio); margin: 0 0 20px; max-width: 64ch; }
+  blockquote { margin: 0 0 16px; font-family: var(--serif); font-size: 19px; line-height: 1.55; font-weight: 400; max-width: 58ch; }
+  blockquote cite { display: block; font-family: "Hanken Grotesk", sans-serif; font-style: normal; font-size: 13px; color: var(--tenue); margin-top: 4px; }
+  .more { font-size: 14px; font-weight: 600; color: var(--inchiostro); text-decoration: underline; text-decoration-color: var(--giallo); text-decoration-thickness: 3px; text-underline-offset: 4px; }
+  .ctl { display: flex; flex-direction: column; gap: 14px; }
+  .ctl label { font-size: 13px; color: var(--tenue); display: block; }
+  .ctl button { display: flex; width: 100%; justify-content: space-between; align-items: center; margin-top: 4px; padding: 8px 12px; border: 0; border-radius: 8px; background: var(--velo); font-size: 14.5px; font-weight: 600; cursor: pointer; text-align: left; }
+  .ctl button::after { content: ""; width: 5px; height: 5px; border-right: 1.5px solid var(--grigio); border-bottom: 1.5px solid var(--grigio); transform: translateY(-2px) rotate(45deg); }
+  .ctl button.unset { font-weight: 400; color: var(--tenue); }
+  .ctl button.road { background: var(--inchiostro); color: #fff; }
+  .ctl button.road::after { border-color: #fff; }
+  .ctl button.done { background: #E1F0E7; color: #1F5E3C; }
+
+  .theme.compact { grid-template-columns: 148px 1fr 168px; padding: 24px 0; }
+  .theme.compact .vol .n { font-size: 32px; }
+  .theme.compact h3 { font-size: 19px; }
+  .theme.compact .wave { height: 24px; margin-top: 12px; }
+  .theme.compact blockquote { font-size: 17px; margin-bottom: 0; }
+
+  /* Stati vuoti */
+  .blank { max-width: 1120px; margin: 0 auto; padding: 72px 40px 64px; }
+  .blank .big { font-family: var(--serif); font-size: 40px; line-height: 1.25; font-weight: 400; letter-spacing: -0.01em; margin: 0 0 16px; max-width: 24ch; }
+  .blank .lede { font-size: 17px; line-height: 1.55; color: var(--grigio); margin: 0 0 44px; max-width: 58ch; }
+  .ways { display: grid; grid-template-columns: 1.35fr 1fr 1fr; gap: 20px; }
+  .way { background: var(--velo); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; }
+  .way.first { background: var(--giallo); display: grid; grid-template-columns: 1fr 112px; gap: 20px; }
+  .way h4 { margin: 0 0 6px; font-size: 18px; font-weight: 700; }
+  .way p { margin: 0 0 20px; font-size: 15px; line-height: 1.5; color: #4A4E57; }
+  .way.first p { color: #3A3520; }
+  .way .btn { align-self: flex-start; margin-top: auto; }
+  .way .btn.soft { background: var(--carta); }
+  .way .url { font-size: 14px; font-weight: 600; margin: 0 0 16px; }
+  .qrbox { background: #fff; border-radius: 10px; padding: 10px; align-self: start; }
+  .wall { display: grid; grid-template-columns: 1fr 1fr; gap: 0 48px; margin-top: 8px; }
+  .wall blockquote { font-size: 18px; color: #3A3D44; padding: 18px 0; border-top: 1px solid var(--linea); margin: 0; }
+  .waiting { display: flex; justify-content: space-between; align-items: center; gap: 32px; background: var(--giallo-chiaro); border-radius: 16px; padding: 22px 28px; margin: 0 0 36px; }
+  .waiting p { margin: 0; font-size: 15px; line-height: 1.5; color: #3A3520; }
+  .waiting p b { font-size: 18px; color: var(--inchiostro); display: block; margin-bottom: 2px; }
+
+  /* ---------- Telefono ---------- */
+  .phones { display: flex; gap: 32px; width: 1656px; }
+  .phone-wrap p { font-size: 13px; color: #3A3D44; margin: 0 0 10px; }
+  .phone {
+    width: 390px; height: 844px; border-radius: 44px;
+    background: var(--carta); overflow: hidden;
+    box-shadow: 0 0 0 10px #1E2127, 0 30px 60px -20px rgba(30,33,39,.45);
+    display: flex; flex-direction: column;
+  }
+  .phone.y { background: var(--giallo); }
+  .status { height: 50px; display: flex; justify-content: space-between; align-items: center; padding: 8px 30px 0; font-size: 15px; font-weight: 600; flex: none; }
+  .status i { width: 26px; height: 12px; border-radius: 3px; box-shadow: inset 0 0 0 1.5px var(--inchiostro); position: relative; }
+  .status i::after { content: ""; position: absolute; inset: 2.5px 7px 2.5px 2.5px; background: var(--inchiostro); border-radius: 1px; }
+  .ask { background: var(--giallo); padding: 8px 26px 28px; flex: none; }
+  .ask .who { font-size: 15px; font-weight: 700; margin: 0 0 36px; display: flex; align-items: center; gap: 8px; }
+  .ask .who i { width: 26px; height: 26px; border-radius: 7px; background: var(--inchiostro); color: #fff; font-style: normal; display: grid; place-items: center; font-size: 13px; }
+  .ask h1 { font-family: var(--serif); font-weight: 500; font-size: 31px; line-height: 1.2; letter-spacing: -0.01em; margin: 0 0 10px; }
+  .ask p { margin: 0; font-size: 15px; line-height: 1.5; color: #4A4520; }
+  .sheet { padding: 22px 26px 28px; display: flex; flex-direction: column; flex: 1; }
+  .sheet label { font-size: 14px; font-weight: 600; display: flex; justify-content: space-between; }
+  .sheet label span { font-weight: 400; color: var(--tenue); }
+  .sheet textarea {
+    width: 100%; height: 190px; margin-top: 6px;
+    border: 0; resize: none; padding: 0; background: none;
+    font-family: var(--serif); font-size: 19px; line-height: 1.55;
+    border-bottom: 1.5px solid var(--linea);
+  }
+  .sheet textarea.active { border-color: var(--inchiostro); }
+  .sheet textarea::placeholder { color: #B0B3B9; font-style: italic; }
+  .sheet input { width: 100%; border: 0; border-bottom: 1.5px solid var(--linea); padding: 8px 0; font-size: 16px; margin-top: 4px; background: none; }
+  .sheet input::placeholder { color: #B0B3B9; }
+  .count { font-size: 13px; color: var(--tenue); text-align: right; margin: 6px 0 20px; font-variant-numeric: tabular-nums; }
+  .sheet .hint { font-size: 13px; color: var(--grigio); margin: 8px 0 0; line-height: 1.45; }
+  .sheet .btn { width: 100%; padding: 16px; font-size: 16px; margin-top: auto; }
+  .sheet .btn[disabled] { background: var(--velo); color: var(--tenue); cursor: not-allowed; }
+  .foot { text-align: center; font-size: 12px; color: var(--tenue); margin-top: 14px; }
+  .thanks { padding: 8px 26px 28px; display: flex; flex-direction: column; flex: 1; }
+  .thanks .who { font-size: 15px; font-weight: 700; margin: 0 0 96px; display: flex; align-items: center; gap: 8px; }
+  .thanks .who i { width: 26px; height: 26px; border-radius: 7px; background: var(--inchiostro); color: #fff; font-style: normal; display: grid; place-items: center; font-size: 13px; }
+  .thanks h1 { font-family: var(--serif); font-weight: 500; font-size: 40px; line-height: 1.1; margin: 0 0 14px; letter-spacing: -0.015em; }
+  .thanks .lede { font-size: 16px; line-height: 1.5; margin: 0 0 28px; color: #3A3520; }
+  .thanks blockquote { font-size: 17px; color: #3A3520; border-left: 2px solid var(--inchiostro); padding-left: 14px; }
+  .thanks .btn { margin-top: auto; width: 100%; padding: 16px; font-size: 16px; }
+  .thanks .foot { color: #6B6440; }
+</style>
+</head>
+<body>
+<main class="board">
+
+  <header class="board-head">
+    <h1>Direzione B: Voci</h1>
+    <p><strong>Ottimizza</strong> la comprensione: ogni tema si legge con le parole dei clienti, la frase che lo riassume evidenziata, e l'andamento delle ultime 13 settimane accanto al numero.</p>
+    <p><strong>Compromesso</strong>: entrano 2 temi per schermata invece di 8. Per decidere su tutti bisogna scorrere, e chi vuole solo aggiornare priorità e stato fa più strada.</p>
+    <p><a href="a-registro.html">Vai alla direzione A</a></p>
+  </header>
+
+  <!-- ===== Dashboard piena ===== -->
+  <p class="caption"><strong>Dashboard dei temi</strong>, dopo l'analisi del 23 settembre. Pagina intera, si scorre.</p>
+  <section class="desk" aria-label="Dashboard dei temi">
+    <header class="bar">
+      <div class="brand"><i>v</i>Fatturino</div>
+      <nav class="tabs"><a href="#" aria-current="page">Temi</a><a href="#">Feedback</a><a href="#">Raccolta</a><a href="#">Abbonamento</a></nav>
+      <div class="quota">Pro. Analisi di settembre: <b>7 di 100</b></div>
+    </header>
+    <div class="page">
+      <div class="intro">
+        <div>
+          <h2>Cosa dicono i clienti di Fatturino</h2>
+          <p><b>412 feedback</b> dal 26 giugno al 23 settembre, raggruppati in <b>8 temi</b>. Il più frequente riguarda la sincronizzazione con la banca, ed è anche quello che cresce di più.</p>
+        </div>
+        <button class="btn">Nuova analisi</button>
+      </div>
+      <div class="filters">
+        <button class="chip" aria-pressed="true">Tutti<span>8</span></button>
+        <button class="chip" aria-pressed="false">Problemi<span>4</span></button>
+        <button class="chip" aria-pressed="false">Opportunità<span>3</span></button>
+        <button class="chip" aria-pressed="false">Apprezzamenti<span>1</span></button>
+        <span class="sep"></span>
+        <button class="chip menu">Canale: <b>tutti</b></button>
+        <button class="chip menu">Stato: <b>aperti</b></button>
+      </div>
+
+      <article class="theme">
+        <div class="vol"><div class="n">58</div><div class="l">feedback</div><div class="wave" data-w="1,2,1,3,2,3,4,3,5,6,7,9,12"></div><div class="w">Ultime 13 settimane. In nero le ultime 2.</div></div>
+        <div>
+          <p class="kind p">Problema</p>
+          <h3>La sincronizzazione con la banca si interrompe</h3>
+          <p class="sum">Il collegamento scade o si blocca senza avviso e i movimenti smettono di arrivare. Chi se ne accorge lo scopre in ritardo, di solito quando riconcilia i pagamenti a fine mese.</p>
+          <blockquote>“Ogni lunedì devo ricollegare Intesa, altrimenti <mark>i movimenti della settimana non arrivano</mark>.”<cite>Supporto, 18 settembre</cite></blockquote>
+          <blockquote>“Il collegamento con Fineco <mark>scade ogni 90 giorni e nessuno me lo dice</mark>. L'ho scoperto chiudendo il trimestre.”<cite>Sondaggio NPS, 9 settembre</cite></blockquote>
+          <a class="more" href="#">Leggi tutti i 58 feedback</a>
+        </div>
+        <div class="ctl">
+          <div><label>Priorità</label><button>Alta</button></div>
+          <div><label>Stato</label><button class="road">In roadmap</button></div>
+        </div>
+      </article>
+
+      <article class="theme">
+        <div class="vol"><div class="n">47</div><div class="l">feedback</div><div class="wave" data-w="3,4,3,2,4,5,3,4,4,3,4,4,4"></div><div class="w">Ultime 13 settimane. In nero le ultime 2.</div></div>
+        <div>
+          <p class="kind o">Opportunità</p>
+          <h3>Accesso diretto per il commercialista</h3>
+          <p class="sum">Molti mandano ogni mese al commercialista un archivio di fatture a mano. Chiedono che possa entrare da solo, in sola lettura, e scaricare quello che gli serve.</p>
+          <blockquote>“Il mio commercialista mi chiede ogni mese lo zip delle fatture: <mark>se potesse entrare lui</mark> mi risparmierei mezza mattina.”<cite>Call vendita, 15 settembre</cite></blockquote>
+          <blockquote>“Siamo in tre soci e lo studio è uno solo. <mark>Un accesso per lo studio</mark> e basta, senza passarci le password.”<cite>Modulo pubblico, 29 agosto</cite></blockquote>
+          <a class="more" href="#">Leggi tutti i 47 feedback</a>
+        </div>
+        <div class="ctl">
+          <div><label>Priorità</label><button>Alta</button></div>
+          <div><label>Stato</label><button>Da valutare</button></div>
+        </div>
+      </article>
+
+      <article class="theme">
+        <div class="vol"><div class="n">41</div><div class="l">feedback</div><div class="wave" data-w="2,3,5,4,2,2,3,3,4,3,2,3,5"></div><div class="w">Ultime 13 settimane. In nero le ultime 2.</div></div>
+        <div>
+          <p class="kind o">Opportunità</p>
+          <h3>Promemoria per F24 e scadenze fiscali</h3>
+          <p class="sum">Chi è in forfettario vorrebbe sapere prima quanto pagare e quando, senza aspettare la mail del commercialista.</p>
+          <blockquote>“Il 30 giugno mi arriva sempre addosso. <mark>Un promemoria con l'importo stimato</mark> sarebbe oro.”<cite>Sondaggio NPS, 2 luglio</cite></blockquote>
+          <a class="more" href="#">Leggi tutti i 41 feedback</a>
+        </div>
+        <div class="ctl">
+          <div><label>Priorità</label><button>Media</button></div>
+          <div><label>Stato</label><button class="road">In roadmap</button></div>
+        </div>
+      </article>
+
+      <article class="theme compact">
+        <div class="vol"><div class="n">33</div><div class="wave" data-w="1,1,2,2,1,2,3,2,3,3,4,4,5"></div></div>
+        <div>
+          <p class="kind p">Problema</p>
+          <h3>Note di credito difficili da emettere</h3>
+          <blockquote>“Non trovo come fare una nota di credito parziale, <mark>ho dovuto annullare tutta la fattura</mark>.”<cite>Supporto, 19 settembre</cite></blockquote>
+        </div>
+        <div class="ctl">
+          <div><label>Priorità</label><button class="unset">Da impostare</button></div>
+          <div><label>Stato</label><button>Da valutare</button></div>
+        </div>
+      </article>
+
+      <article class="theme compact">
+        <div class="vol"><div class="n">28</div><div class="wave" data-w="3,3,2,4,3,2,2,2,2,1,2,1,1"></div></div>
+        <div>
+          <p class="kind p">Problema</p>
+          <h3>L'app mobile è lenta a caricare le ricevute</h3>
+          <blockquote>“Fotografo lo scontrino e poi resto lì <mark>a guardare la rotella per venti secondi</mark>.”<cite>App Store, 11 agosto</cite></blockquote>
+        </div>
+        <div class="ctl">
+          <div><label>Priorità</label><button>Media</button></div>
+          <div><label>Stato</label><button>Da valutare</button></div>
+        </div>
+      </article>
+      <p style="margin:28px 0 0;font-size:15px;color:var(--grigio)"><a class="more" href="#">Mostra altri 3 temi</a>&nbsp;&nbsp;con 26, 19 e 14 feedback</p>
+    </div>
+  </section>
+
+  <!-- ===== Stato vuoto 1 ===== -->
+  <p class="caption"><strong>Stato vuoto: workspace appena creato</strong>, nessun feedback.</p>
+  <section class="desk" aria-label="Dashboard vuota, nessun feedback">
+    <header class="bar">
+      <div class="brand"><i>v</i>Fatturino</div>
+      <nav class="tabs"><a href="#" aria-current="page">Temi</a><a href="#">Feedback</a><a href="#">Raccolta</a><a href="#">Abbonamento</a></nav>
+      <div class="quota">Free. Feedback: <b>0 di 100</b>. Analisi di settembre: <b>0 di 3</b></div>
+    </header>
+    <div class="blank">
+      <p class="big">Qui leggerai cosa dicono i tuoi clienti, raggruppato per tema.</p>
+      <p class="lede">Per cominciare servono i feedback. Parti da quelli che hai già in giro: ticket, note delle call, risposte ai sondaggi. Più canali metti insieme, più i temi sono completi.</p>
+      <div class="ways">
+        <div class="way first">
+          <div style="display:flex;flex-direction:column">
+            <h4>Chiedi ai clienti</h4>
+            <p>Un modulo pubblico con una sola domanda. Si risponde dal telefono, senza account.</p>
+            <p class="url">voce.app/f/fatturino-k3m9</p>
+            <button class="btn">Copia il link</button>
+          </div>
+          <div class="qrbox"><svg class="qr" data-seed="11" width="92" height="92" aria-label="QR code del modulo pubblico"></svg></div>
+        </div>
+        <div class="way">
+          <h4>Importa un CSV</h4>
+          <p>Serve una colonna <b>testo</b>. Canale, cliente e data sono facoltativi. Fino a 2.000 righe.</p>
+          <button class="btn soft">Scegli il file</button>
+        </div>
+        <div class="way">
+          <h4>Incolla un feedback</h4>
+          <p>Copiato da un'email, da Slack o dalle tue note, uno alla volta.</p>
+          <button class="btn soft">Incolla un testo</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Stato vuoto 2 ===== -->
+  <p class="caption"><strong>Stato vuoto: feedback raccolti, nessuna analisi</strong>. È il momento dell'attivazione.</p>
+  <section class="desk" aria-label="Dashboard con feedback ma senza analisi">
+    <header class="bar">
+      <div class="brand"><i>v</i>Fatturino</div>
+      <nav class="tabs"><a href="#" aria-current="page">Temi</a><a href="#">Feedback</a><a href="#">Raccolta</a><a href="#">Abbonamento</a></nav>
+      <div class="quota">Free. Feedback: <b>37 di 100</b>. Analisi di settembre: <b>0 di 3</b></div>
+    </header>
+    <div class="page">
+      <div class="intro" style="margin-bottom:24px">
+        <div>
+          <h2>37 feedback, ancora nessun tema</h2>
+          <p>Letti uno per uno dicono poco. L'analisi li raggruppa in problemi, opportunità e apprezzamenti, con le citazioni che li rappresentano meglio.</p>
+        </div>
+      </div>
+      <div class="waiting">
+        <p><b>Pronti per la prima analisi</b>16 dal supporto, 10 dal modulo pubblico, 6 dalle call di vendita, 5 dall'App Store. Userai 1 delle 3 analisi di settembre.</p>
+        <button class="btn">Analizza 37 feedback</button>
+      </div>
+      <div class="wall">
+        <blockquote>“Non trovo come fare una nota di credito parziale, ho dovuto annullare tutta la fattura.”<cite>Supporto, oggi</cite></blockquote>
+        <blockquote>“Mi piacerebbe vedere quanto manca alla soglia del forfettario senza fare i conti a mano.”<cite>Modulo pubblico, ieri</cite></blockquote>
+        <blockquote>“La fattura allo SdI la mando dal telefono in un minuto. Prima ci mettevo mezz'ora.”<cite>App Store, 22 settembre</cite></blockquote>
+        <blockquote>“Il collegamento con Fineco si è scollegato di nuovo.”<cite>Supporto, 21 settembre</cite></blockquote>
+        <blockquote>“Codice errore 00305 e basta. Ho dovuto cercare su Google cosa volesse dire.”<cite>Supporto, 20 settembre</cite></blockquote>
+        <blockquote>“Per noi il punto è il commercialista: se non lo convinci tu, non passiamo a Pro.”<cite>Call vendita, 19 settembre</cite></blockquote>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Modulo pubblico ===== -->
+  <p class="caption"><strong>Modulo pubblico</strong> su telefono. Stessa pagina in quattro stati.</p>
+  <div class="phones">
+    <div class="phone-wrap">
+      <p>Vuoto, appena aperto dal link o dal QR</p>
+      <div class="phone">
+        <div class="status" style="background:var(--giallo)">9:41<i></i></div>
+        <div class="ask">
+          <p class="who"><i>F</i>Fatturino</p>
+          <h1>Cosa vuoi dire al team di Fatturino?</h1>
+          <p>Un problema, un'idea, qualcosa che ti piace. Lo leggono le persone che costruiscono il prodotto.</p>
+        </div>
+        <form class="sheet" onsubmit="return false">
+          <label for="c1">Il tuo feedback</label>
+          <textarea id="c1" placeholder="Scrivi come lo diresti a voce"></textarea>
+          <div class="count">0 / 2.000</div>
+          <label for="c2">Email <span>facoltativa</span></label>
+          <input id="c2" type="email" placeholder="nome@esempio.it">
+          <p class="hint">Lasciala solo se vuoi essere ricontattato.</p>
+          <button class="btn" disabled>Invia</button>
+          <div class="foot">Raccolto con Voce. Non serve un account.</div>
+        </form>
+      </div>
+    </div>
+
+    <div class="phone-wrap">
+      <p>In scrittura (la domanda si riduce per fare spazio)</p>
+      <div class="phone">
+        <div class="status" style="background:var(--giallo)">9:42<i></i></div>
+        <div class="ask" style="padding-bottom:18px">
+          <p class="who" style="margin-bottom:12px"><i>F</i>Fatturino</p>
+          <h1 style="font-size:22px;margin:0">Cosa vuoi dire al team di Fatturino?</h1>
+        </div>
+        <form class="sheet" onsubmit="return false">
+          <label for="d1">Il tuo feedback</label>
+          <textarea id="d1" class="active" style="height:270px">Uso Fatturino da due anni e mi trovo bene. Però il collegamento con Fineco si stacca ogni tre mesi e me ne accorgo solo quando mancano i movimenti. Basterebbe un avviso qualche giorno prima della scadenza.</textarea>
+          <div class="count">214 / 2.000</div>
+          <label for="d2">Email <span>facoltativa</span></label>
+          <input id="d2" type="email" value="giulia.r@studiorossi.it">
+          <p class="hint">Lasciala solo se vuoi essere ricontattato.</p>
+          <button class="btn">Invia</button>
+          <div class="foot">Raccolto con Voce. Non serve un account.</div>
+        </form>
+      </div>
+    </div>
+
+    <div class="phone-wrap">
+      <p>Inviato</p>
+      <div class="phone y">
+        <div class="status">9:43<i></i></div>
+        <div class="thanks">
+          <p class="who"><i>F</i>Fatturino</p>
+          <h1>Ricevuto. Grazie.</h1>
+          <p class="lede">Il team di Fatturino lo legge insieme agli altri feedback e lo usa per decidere cosa migliorare.</p>
+          <blockquote>“Uso Fatturino da due anni e mi trovo bene. Però il collegamento con Fineco si stacca ogni tre mesi…”</blockquote>
+          <button class="btn">Scrivi un altro feedback</button>
+          <div class="foot">Raccolto con Voce.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone-wrap">
+      <p>Non disponibile (limite Free raggiunto)</p>
+      <div class="phone">
+        <div class="status">9:41<i></i></div>
+        <div class="thanks">
+          <p class="who"><i>F</i>Fatturino</p>
+          <h1 style="font-size:32px;line-height:1.2">Per ora questo modulo non accetta nuovi feedback.</h1>
+          <p class="lede" style="color:var(--grigio)">Se vuoi scrivere a Fatturino, usa il supporto dall'app o dal sito. Il tuo messaggio arriva comunque alle stesse persone.</p>
+          <div class="foot" style="margin-top:auto">Raccolto con Voce.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  // Andamento settimanale di ogni tema
+  document.querySelectorAll(".wave").forEach(el => {
+    const w = el.dataset.w.split(",").map(Number), max = Math.max(...w, 1);
+    el.setAttribute("role", "img");
+    el.setAttribute("aria-label", "Feedback per settimana: " + w.join(", "));
+    el.innerHTML = w.map(v => `<i style="height:${Math.max(6, v / max * 100)}%"></i>`).join("");
+  });
+
+  // QR finto ma credibile
+  document.querySelectorAll("svg.qr").forEach(svg => {
+    const n = 25, s = svg.width.baseVal.value / n;
+    let seed = +svg.dataset.seed, out = "";
+    const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+    const inFinder = (x, y) => {
+      for (const [ox, oy] of [[0,0],[n-7,0],[0,n-7]]) {
+        const dx = x - ox, dy = y - oy;
+        if (dx >= 0 && dx < 7 && dy >= 0 && dy < 7)
+          return dx === 0 || dx === 6 || dy === 0 || dy === 6 || (dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4);
+      }
+      return null;
+    };
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      const f = inFinder(x, y);
+      if (f === null ? rnd() > 0.52 : f) out += `<rect x="${x*s}" y="${y*s}" width="${s+.2}" height="${s+.2}"/>`;
+    }
+    svg.innerHTML = `<g fill="currentColor">${out}</g>`;
+  });
+</script>
+</body>
+</html>
