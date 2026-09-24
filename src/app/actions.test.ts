@@ -79,21 +79,45 @@ describe("submitFeedback", () => {
       expect(await submitFeedback({ ...valid(), slug })).toEqual({ ok: false, reason: "unavailable" })
   })
 
-  it("accepts 10 submissions a minute from the same IP, then asks to wait", async () => {
-    const results = []
-    for (let i = 0; i < 11; i++) results.push(await submitFeedback({ ...valid(), text: `Invio ripetuto ${i}` }))
-    expect(results.slice(0, 10)).toEqual(Array(10).fill({ ok: true }))
-    expect(results[10]).toEqual({ ok: false, reason: "rate_limited" })
-    const { count } = await admin
-      .from("feedback")
-      .select("id", { count: "exact", head: true })
-      .eq("workspace_id", user.workspaceId)
-      .like("text", "Invio ripetuto%")
-    expect(count).toBe(10)
-    // Another visitor is not blocked by the first one.
-    session.ip = crypto.randomUUID()
-    expect(await submitFeedback({ ...valid(), text: "Un altro visitatore" })).toEqual({ ok: true })
-  })
+  // A full room: every phone reaches the internet from the venue Wi-Fi or the same carrier IP.
+  it("accepts a room of 230 people submitting from the same IP within a minute", async () => {
+    const room = await createTestUser("room")
+    try {
+      // Pro, so the Free limit does not get in the way of the count.
+      await admin.from("subscriptions").update({ plan: "pro" }).eq("workspace_id", room.workspaceId)
+      const started = Date.now()
+      const send = (i: number) => submitFeedback({ ...valid(), slug: room.formSlug, text: `Dalla sala ${i}` })
+      const results = []
+      // People submit a few at a time, not one after the other.
+      for (let i = 0; i < 230; i += 23) results.push(...(await Promise.all(Array.from({ length: 23 }, (_, j) => send(i + j)))))
+      expect(Date.now() - started).toBeLessThan(60_000)
+      expect(results).toEqual(Array(230).fill({ ok: true }))
+      const { count } = await admin.from("feedback").select("id", { count: "exact", head: true }).eq("workspace_id", room.workspaceId)
+      expect(count).toBe(230)
+    } finally {
+      await deleteTestUsers([room])
+    }
+  }, 60_000)
+
+  it("accepts 300 submissions an hour from the same IP across all forms, then asks to wait", async () => {
+    const [first, second] = await Promise.all([createTestUser("ip-a"), createTestUser("ip-b")])
+    try {
+      for (const u of [first, second]) await admin.from("subscriptions").update({ plan: "pro" }).eq("workspace_id", u.workspaceId)
+      const send = (u: TestUser, i: number) => submitFeedback({ ...valid(), slug: u.formSlug, text: `Stesso IP ${i}` })
+      for (let i = 0; i < 300; i += 30) {
+        // 200 to the first form, 100 to the second: the limit counts the IP on every form.
+        const target = i < 200 ? first : second
+        expect(await Promise.all(Array.from({ length: 30 }, (_, j) => send(target, i + j)))).toEqual(Array(30).fill({ ok: true }))
+      }
+      expect(await send(second, 300)).toEqual({ ok: false, reason: "rate_limited" })
+      expect(await send(first, 301)).toEqual({ ok: false, reason: "rate_limited" })
+      // Another visitor is not blocked by the first one.
+      session.ip = crypto.randomUUID()
+      expect(await send(second, 302)).toEqual({ ok: true })
+    } finally {
+      await deleteTestUsers([first, second])
+    }
+  }, 60_000)
 
   it("accepts 300 submissions an hour per workspace, from any IP", async () => {
     const busy = await createTestUser("busy")

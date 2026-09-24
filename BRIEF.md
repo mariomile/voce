@@ -82,7 +82,7 @@ Scelte di dettaglio prese il 2026-09-25. Dove precisano il resto del brief, valg
 
 ### Raccolta dei feedback
 
-7. **Modulo pubblico:** testo obbligatorio, email facoltativa. Testo massimo 2.000 caratteri. Limiti: 10 invii al minuto per IP, 300 all'ora per workspace. Un campo nascosto anti-bot, niente captcha per ora.
+7. **Modulo pubblico:** testo obbligatorio, email facoltativa. Testo massimo 2.000 caratteri. Limiti: 300 invii all'ora per IP, contati su tutti i moduli insieme, e 300 all'ora per workspace. Un campo nascosto anti-bot, niente captcha per ora. Il limite per IP non è al minuto perché in una sala piena (230 persone) i telefoni escono spesso tutti dallo stesso IP, quello del Wi-Fi o dell'operatore: la sala deve poter rispondere nello stesso minuto. Dagli abusi proteggono i due tetti orari e il limite Free: un solo IP non riempie più dell'ora di un modulo, e non può spargere invii su tanti workspace.
 8. **Domanda del modulo pubblico:** la sceglie il PM. Se non la cambia, vale il default "Cosa vuoi dire al team di …?" con il nome del workspace. La domanda è lunga al massimo 140 caratteri.
 9. **Link pubblico:** il PM può disattivarlo e generarne uno nuovo.
 10. **CSV:** colonna `testo` obbligatoria, colonne facoltative `canale`, `cliente`, `data`. Massimo 1 MB e 2.000 righe. I duplicati esatti nello stesso workspace vengono ignorati.

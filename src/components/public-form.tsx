@@ -157,7 +157,7 @@ export function PublicForm({
         </div>
         {error === "rate_limited" && (
           <FieldError role="alert" className="mt-auto text-center">
-            Troppi invii in poco tempo. Riprova tra qualche minuto.
+            Troppi invii in poco tempo. Riprova più tardi.
           </FieldError>
         )}
         <Button
