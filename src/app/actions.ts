@@ -1,14 +1,15 @@
 "use server"
 
 import { z } from "zod"
-import { getCurrentWorkspace, getPublicForm, getTheme } from "@/lib/data"
+import { getCurrentWorkspace } from "@/lib/data"
 import { FEEDBACK_MAX_LENGTH } from "@/lib/plans"
+import { createClient } from "@/lib/supabase/server"
 
-// Server actions validate every input with an explicit schema.
-// Nothing is saved yet: the Supabase step adds the writes where marked.
+// Server actions validate every input with an explicit schema, then write as the signed-in user:
+// RLS and column grants decide what the write can touch.
 
 const themeUpdateSchema = z.object({
-  themeId: z.string().min(1),
+  themeId: z.uuid(),
   priority: z.enum(["high", "medium", "low"]).nullable(),
   status: z.enum(["to_review", "roadmap", "done", "discarded"]),
 })
@@ -17,8 +18,14 @@ export async function updateTheme(input: z.input<typeof themeUpdateSchema>) {
   const parsed = themeUpdateSchema.safeParse(input)
   if (!parsed.success) return { ok: false as const }
   const workspace = await getCurrentWorkspace()
-  if (!(await getTheme(workspace.id, parsed.data.themeId))) return { ok: false as const }
-  // Supabase step: update the theme's priority and status.
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("themes")
+    .update({ priority: parsed.data.priority, status: parsed.data.status })
+    .eq("workspace_id", workspace.id)
+    .eq("id", parsed.data.themeId)
+    .select("id")
+  if (error || data.length === 0) return { ok: false as const }
   return { ok: true as const }
 }
 
@@ -44,10 +51,15 @@ export async function submitFeedback(
     const emailIssue = parsed.error.issues.some((i) => i.path[0] === "email")
     return { ok: false, reason: emailIssue ? "invalid_email" : "invalid" }
   }
-  const form = await getPublicForm(parsed.data.slug)
-  if (!form) return { ok: false, reason: "unavailable" }
-  if (!form.accepting) return { ok: false, reason: "unavailable" }
-  // Supabase step: rate limits (10/min per IP, 300/h per workspace) and the insert,
-  // with channel "Modulo pubblico".
-  return { ok: true }
+  // The database function checks the link, the Free limit and fixes the channel.
+  // Rate limits (10/min per IP, 300/h per workspace) are not built yet.
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc("submit_public_feedback", {
+    slug: parsed.data.slug,
+    feedback_text: parsed.data.text,
+    email: parsed.data.email,
+  })
+  if (error) throw error
+  if (data === "ok") return { ok: true }
+  return { ok: false, reason: data === "invalid" ? "invalid" : "unavailable" }
 }

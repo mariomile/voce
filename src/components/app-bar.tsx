@@ -1,6 +1,8 @@
+import { signOut } from "@/app/(auth)/actions"
 import { AppTabs } from "@/components/app-tabs"
 import { Logo } from "@/components/logo"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import type { Usage } from "@/lib/data"
 import { formatMonth } from "@/lib/format"
 import type { Workspace } from "@/lib/types"
@@ -31,6 +33,11 @@ export function AppBar({ workspace, usage }: { workspace: Workspace; usage: Usag
           {usage.analysesThisMonth} di {usage.analysesLimit}
         </b>
       </div>
+      <form action={signOut}>
+        <Button type="submit" variant="link" className="text-md text-ink-muted">
+          Esci
+        </Button>
+      </form>
     </header>
   )
 }

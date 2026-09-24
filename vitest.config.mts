@@ -1,5 +1,9 @@
+import { existsSync } from "node:fs"
 import { fileURLToPath } from "node:url"
 import { defineConfig } from "vitest/config"
+
+// Local Supabase URL and keys for the tests.
+if (existsSync(".env.local")) process.loadEnvFile(".env.local")
 
 export default defineConfig({
   resolve: {
