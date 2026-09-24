@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voce, kit di design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400..800&family=Literata:ital,opsz,wght@0,7..72,400..700;1,7..72,400..600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<style>
+  /* Solo impaginazione del catalogo */
+  .cat { max-width: 1120px; margin: 0 auto; padding: 56px 40px 96px; }
+  .cat > header p { color: var(--color-ink-muted); max-width: 70ch; line-height: 1.5; margin: 0; }
+  .cat h1 { font-size: 32px; margin: 0 0 8px; letter-spacing: -0.02em; }
+  .cat h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--color-ink-subtle); margin: 64px 0 16px; padding-top: 16px; border-top: 1px solid var(--color-ink); }
+  .row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+  .cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .cols-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 32px; }
+  .note { font-size: 12px; color: var(--color-ink-subtle); margin-top: 6px; line-height: 1.4; }
+  .note code { color: var(--color-ink-muted); }
+  .swatch { width: 132px; }
+  .swatch div { height: 64px; border-radius: 8px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.06); }
+  .type-row { display: grid; grid-template-columns: 180px 1fr; gap: 24px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--color-line); }
+  .space-row { display: flex; align-items: center; gap: 16px; font-size: 13px; color: var(--color-ink-muted); margin: 4px 0; }
+  .space-row span { display: inline-block; width: 90px; }
+  .space-row i { display: block; height: 12px; background: var(--color-highlight); }
+  .box { width: 120px; height: 80px; background: var(--color-veil); display: grid; place-items: center; font-size: 12px; color: var(--color-ink-muted); }
+  .shadow-box { width: 200px; height: 96px; background: var(--color-paper); border-radius: 12px; display: grid; place-items: center; font-size: 12px; color: var(--color-ink-muted); }
+  .shadow-stage { background: var(--color-veil); padding: 32px; border-radius: 16px; display: flex; gap: 32px; }
+</style>
+</head>
+<body>
+<main class="cat">
+  <header>
+    <h1>Voce, kit di design</h1>
+    <p>Token e componenti della direzione B. Le regole d'uso sono in <a class="link" href="../DESIGN.md">DESIGN.md</a>, le schermate costruite con il kit in <a class="link" href="b-voci.html">b-voci.html</a>.</p>
+  </header>
+
+  <!-- ===== Token ===== -->
+  <h2>Colori</h2>
+  <div class="row" id="swatches"></div>
+
+  <h2>Tipografia</h2>
+  <div class="type-row"><span class="note"><code>--text-6xl</code> 48 · sans bold</span><span class="stat-value">412</span></div>
+  <div class="type-row"><span class="note"><code>--text-5xl</code> 40 · serif</span><span class="empty-title">Ricevuto. Grazie.</span></div>
+  <div class="type-row"><span class="note"><code>--text-4xl</code> 32 · sans bold</span><span class="page-title">Cosa dicono i clienti</span></div>
+  <div class="type-row"><span class="note"><code>--text-3xl</code> 24 · sans bold</span><span class="theme-title">Accesso diretto per il commercialista</span></div>
+  <div class="type-row"><span class="note"><code>--text-2xl</code> 20 · serif</span><span class="quote">“Il collegamento <mark>scade ogni 90 giorni</mark>.”</span></div>
+  <div class="type-row"><span class="note"><code>--text-xl</code> 18 · sans bold</span><span class="card-title">Importa un CSV</span></div>
+  <div class="type-row"><span class="note"><code>--text-lg</code> 16 · testo lungo, campi</span><span class="page-lede">412 feedback dal 26 giugno al 23 settembre.</span></div>
+  <div class="type-row"><span class="note"><code>--text-base</code> 15 · interfaccia</span><span class="theme-summary">Il collegamento scade o si blocca senza avviso.</span></div>
+  <div class="type-row"><span class="note"><code>--text-md</code> 14 · etichette</span><span class="field-label">Il tuo feedback</span></div>
+  <div class="type-row"><span class="note"><code>--text-sm</code> 13 · fonti, note</span><span class="field-hint">Supporto, 18 settembre</span></div>
+  <div class="type-row"><span class="note"><code>--text-xs</code> 12 · minimo</span><span class="trend-note">Ultime 13 settimane. In nero le ultime 2.</span></div>
+
+  <h2>Spaziature</h2>
+  <div id="spaces"></div>
+
+  <h2>Raggi</h2>
+  <div class="row">
+    <div><div class="box" style="border-radius:var(--radius-sm)">sm · 8</div><p class="note">Campi, select, avatar</p></div>
+    <div><div class="box" style="border-radius:var(--radius-md)">md · 12</div><p class="note">QR code, riquadri piccoli</p></div>
+    <div><div class="box" style="border-radius:var(--radius-lg)">lg · 16</div><p class="note">Card</p></div>
+    <div><div class="box" style="border-radius:var(--radius-full)">full</div><p class="note">Pulsanti, chip, badge</p></div>
+  </div>
+
+  <h2>Ombre</h2>
+  <div class="shadow-stage">
+    <div><div class="shadow-box" style="box-shadow:var(--shadow-sm)">shadow-sm</div><p class="note">Menu aperti, tooltip, toast</p></div>
+    <div><div class="shadow-box" style="box-shadow:var(--shadow-md)">shadow-md</div><p class="note">Dialog e pannelli sopra la pagina</p></div>
+  </div>
+
+  <!-- ===== Componenti ===== -->
+  <h2>Pulsanti</h2>
+  <div class="row">
+    <button class="btn">Nuova analisi</button>
+    <button class="btn btn-secondary">Scegli il file</button>
+    <button class="btn btn-highlight">Passa a Pro</button>
+    <button class="btn" disabled>Invia</button>
+    <a class="link" href="#">Leggi tutti i 58 feedback</a>
+  </div>
+  <div class="row" style="margin-top:16px;max-width:360px"><button class="btn btn-lg btn-block">Invia</button></div>
+  <p class="note"><code>.btn</code> · <code>.btn-secondary</code> · <code>.btn-highlight</code> · <code>:disabled</code> · <code>.link</code> · <code>.btn-lg .btn-block</code></p>
+
+  <h2>Filtri</h2>
+  <div class="filter-bar">
+    <button class="chip" aria-pressed="true">Tutti<span class="chip-count">8</span></button>
+    <button class="chip" aria-pressed="false">Problemi<span class="chip-count">4</span></button>
+    <span class="filter-bar-sep"></span>
+    <button class="chip chip-menu">Canale: <b>tutti</b></button>
+  </div>
+
+  <h2>Campi</h2>
+  <div class="cols">
+    <div class="field">
+      <label class="field-label" for="k1">Domanda del modulo</label>
+      <input class="input" id="k1" value="Cosa vuoi dire al team di Fatturino?">
+      <p class="field-hint">La vedono i clienti in cima al modulo pubblico.</p>
+    </div>
+    <div class="field">
+      <label class="field-label" for="k2">Cliente <span class="field-optional">facoltativo</span></label>
+      <input class="input" id="k2" placeholder="Es. Studio Rossi">
+    </div>
+    <div class="field">
+      <label class="field-label" for="k3">Email <span class="field-optional">facoltativa</span></label>
+      <input class="input" id="k3" value="giulia.r@studiorossi" aria-invalid="true" aria-describedby="k3e">
+      <p class="field-error" id="k3e">Manca il dominio, per esempio .it</p>
+    </div>
+  </div>
+  <div class="cols-2" style="margin-top:32px">
+    <div class="field">
+      <label class="field-label" for="k4">Il tuo feedback</label>
+      <textarea class="textarea textarea-line" id="k4" rows="3" placeholder="Scrivi come lo diresti a voce"></textarea>
+      <p class="field-count">0 / 2.000</p>
+    </div>
+    <div class="field">
+      <label class="field-label" for="k5">Email <span class="field-optional">facoltativa</span></label>
+      <input class="input input-line" id="k5" type="email" placeholder="nome@esempio.it">
+      <p class="field-hint">Lasciala solo se vuoi essere ricontattato.</p>
+    </div>
+  </div>
+  <p class="note"><code>.input</code> · <code>.textarea</code> nell'app · <code>.input-line</code> · <code>.textarea-line</code> nel modulo pubblico · errore con <code>aria-invalid="true"</code> e <code>.field-error</code></p>
+
+  <h2>Select</h2>
+  <div class="row">
+    <div class="field field-quiet" style="width:168px"><label class="field-label" for="s1">Priorità</label><select class="select select-empty" id="s1"><option selected>Da impostare</option><option>Alta</option><option>Media</option><option>Bassa</option></select></div>
+    <div class="field field-quiet" style="width:168px"><label class="field-label" for="s2">Priorità</label><select class="select" id="s2"><option>Da impostare</option><option selected>Alta</option><option>Media</option><option>Bassa</option></select></div>
+    <div class="field field-quiet" style="width:168px"><label class="field-label" for="s3">Stato</label><select class="select select-strong" id="s3"><option>Da valutare</option><option selected>In roadmap</option><option>Fatto</option><option>Scartato</option></select></div>
+    <div class="field field-quiet" style="width:168px"><label class="field-label" for="s4">Stato</label><select class="select select-positive" id="s4"><option>Da valutare</option><option>In roadmap</option><option selected>Fatto</option><option>Scartato</option></select></div>
+  </div>
+  <p class="note"><code>.select</code> · <code>.select-empty</code> nessun valore · <code>.select-strong</code> in roadmap · <code>.select-positive</code> fatto</p>
+
+  <h2>Card</h2>
+  <div class="cols">
+    <div class="card"><h3 class="card-title">Importa un CSV</h3><p class="card-text">Serve una colonna <b>testo</b>. Fino a 2.000 righe.</p><div class="card-actions"><button class="btn btn-secondary">Scegli il file</button></div></div>
+    <div class="card card-highlight"><h3 class="card-title">Chiedi ai clienti</h3><p class="card-text">Un modulo pubblico con una sola domanda, che scegli tu.</p><div class="card-actions"><button class="btn">Copia il link</button></div></div>
+    <div class="card card-soft"><h3 class="card-title">Pronti per la prima analisi</h3><p class="card-text">37 feedback da 4 canali. Userai 1 delle 3 analisi di settembre.</p><div class="card-actions"><button class="btn">Analizza 37 feedback</button></div></div>
+  </div>
+  <p class="note"><code>.card</code> · <code>.card-highlight</code> l'azione consigliata · <code>.card-soft</code> un avviso che invita ad agire · <code>.card-row</code> · <code>.card-media</code></p>
+
+  <h2>Badge</h2>
+  <div class="row">
+    <span class="badge badge-problem">Problema</span>
+    <span class="badge badge-opportunity">Opportunità</span>
+    <span class="badge badge-praise">Apprezzamento</span>
+    <span class="badge">Pro</span>
+    <span class="badge">Free</span>
+  </div>
+
+  <h2>Tabella</h2>
+  <table class="table">
+    <thead><tr><th>Feedback</th><th>Canale</th><th>Cliente</th><th class="table-num">Data</th></tr></thead>
+    <tbody>
+      <tr><td>Non trovo come fare una nota di credito parziale, ho dovuto annullare tutta la fattura.</td><td class="table-muted">Supporto</td><td class="table-muted">Studio Bianchi</td><td class="table-num table-muted">19 set</td></tr>
+      <tr><td>Mi piacerebbe vedere quanto manca alla soglia del forfettario senza fare i conti a mano.</td><td class="table-muted">Modulo pubblico</td><td class="table-muted"></td><td class="table-num table-muted">18 set</td></tr>
+      <tr><td>Il collegamento con Fineco si è scollegato di nuovo.</td><td class="table-muted">Supporto</td><td class="table-muted">G. Rossi</td><td class="table-num table-muted">16 set</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Stato vuoto</h2>
+  <div class="empty">
+    <h3 class="empty-title">Nessun feedback da questo canale.</h3>
+    <p class="empty-text">Cambia il filtro o importa un CSV con la colonna canale.</p>
+    <button class="btn btn-secondary">Mostra tutti i canali</button>
+  </div>
+
+  <h2>Citazione evidenziata</h2>
+  <div class="cols-2">
+    <div class="quote-stack">
+      <blockquote class="quote">“Il collegamento con Fineco <mark>scade ogni 90 giorni e nessuno me lo dice</mark>. L'ho scoperto chiudendo il trimestre.”<cite>Sondaggio NPS, 9 settembre</cite></blockquote>
+      <blockquote class="quote quote-sm">“Fotografo lo scontrino e poi resto lì <mark>a guardare la rotella per venti secondi</mark>.”<cite>App Store, 11 agosto</cite></blockquote>
+    </div>
+    <div>
+      <blockquote class="quote quote-sm quote-bar">“Uso Fatturino da due anni e mi trovo bene. Però il collegamento con Fineco si stacca ogni tre mesi…”</blockquote>
+    </div>
+  </div>
+  <p class="note"><code>.quote</code> · <code>.quote-sm</code> · <code>.quote-bar</code> · <code>mark</code> per la frase che conta, una per citazione</p>
+</main>
+
+<script>
+  const colors = ["paper","veil","ink","ink-muted","ink-subtle","line","line-strong","highlight","highlight-soft","on-highlight","problem","opportunity","praise","praise-soft","praise-ink"];
+  const css = getComputedStyle(document.documentElement);
+  document.getElementById("swatches").innerHTML = colors.map(c =>
+    `<div class="swatch"><div style="background:var(--color-${c})"></div><p class="note"><code>--color-${c}</code><br>${css.getPropertyValue("--color-" + c).trim()}</p></div>`
+  ).join("");
+  document.getElementById("spaces").innerHTML = [1,2,3,4,5,6,8,10,12,16,24].map(n =>
+    `<div class="space-row"><span>--space-${n}</span><i style="width:var(--space-${n})"></i>${css.getPropertyValue("--space-" + n).trim()}</div>`
+  ).join("");
+</script>
+</body>
+</html>

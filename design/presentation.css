@@ -1,0 +1,31 @@
+/* Cornice di presentazione: tavola, didascalie, finto browser, finto telefono.
+   Non è prodotto e non entra nell'app. Il prodotto sta tutto in kit.css. */
+
+body { background: #CFD0CB; }
+
+.board { padding: 48px 48px 96px; overflow-x: auto; }
+.board-head { max-width: 1280px; margin: 0 0 40px; }
+.board-head h1 { font-size: 32px; font-weight: 700; margin: 0 0 8px; letter-spacing: -0.015em; }
+.board-head p { margin: 0 0 4px; max-width: 72ch; color: #3A3D44; line-height: 1.5; }
+.board-head a { color: inherit; }
+.caption { font-size: 14px; color: #3A3D44; margin: 48px 0 12px; }
+.caption strong { color: #1E2127; }
+
+.desk {
+  width: 1280px; min-height: 800px;
+  background: #FFFFFF;
+  border-radius: 10px; overflow: hidden;
+  box-shadow: 0 30px 60px -30px rgba(30,33,39,.35);
+}
+
+.phones { display: flex; gap: 32px; width: 1656px; }
+.phone-wrap > p { font-size: 13px; color: #3A3D44; margin: 0 0 10px; }
+.phone {
+  width: 390px; height: 844px; border-radius: 44px;
+  background: #FFFFFF; overflow: hidden;
+  box-shadow: 0 0 0 10px #1E2127, 0 30px 60px -20px rgba(30,33,39,.45);
+  display: flex; flex-direction: column;
+}
+.phone-status { height: 50px; display: flex; justify-content: space-between; align-items: center; padding: 8px 30px 0; font-size: 15px; font-weight: 600; flex: none; }
+.phone-status i { width: 26px; height: 12px; border-radius: 3px; box-shadow: inset 0 0 0 1.5px #1E2127; position: relative; }
+.phone-status i::after { content: ""; position: absolute; inset: 2.5px 7px 2.5px 2.5px; background: #1E2127; border-radius: 1px; }
