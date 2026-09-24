@@ -1,0 +1,148 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Voce design tokens. Same names and values as design/kit.css, rules in DESIGN.md. */
+@theme {
+  --color-*: initial;
+  --color-paper: #ffffff;
+  --color-veil: #f3f3f0;
+  --color-ink: #1e2127;
+  --color-ink-hover: #000000;
+  --color-ink-muted: #5f6470;
+  --color-ink-subtle: #9095a0;
+  --color-line: #e4e4df;
+  --color-line-strong: #c4c6c0;
+  --color-highlight: #ffe45c;
+  --color-highlight-hover: #f5d83a;
+  --color-highlight-soft: #fff4b8;
+  --color-on-highlight: #4a4520;
+  --color-problem: #b8322a;
+  --color-opportunity: #2a56c6;
+  --color-praise: #2b7d52;
+  --color-praise-soft: #e1f0e7;
+  --color-praise-ink: #1f5e3c;
+
+  --font-*: initial;
+  --font-sans: var(--font-hanken), system-ui, sans-serif;
+  --font-serif: var(--font-literata), Georgia, serif;
+
+  --text-*: initial;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-md: 14px;
+  --text-base: 15px;
+  --text-lg: 16px;
+  --text-xl: 18px;
+  --text-2xl: 20px;
+  --text-3xl: 24px;
+  --text-4xl: 32px;
+  --text-5xl: 40px;
+  --text-6xl: 48px;
+
+  --leading-*: initial;
+  --leading-none: 1;
+  --leading-display: 1.1;
+  --leading-tight: 1.15;
+  --leading-heading: 1.2;
+  --leading-snug: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.55;
+
+  --tracking-*: initial;
+  --tracking-tight: -0.02em;
+  --tracking-snug: -0.01em;
+  --tracking-numbers: -0.03em;
+
+  /* Spacing scale is Tailwind's default 4px step: p-3 = --space-3 = 12px. */
+  --spacing: 4px;
+
+  --radius-*: initial;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  --shadow-*: initial;
+  --shadow-sm: 0 1px 2px rgba(30, 33, 39, 0.08), 0 2px 8px -2px rgba(30, 33, 39, 0.1);
+  --shadow-md: 0 16px 40px -12px rgba(30, 33, 39, 0.3);
+}
+
+/* shadcn/ui variables point to the tokens. The yellow never enters them. */
+:root {
+  --background: var(--color-paper);
+  --foreground: var(--color-ink);
+  --card: var(--color-veil);
+  --card-foreground: var(--color-ink);
+  --popover: var(--color-paper);
+  --popover-foreground: var(--color-ink);
+  --primary: var(--color-ink);
+  --primary-foreground: var(--color-paper);
+  --secondary: var(--color-veil);
+  --secondary-foreground: var(--color-ink);
+  --muted: var(--color-veil);
+  --muted-foreground: var(--color-ink-muted);
+  --accent: var(--color-veil);
+  --accent-foreground: var(--color-ink);
+  --destructive: var(--color-problem);
+  --border: var(--color-line);
+  --input: var(--color-line);
+  --ring: var(--color-ink);
+  --radius: var(--radius-sm);
+
+  /* Menu chevrons, in the three colors they need */
+  --chevron-muted: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%235F6470' stroke-width='1.5'/%3E%3C/svg%3E");
+  --chevron-paper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23FFFFFF' stroke-width='1.5'/%3E%3C/svg%3E");
+  --chevron-praise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%231F5E3C' stroke-width='1.5'/%3E%3C/svg%3E");
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+
+  /* The phrase that matters, highlighted as on paper */
+  mark {
+    color: inherit;
+    background: linear-gradient(
+      transparent 12%,
+      var(--color-highlight) 12%,
+      var(--color-highlight) 88%,
+      transparent 88%
+    );
+    padding: 0 2px;
+    margin: 0 -2px;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+}

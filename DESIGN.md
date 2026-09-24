@@ -6,8 +6,9 @@ Il sistema visivo di Voce. Nasce dalla direzione B (Voci): ogni tema si legge co
 - Catalogo di tutti i componenti e stati: `design/kit.html`
 - Schermate costruite solo con il kit: `design/b-voci.html`
 - `design/presentation.css` è solo la cornice delle tavole (sfondo, finto browser, finto telefono). Non è prodotto.
+- Nell'app: token in `src/app/globals.css`, componenti in `src/components/ui/` (shadcn/ui con le varianti del kit), pezzi di schermata in `src/components/`.
 
-Una schermata nuova si costruisce con il kit. Se manca un pezzo, si aggiunge al kit e a questo file, non alla schermata.
+Una schermata nuova si costruisce con il kit. Se manca un pezzo, si aggiunge al kit e a questo file, non alla schermata. Da quando esiste l'app, il kit vivo sono i componenti in `src/components/`: `design/` resta come riferimento.
 
 ## Principi
 
@@ -112,7 +113,7 @@ Ogni componente è in `design/kit.css` e in `design/kit.html` con tutti i suoi s
 `.filter-bar` con `.chip` (`aria-pressed` per lo stato), `.chip-count`, `.chip-menu` per i filtri a menu, `.filter-bar-sep` tra gruppi.
 
 - I chip filtrano, non eseguono azioni.
-- La barra chiude con una linea inchiostro: sotto inizia l'elenco filtrato.
+- La barra chiude con una linea inchiostro: sotto inizia l'elenco filtrato. Se sotto c'è una tabella, la linea è quella della sua intestazione: la barra non ne disegna una seconda.
 
 ### Campi
 
@@ -177,11 +178,13 @@ Composti dai componenti sopra, servono alle schermate della B.
 - **Tema**: `.theme` a tre colonne (numero e andamento, contenuto, controlli). `.theme-compact` dal quarto tema in poi: niente sintesi, una citazione. `.stat-value`/`.stat-label` per il numero, `.trend` per l'andamento a 13 settimane (le ultime 2 in inchiostro) con `.trend-note`, `.theme-controls` per priorità e stato.
 - **Modulo pubblico**: `.form-page`; `.form-ask` con `.form-brand` (`.avatar` con l'iniziale del workspace), `.form-ask-title` e `.form-ask-text` su `.surface-highlight`; `.form-body` con i campi a riga e il pulsante in fondo; `.form-foot`. `.form-message` per inviato e non disponibile, `.form-message-title.is-long` quando il messaggio è lungo.
   - La domanda (`.form-ask-title`) la sceglie il PM, con default "Cosa vuoi dire al team di …?". Va a capo su qualsiasi lunghezza; mentre si scrive, `.form-ask.is-compact` la riduce e nasconde il sottotitolo.
-  - La domanda è testo scritto dal PM e mostrato a sconosciuti: sempre come testo, mai come HTML.
+  - La domanda è testo scritto dal PM e mostrato a sconosciuti: sempre come testo, mai come HTML. Massimo 140 caratteri.
+- **Landing**: barra con marchio, accesso e "Prova gratis"; titolo sans a `--text-6xl`; un tema d'esempio in una `card`; i tre passi separati da una linea inchiostro; i prezzi in due `card`, Pro in `card-highlight` (è l'azione consigliata della pagina).
+- **Accesso e registrazione**: colonna stretta, marchio in alto, campi `.input` con fondo velo, un solo pulsante primario a tutta larghezza.
 
-## Quando nasce l'app
+## Nell'app
 
-Il kit è in CSS semplice per essere provato senza app. Quando si passa a Next.js con Tailwind e shadcn/ui:
+Il kit è nato in CSS semplice per essere provato senza app. In Next.js con Tailwind e shadcn/ui:
 
 - I token diventano il tema di Tailwind (`@theme` in `globals.css`), con gli stessi nomi.
 - Le variabili di shadcn/ui puntano ai token:
@@ -201,5 +204,6 @@ Il kit è in CSS semplice per essere provato senza app. Quando si passa a Next.j
 | `--radius` | `--radius-sm` |
 
 - `--accent` di shadcn/ui colora gli stati hover dei menu: resta velo. Il giallo non entra nelle variabili di shadcn/ui, si usa solo attraverso i componenti del kit.
-- I componenti del kit diventano varianti dei componenti shadcn/ui corrispondenti (Button, Input, Textarea, Select, Card, Badge, Table), con gli stessi nomi di variante: `secondary`, `highlight`, `line`, `strong`, `positive`.
+- I componenti del kit diventano varianti dei componenti shadcn/ui corrispondenti (Button, Input, Textarea, NativeSelect, Card, Badge, Table), con gli stessi nomi di variante: `secondary`, `highlight`, `line`, `strong`, `positive`. Per NativeSelect il nome della prop è `tone` (i valori sono quelli del kit). `field.tsx` (etichetta, suggerimento, contatore, errore) è scritto a mano sulle classi del kit invece di usare il Field di shadcn/ui, più ricco del necessario; `chip.tsx` (barra dei filtri e chip) non ha un equivalente in shadcn/ui.
+- Le classi di Tailwind usano i token: `bg-veil`, `text-ink-muted`, `text-md`, `rounded-lg`, `p-6` (la scala di spaziature di Tailwind a passo 4 coincide con `--space-*`). I colori, le taglie di testo, le interlinee, i raggi e le ombre di default di Tailwind sono spenti: fuori dai token non c'è niente da usare.
 - I font si caricano con `next/font`, non da Google Fonts a runtime.
