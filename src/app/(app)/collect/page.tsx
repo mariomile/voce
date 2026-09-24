@@ -2,6 +2,7 @@ import Link from "next/link"
 import { CopyLinkButton } from "@/components/copy-link-button"
 import { CsvImport } from "@/components/csv-import"
 import { FormLinkControls } from "@/components/form-link-controls"
+import { FormQuestionField } from "@/components/form-question-field"
 import { LimitWarning } from "@/components/limit-warning"
 import { ManualFeedbackForm } from "@/components/manual-feedback-form"
 import { Page, PageHeader, PageLede, PageTitle } from "@/components/page"
@@ -68,6 +69,11 @@ export default async function CollectPage() {
           <QrCode url={`${origin}${formPath}`} />
         </Card>
         <FormLinkControls enabled={workspace.formEnabled} />
+        {/* Same default as get_public_form in the database. */}
+        <FormQuestionField
+          question={workspace.formQuestion}
+          defaultQuestion={`Cosa vuoi dire al team di ${workspace.name}?`}
+        />
       </section>
 
       <section id="csv" className="mb-12 scroll-mt-8">

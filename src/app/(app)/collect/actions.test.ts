@@ -7,7 +7,9 @@ const session = vi.hoisted(() => ({ client: null as unknown }))
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => session.client }))
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }))
 
-const { addFeedback, importCsv, previewCsv, regenerateFormLink, setFormEnabled } = await import("./actions")
+const { addFeedback, importCsv, previewCsv, regenerateFormLink, setFormEnabled, setFormQuestion } = await import(
+  "./actions"
+)
 
 let user: TestUser
 
@@ -196,5 +198,25 @@ describe("public form link", () => {
       client_ip: crypto.randomUUID(),
     })
     expect(old.data).toBe("unavailable")
+  })
+
+  it("saves the question, up to 140 characters, and goes back to the default when empty", async () => {
+    // Read the slug each time: the test above gives the workspace a new link.
+    const question = async () => {
+      const { data } = await admin.from("workspaces").select("form_slug").eq("id", user.workspaceId).single()
+      return (await form(data!.form_slug))![0].question
+    }
+    expect(await setFormQuestion("  Cosa ti ha fatto perdere tempo oggi?  ")).toEqual({ ok: true })
+    expect(await question()).toBe("Cosa ti ha fatto perdere tempo oggi?")
+    expect(await setFormQuestion("a".repeat(140))).toEqual({ ok: true })
+    expect(await question()).toBe("a".repeat(140))
+    expect(await setFormQuestion("a".repeat(141))).toEqual({ ok: false })
+    expect(await question()).toBe("a".repeat(140))
+    expect(await setFormQuestion("Con\u0000 NUL?")).toEqual({ ok: true })
+    expect(await question()).toBe("Con NUL?")
+    expect(await setFormQuestion("   ")).toEqual({ ok: true })
+    expect(await question()).toBe("Cosa vuoi dire al team di Prova collect?")
+    // @ts-expect-error not a string on purpose
+    expect(await setFormQuestion(null)).toEqual({ ok: false })
   })
 })

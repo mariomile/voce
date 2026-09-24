@@ -5,7 +5,7 @@ import { z } from "zod"
 import { parseFeedbackCsv, type CsvInvalidRow, type CsvRow } from "@/lib/csv-import"
 import { getCurrentWorkspace } from "@/lib/data"
 import { isoDateOf } from "@/lib/format"
-import { CHANNEL_MAX_LENGTH, CUSTOMER_MAX_LENGTH, FEEDBACK_MAX_LENGTH } from "@/lib/plans"
+import { CHANNEL_MAX_LENGTH, CUSTOMER_MAX_LENGTH, FEEDBACK_MAX_LENGTH, FORM_QUESTION_MAX_LENGTH } from "@/lib/plans"
 import { createClient } from "@/lib/supabase/server"
 
 // Every write runs as the signed-in user: RLS, column grants and the database functions decide
@@ -144,6 +144,22 @@ export async function regenerateFormLink() {
   const supabase = await createClient()
   const { error } = await supabase.rpc("regenerate_form_link", { ws: workspace.id })
   if (error) return { ok: false as const }
+  revalidatePath("/", "layout")
+  return { ok: true as const }
+}
+
+// Empty means the default question, which the database builds from the workspace name.
+export async function setFormQuestion(question: string) {
+  const parsed = text(z.string().trim().max(FORM_QUESTION_MAX_LENGTH)).safeParse(question)
+  if (!parsed.success) return { ok: false as const }
+  const workspace = await getCurrentWorkspace()
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("workspaces")
+    .update({ form_question: parsed.data || null })
+    .eq("id", workspace.id)
+    .select("id")
+  if (error || data.length === 0) return { ok: false as const }
   revalidatePath("/", "layout")
   return { ok: true as const }
 }

@@ -1,0 +1,61 @@
+"use client"
+
+import { useState, useTransition } from "react"
+import { setFormQuestion } from "@/app/(app)/collect/actions"
+import { Button } from "@/components/ui/button"
+import { Field, FieldCount, FieldHint, FieldLabel } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+import { FORM_QUESTION_MAX_LENGTH } from "@/lib/plans"
+
+export function FormQuestionField({ question, defaultQuestion }: { question: string | null; defaultQuestion: string }) {
+  const [value, setValue] = useState(question ?? "")
+  const [saved, setSaved] = useState(question ?? "")
+  const [message, setMessage] = useState<"saved" | "failed" | null>(null)
+  const [pending, startTransition] = useTransition()
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault()
+    setMessage(null)
+    startTransition(async () => {
+      const result = await setFormQuestion(value)
+      if (result.ok) {
+        setValue(value.trim())
+        setSaved(value.trim())
+      }
+      setMessage(result.ok ? "saved" : "failed")
+    })
+  }
+
+  return (
+    <form noValidate onSubmit={submit} className="mt-8 flex max-w-[720px] flex-col gap-3">
+      <Field>
+        <FieldLabel htmlFor="form-question">Domanda del modulo</FieldLabel>
+        <Input
+          id="form-question"
+          maxLength={FORM_QUESTION_MAX_LENGTH}
+          placeholder={defaultQuestion}
+          value={value}
+          onChange={(e) => {
+            setValue(e.target.value)
+            setMessage(null)
+          }}
+        />
+        <div className="flex justify-between gap-4">
+          <FieldHint>Se la lasci vuota, il modulo chiede «{defaultQuestion}»</FieldHint>
+          <FieldCount>
+            {value.length} / {FORM_QUESTION_MAX_LENGTH}
+          </FieldCount>
+        </div>
+      </Field>
+      <div className="flex items-center gap-4">
+        <Button type="submit" variant="secondary" disabled={pending || value.trim() === saved}>
+          {pending ? "Salvo…" : "Salva la domanda"}
+        </Button>
+        <p role="status" className="text-base text-ink-muted">
+          {message === "saved" && "Salvata. Il modulo la mostra da subito."}
+          {message === "failed" && <span className="text-problem">Non è andata. Riprova tra poco.</span>}
+        </p>
+      </div>
+    </form>
+  )
+}
