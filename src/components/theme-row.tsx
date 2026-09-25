@@ -2,6 +2,7 @@ import Link from "next/link"
 import { cn } from "cn"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
+import { CopyRoadmapButton } from "@/components/copy-roadmap-button"
 import { Quote } from "@/components/quote"
 import { ThemeControls } from "@/components/theme-controls"
 import { Trend, TrendNote } from "@/components/trend"
@@ -61,9 +62,20 @@ export function ThemeRow({ theme, compact = false }: { theme: ThemeSummary; comp
           </Link>
         )}
       </div>
-      <ThemeControls themeId={theme.id} priority={theme.priority} status={theme.status} />
+      <div className="flex flex-col gap-4">
+        <ThemeControls themeId={theme.id} priority={theme.priority} status={theme.status} />
+        <CopyRoadmapButton markdown={roadmapMarkdown(theme)} />
+      </div>
     </article>
   )
+}
+
+// Always two quotes, even when the row is compact. Multi-line quotes stay inside the blockquote.
+function roadmapMarkdown(theme: ThemeSummary) {
+  const quotes = theme.quotes
+    .slice(0, 2)
+    .map((q) => `> ${q.text.replace(/\r?\n/g, "\n> ")}\n> (${q.channel}, ${formatDate(q.receivedAt)})`)
+  return [`## ${theme.title}`, theme.summary, `**Feedback:** ${theme.feedbackCount}`, ...quotes].join("\n\n")
 }
 
 export function Stat({
