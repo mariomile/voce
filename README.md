@@ -1,5 +1,34 @@
 # Voce
 
+Voce raccoglie i feedback dei clienti e li raggruppa in temi con l'AI. Contesto di prodotto in `BRIEF.md`, regole di lavoro in `AGENTS.md`.
+
+## Avvio
+
+Servono Node 22, pnpm 10, Docker acceso e la Supabase CLI.
+
+```bash
+pnpm install
+supabase start                  # stack locale: migrazioni da zero e dati di esempio
+cp .env.example .env.local      # poi incolla le tre chiavi Supabase da `supabase status -o env`
+pnpm dev                        # http://localhost:3000
+```
+
+Con le sole chiavi Supabase l'app funziona: pagamenti, analytics e analisi AI si accendono aggiungendo le loro variabili (sezioni sotto). Elenco completo in `.env.example`: le righe non commentate sono obbligatorie in produzione.
+
+## Test e pull request
+
+```bash
+pnpm typecheck
+pnpm lint
+pnpm test        # unit test e test del database (RLS), contro lo stack locale con il seed
+pnpm test:e2e    # registrazione, feedback e prima analisi nel browser
+pnpm evals       # solo dopo modifiche al prompt: chiama il modello vero
+```
+
+`pnpm test:e2e` avvia da solo l'app sulla porta 3000 (che deve essere libera) e un finto AI Gateway sulla 4010: l'analisi non chiama mai il modello vero. La prima volta serve `pnpm exec playwright install chromium`. L'email di conferma si legge da Mailpit.
+
+A ogni pull request GitHub Actions (`.github/workflows/ci.yml`) esegue typecheck, lint, test del database, unit test, build e test end-to-end, con uno stack Supabase locale avviato nel job. Non servono segreti.
+
 ## Supabase in locale
 
 Serve Docker acceso e la [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started).

@@ -7,7 +7,7 @@ if (existsSync(".env.local")) process.loadEnvFile(".env.local")
 
 export default defineConfig({
   // Tests never send analytics, even with a PostHog key in .env.local.
-  test: { env: { POSTHOG_KEY: "" } },
+  test: { env: { POSTHOG_KEY: "" }, exclude: ["**/node_modules/**", "e2e/**"] },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),

@@ -1,4 +1,4 @@
-import { gateway, generateText, Output, type LanguageModel } from "ai"
+import { createGateway, generateText, Output, type LanguageModel } from "ai"
 import { z } from "zod"
 import type { Sentiment, ThemeKind } from "./types"
 
@@ -23,7 +23,10 @@ export function analysisModel() {
   return process.env.AI_MODEL || DEFAULT_MODEL
 }
 
-// Claude through Vercel AI Gateway. Tests replace this with a fake model.
+// Claude through Vercel AI Gateway. Unit tests replace this with a fake model; the end-to-end
+// test points AI_GATEWAY_BASE_URL at a fake gateway (e2e/fake-gateway.mts).
+const gateway = createGateway({ baseURL: process.env.AI_GATEWAY_BASE_URL })
+
 export function analysisLanguageModel(): LanguageModel {
   return gateway(analysisModel())
 }
