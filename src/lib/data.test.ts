@@ -5,7 +5,8 @@ import { admin, createTestUser, deleteTestUsers, signIn, type Client } from "@/t
 const session = vi.hoisted(() => ({ client: null as unknown }))
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => session.client }))
 
-const { getCurrentWorkspace, getDashboard, getPublicForm, getTheme, getUsage, listFeedback } = await import("./data")
+const { FEEDBACK_PAGE_SIZE, getCurrentWorkspace, getDashboard, getPublicForm, getTheme, getUsage, listFeedback } =
+  await import("./data")
 
 const users: Record<"fatturino" | "orto" | "ordinalo", Client> = {} as never
 const workspaceIds: Record<string, string> = {}
@@ -139,8 +140,8 @@ describe("listFeedback", () => {
   })
 })
 
-describe("listFeedback beyond the API's 1,000 rows", () => {
-  it("returns every feedback of a big Pro workspace", async () => {
+describe("listFeedback pages", () => {
+  it("reads one page at a time, also by channel", async () => {
     const user = await createTestUser("big")
     try {
       await admin.from("subscriptions").update({ plan: "pro" }).eq("workspace_id", user.workspaceId)
@@ -152,10 +153,23 @@ describe("listFeedback beyond the API's 1,000 rows", () => {
       const { error } = await admin.from("feedback").insert(rows)
       if (error) throw error
       session.client = user.client
-      const { feedback, total } = await listFeedback(user.workspaceId)
-      expect(total).toBe(1050)
-      expect(new Set(feedback.map((f) => f.id)).size).toBe(1050)
-      expect((await listFeedback(user.workspaceId, { channel: "Supporto" })).feedback).toHaveLength(525)
+      const first = await listFeedback(user.workspaceId)
+      expect(first).toMatchObject({ total: 1050, page: 1, pageCount: 11 })
+      expect(first.feedback).toHaveLength(FEEDBACK_PAGE_SIZE)
+
+      const pages = await Promise.all(
+        Array.from({ length: 11 }, (_, i) => listFeedback(user.workspaceId, { page: i + 1 }))
+      )
+      expect(pages[10].feedback).toHaveLength(50)
+      expect(new Set(pages.flatMap((p) => p.feedback.map((f) => f.id))).size).toBe(1050)
+
+      const support = await listFeedback(user.workspaceId, { channel: "Supporto", page: 6 })
+      expect(support).toMatchObject({ page: 6, pageCount: 6 })
+      expect(support.feedback).toHaveLength(25)
+      expect(support.feedback.every((f) => f.channel === "Supporto")).toBe(true)
+
+      // A page beyond the last shows the last one.
+      expect((await listFeedback(user.workspaceId, { page: 99 })).page).toBe(11)
     } finally {
       await deleteTestUsers([user])
     }

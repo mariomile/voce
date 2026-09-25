@@ -16,8 +16,7 @@ import type { Analysis, Feedback, Plan, Theme, ThemeKind, ThemeStatus, Workspace
 const TREND_WEEKS = 13;
 const OPEN_STATUSES: ThemeStatus[] = ["to_review", "roadmap"];
 const RECENT_FEEDBACK = 6;
-// Matches max_rows in supabase/config.toml.
-const PAGE_SIZE = 1000;
+export const FEEDBACK_PAGE_SIZE = 100;
 const FEEDBACK_COLUMNS = "id, workspace_id, text, channel, customer, email, received_at";
 
 export type StatusFilter = "open" | "all" | ThemeStatus;
@@ -180,29 +179,26 @@ export async function getDashboard(
   };
 }
 
-export async function listFeedback(workspaceId: string, filters: { channel?: string } = {}) {
+// One page of the list, newest first. The channel counts give the totals without another query.
+export async function listFeedback(workspaceId: string, filters: { channel?: string; page?: number } = {}) {
   const supabase = await createClient();
-  const page = (from: number) => {
-    let query = supabase
-      .from("feedback")
-      .select(FEEDBACK_COLUMNS)
-      .eq("workspace_id", workspaceId)
-      .order("received_at", { ascending: false })
-      .order("created_at", { ascending: false })
-      .order("id")
-      .range(from, from + PAGE_SIZE - 1);
-    if (filters.channel) query = query.eq("channel", filters.channel);
-    return query;
-  };
   const channels = await channelCounts(workspaceId);
-  // The API returns at most 1,000 rows per request: read the list in pages.
-  const feedback: Feedback[] = [];
-  for (let from = 0; ; from += PAGE_SIZE) {
-    const rows = unwrap(await page(from));
-    feedback.push(...rows.map(toFeedback));
-    if (rows.length < PAGE_SIZE) break;
-  }
-  return { total: channels.reduce((sum, c) => sum + c.count, 0), channels, feedback };
+  const total = channels.reduce((sum, c) => sum + c.count, 0);
+  const matching = filters.channel ? (channels.find((c) => c.name === filters.channel)?.count ?? 0) : total;
+  const pageCount = Math.max(1, Math.ceil(matching / FEEDBACK_PAGE_SIZE));
+  const page = Math.min(Math.max(1, Math.floor(filters.page ?? 1)), pageCount);
+  const from = (page - 1) * FEEDBACK_PAGE_SIZE;
+  let query = supabase
+    .from("feedback")
+    .select(FEEDBACK_COLUMNS)
+    .eq("workspace_id", workspaceId)
+    .order("received_at", { ascending: false })
+    .order("created_at", { ascending: false })
+    .order("id")
+    .range(from, from + FEEDBACK_PAGE_SIZE - 1);
+  if (filters.channel) query = query.eq("channel", filters.channel);
+  const feedback = unwrap(await query).map(toFeedback);
+  return { total, channels, feedback, page, pageCount };
 }
 
 export async function getTheme(workspaceId: string, themeId: string) {

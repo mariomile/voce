@@ -1,5 +1,6 @@
 import Link from "next/link"
-import { Page, PageHeader, PageLede, PageTitle } from "@/components/page"
+import { Page, PageHeader, PageLede, PageMore, PageTitle } from "@/components/page"
+import { buttonVariants } from "@/components/ui/button"
 import { ChipCount, chipVariants, FilterBar } from "@/components/ui/chip"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { getCurrentWorkspace, listFeedback } from "@/lib/data"
@@ -9,7 +10,16 @@ export default async function FeedbackPage({ searchParams }: PageProps<"/feedbac
   const params = await searchParams
   const channel = typeof params.channel === "string" ? params.channel : undefined
   const workspace = await getCurrentWorkspace()
-  const { total, channels, feedback } = await listFeedback(workspace.id, { channel })
+  const { total, channels, feedback, page, pageCount } = await listFeedback(workspace.id, {
+    channel,
+    page: Number(params.page) || 1,
+  })
+  const pageHref = (to: number) => {
+    const query = new URLSearchParams()
+    if (channel) query.set("channel", channel)
+    if (to > 1) query.set("page", String(to))
+    return `/feedback${query.size ? `?${query}` : ""}`
+  }
 
   return (
     <Page>
@@ -71,6 +81,23 @@ export default async function FeedbackPage({ searchParams }: PageProps<"/feedbac
           </Table>
           {feedback.length === 0 && (
             <p className="mt-8 text-base text-ink-muted">Nessun feedback da questo canale.</p>
+          )}
+          {pageCount > 1 && (
+            <PageMore className="flex items-center gap-6">
+              {page > 1 && (
+                <Link href={pageHref(page - 1)} className={buttonVariants({ variant: "link" })}>
+                  Più recenti
+                </Link>
+              )}
+              <span className="tabular-nums">
+                Pagina {page} di {pageCount}
+              </span>
+              {page < pageCount && (
+                <Link href={pageHref(page + 1)} className={buttonVariants({ variant: "link" })}>
+                  Meno recenti
+                </Link>
+              )}
+            </PageMore>
           )}
         </>
       )}

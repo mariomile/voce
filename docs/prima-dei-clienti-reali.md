@@ -9,6 +9,7 @@ Cose da risolvere prima di aprire Voce a clienti reali. Finché siamo in modalit
 - **AI Gateway attivo.** Il Gateway rifiuta le richieste (403) finché sul team Vercel non c'è una carta di credito. Su Vercel l'analisi si autentica da sola (OIDC); `AI_MODEL` resta facoltativa.
 - **Registro delle analisi.** `analysis_runs` conserva per sempre il testo dei feedback inviati al modello e la risposta. Da citare nel registro dei trattamenti e da decidere per quanto tempo tenerlo.
 - **Analisi rimaste a metà.** Se la funzione viene interrotta, l'analisi resta "in corso" e si chiude come fallita solo al tentativo successivo, dopo 10 minuti. Con traffico vero valutare un job che le chiuda.
+- **Costo AI oltre la quota.** Le analisi fallite non consumano quota e si provocano facilmente: il tetto effettivo è il doppio della quota (fino a circa 130 $ al mese per un Pro nel caso peggiore, 500 feedback lunghi). E ogni nuovo account Free porta 3 analisi al mese, quindi chi crea account in serie moltiplica il costo. Da decidere: contare le fallite oltre una soglia, un tetto di caratteri per analisi, un tetto di spesa globale o un captcha alla registrazione (`docs/review.md`, B5 e B6).
 - **Durata della funzione.** L'analisi può durare fino a 4 minuti: la pagina dei temi chiede 300 secondi (`maxDuration`). Verificare che il piano Vercel li consenta.
 
 ## Analytics
