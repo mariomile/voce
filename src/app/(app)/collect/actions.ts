@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
+import { trackMilestone } from "@/lib/analytics"
 import { parseFeedbackCsv, type CsvInvalidRow, type CsvRow } from "@/lib/csv-import"
 import { getCurrentWorkspace } from "@/lib/data"
 import { isoDateOf } from "@/lib/format"
@@ -47,6 +48,7 @@ export async function addFeedback(input: z.input<typeof manualFeedbackSchema>): 
   })
   if (error?.message === "feedback_limit_reached") return { ok: false, reason: "limit" }
   if (error) throw error
+  trackMilestone(workspace.id, { event: "first_feedback_added", properties: { source: "manual" } })
   revalidatePath("/", "layout")
   return { ok: true }
 }
@@ -92,10 +94,12 @@ export async function previewCsv(formData: FormData): Promise<CsvPreview | CsvEr
 export async function importCsv(formData: FormData): Promise<CsvImportResult | CsvError> {
   const result = await runImport(formData, false)
   if (!result.ok) return result
+  const imported = result.outcomes.filter((o) => o === "new").length
+  if (imported > 0) trackMilestone(result.workspaceId, { event: "first_feedback_added", properties: { source: "csv" } })
   revalidatePath("/", "layout")
   return {
     ok: true,
-    imported: result.outcomes.filter((o) => o === "new").length,
+    imported,
     duplicateCount: result.outcomes.filter((o) => o === "duplicate").length,
     overLimitCount: result.outcomes.filter((o) => o === "over_limit").length,
     invalidCount: result.invalid.length,
@@ -121,7 +125,7 @@ async function runImport(formData: FormData, dryRun: boolean) {
   })
   if (error) throw error
   const outcomes = data as ("new" | "duplicate" | "over_limit")[]
-  return { ok: true as const, rows: parsed.rows, invalid: parsed.invalid, outcomes }
+  return { ok: true as const, workspaceId: workspace.id, rows: parsed.rows, invalid: parsed.invalid, outcomes }
 }
 
 export async function setFormEnabled(enabled: boolean) {

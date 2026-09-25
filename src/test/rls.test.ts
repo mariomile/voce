@@ -422,3 +422,17 @@ describe("AI analysis functions and log", () => {
     expect(error?.code).toBe("42501")
   })
 })
+
+describe("analytics milestones", () => {
+  it("nobody but the server reads or writes which events a workspace has sent", async () => {
+    const { error } = await admin.from("analytics_milestones").insert({ workspace_id: a.workspaceId, event: "signed_up" })
+    expect(error).toBeNull()
+    for (const client of [anon(), a.client]) {
+      expect((await client.from("analytics_milestones").select("*")).error?.code).toBe("42501")
+      const insert = await client.from("analytics_milestones").insert({ workspace_id: b.workspaceId, event: "signed_up" })
+      expect(insert.error?.code).toBe("42501")
+      const remove = await client.from("analytics_milestones").delete().eq("workspace_id", a.workspaceId)
+      expect(remove.error?.code).toBe("42501")
+    }
+  })
+})

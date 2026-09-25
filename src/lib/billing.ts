@@ -1,6 +1,7 @@
 import "server-only"
 
 import type Stripe from "stripe"
+import { trackMilestone } from "./analytics"
 import { saveBilling } from "./supabase/admin"
 import type { Plan } from "./types"
 
@@ -49,7 +50,9 @@ export async function subscriptionsOf(stripe: Stripe, customerId: string) {
 export async function syncCustomer(stripe: Stripe, proPriceId: string, customerId: string) {
   const readAt = new Date()
   const state = billingStateOf(await subscriptionsOf(stripe, customerId), proPriceId)
-  return saveBilling(customerId, state, readAt)
+  const saved = await saveBilling(customerId, state, readAt)
+  if (saved.outcome === "saved" && state.plan === "pro") trackMilestone(saved.workspaceId, { event: "upgraded_to_pro", properties: {} })
+  return saved.outcome
 }
 
 function toIso(seconds: number | null) {

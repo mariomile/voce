@@ -11,6 +11,11 @@ Cose da risolvere prima di aprire Voce a clienti reali. Finché siamo in modalit
 - **Analisi rimaste a metà.** Se la funzione viene interrotta, l'analisi resta "in corso" e si chiude come fallita solo al tentativo successivo, dopo 10 minuti. Con traffico vero valutare un job che le chiuda.
 - **Durata della funzione.** L'analisi può durare fino a 4 minuti: la pagina dei temi chiede 300 secondi (`maxDuration`). Verificare che il piano Vercel li consenta.
 
+## Analytics
+
+- **Chiave PostHog su Vercel.** Senza `POSTHOG_KEY` non parte nessun evento: la metrica di attivazione resta vuota. Il progetto PostHog va creato in regione UE.
+- **PostHog tra i sub-responsabili.** Riceve solo l'id del workspace, il momento e categorie o conteggi (`docs/analytics.md`), niente testo né dati personali. Va comunque nell'elenco dei sub-responsabili e nel registro dei trattamenti: l'id del workspace è un identificativo pseudonimo.
+
 ## Modulo pubblico
 
 - **Chiave segreta su Vercel.** Il modulo pubblico ora salva passando dal server con `SUPABASE_SECRET_KEY`: senza questa variabile su Vercel il modulo non funziona.

@@ -132,6 +132,32 @@ export type Database = {
           },
         ]
       }
+      analytics_milestones: {
+        Row: {
+          event: string
+          sent_at: string
+          workspace_id: string
+        }
+        Insert: {
+          event: string
+          sent_at?: string
+          workspace_id: string
+        }
+        Update: {
+          event?: string
+          sent_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_milestones_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feedback: {
         Row: {
           channel: string

@@ -6,6 +6,9 @@ import { admin, anon, createTestUser, deleteTestUsers, type TestUser } from "@/t
 const session = vi.hoisted(() => ({ client: null as unknown }))
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => session.client }))
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }))
+// Which activation events the action asks for. Sending them is tested in src/lib/analytics.test.ts.
+const analytics = vi.hoisted(() => ({ trackMilestone: vi.fn() }))
+vi.mock("@/lib/analytics", () => analytics)
 
 const { addFeedback, importCsv, previewCsv, regenerateFormLink, setFormEnabled, setFormQuestion } = await import(
   "./actions"
@@ -80,6 +83,32 @@ describe("addFeedback", () => {
     await fillTo(100)
     expect(await addFeedback(valid)).toEqual({ ok: false, reason: "limit" })
     expect(await savedFeedback()).toHaveLength(100)
+  })
+})
+
+describe("first feedback event", () => {
+  beforeEach(() => analytics.trackMilestone.mockClear())
+
+  it("asks for it after a manual feedback is saved, without the text", async () => {
+    await addFeedback({ text: "Testo riservato", channel: "Email", customer: "Rossi", receivedAt: "" })
+    expect(analytics.trackMilestone).toHaveBeenCalledExactlyOnceWith(user.workspaceId, {
+      event: "first_feedback_added",
+      properties: { source: "manual" },
+    })
+  })
+
+  it("asks for it after a CSV import that saved rows, not after a preview or an import of duplicates", async () => {
+    const file = "testo\nUno\nDue"
+    await previewCsv(csv(file))
+    expect(analytics.trackMilestone).not.toHaveBeenCalled()
+    await importCsv(csv(file))
+    expect(analytics.trackMilestone).toHaveBeenCalledExactlyOnceWith(user.workspaceId, {
+      event: "first_feedback_added",
+      properties: { source: "csv" },
+    })
+    analytics.trackMilestone.mockClear()
+    expect(await importCsv(csv(file))).toMatchObject({ imported: 0 })
+    expect(analytics.trackMilestone).not.toHaveBeenCalled()
   })
 })
 

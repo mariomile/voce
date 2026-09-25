@@ -11,6 +11,9 @@ const session = vi.hoisted(() => ({ client: null as unknown }))
 const ai = vi.hoisted(() => ({ model: null as unknown }))
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => session.client }))
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }))
+// Which activation events the action asks for. Sending them is tested in src/lib/analytics.test.ts.
+const analytics = vi.hoisted(() => ({ trackMilestone: vi.fn() }))
+vi.mock("@/lib/analytics", () => analytics)
 vi.mock("@/lib/analysis", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/analysis")>()),
   analysisLanguageModel: () => ai.model,
@@ -331,10 +334,37 @@ describe("analyze", () => {
     expect((await analyses()).map((a) => a.status)).toEqual(["failed", "done"])
   })
 
+  it("asks for the first analysis event with counts only, and not when the analysis fails", async () => {
+    await addFeedback()
+    analytics.trackMilestone.mockClear()
+    answer("non è JSON")
+    expect(await analyze()).toEqual({ ok: false, reason: "failed" })
+    expect(analytics.trackMilestone).not.toHaveBeenCalled()
+    answer({ themes: [bank, phone] })
+    expect(await analyze()).toEqual({ ok: true })
+    expect(analytics.trackMilestone).toHaveBeenCalledExactlyOnceWith(user.workspaceId, {
+      event: "first_analysis_completed",
+      properties: { feedback_count: 5, theme_count: 2 },
+    })
+  })
+
   it("two clicks at once make one analysis", async () => {
     await addFeedback()
-    answer({ themes: [bank] })
-    const results = await Promise.all([analyze(), analyze()])
+    // The model holds its answer until the other click is refused: otherwise a fast first
+    // analysis could finish before the second click starts, and both would pass.
+    const model = answer({ themes: [bank] })
+    let release = () => {}
+    const held = new Promise<void>((resolve) => (release = resolve))
+    ai.model = new MockLanguageModelV4({
+      doGenerate: async (options) => {
+        await held
+        return model.doGenerate(options)
+      },
+    })
+    const clicks = [analyze(), analyze()]
+    expect(await Promise.race(clicks)).toEqual({ ok: false, reason: "busy" })
+    release()
+    const results = await Promise.all(clicks)
     expect(results).toContainEqual({ ok: true })
     expect(results).toContainEqual({ ok: false, reason: "busy" })
     expect((await analyses()).map((a) => a.status)).toEqual(["done"])

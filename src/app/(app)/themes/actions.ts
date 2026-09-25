@@ -13,6 +13,7 @@ import {
   runAnalysis,
   type AnalysisFeedback,
 } from "@/lib/analysis"
+import { trackMilestone } from "@/lib/analytics"
 import { getCurrentWorkspace } from "@/lib/data"
 import { isoDateOf } from "@/lib/format"
 import { failAnalysis, finishAnalysis, startAnalysis } from "@/lib/supabase/admin"
@@ -86,6 +87,7 @@ export async function analyze(): Promise<AnalyzeResult> {
   if (start.outcome !== "ok") return { ok: false, reason: start.outcome }
 
   const started = performance.now()
+  let themeCount: number
   try {
     const result = await runAnalysis({ model: analysisLanguageModel(), modelId, feedback, existingTitles })
     const run = {
@@ -102,6 +104,7 @@ export async function analyze(): Promise<AnalyzeResult> {
       return { ok: false, reason: "no_themes" }
     }
     await finishAnalysis(start.analysisId, result.themes, run)
+    themeCount = result.themes.length
   } catch (error) {
     // Only the error name reaches the logs: messages can carry feedback text.
     console.error(`Analysis ${start.analysisId} failed:`, error instanceof Error ? error.name : "unknown")
@@ -119,6 +122,10 @@ export async function analyze(): Promise<AnalyzeResult> {
     return { ok: false, reason: "failed" }
   }
 
+  trackMilestone(workspace.id, {
+    event: "first_analysis_completed",
+    properties: { feedback_count: feedback.length, theme_count: themeCount },
+  })
   revalidatePath("/", "layout")
   return { ok: true }
 }

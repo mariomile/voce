@@ -4,12 +4,13 @@ import { createHmac } from "node:crypto"
 import { createClient } from "@supabase/supabase-js"
 import type { Database, Json } from "@/lib/database.types"
 import type { CheckedTheme } from "@/lib/analysis"
+import type { Milestone } from "@/lib/analytics"
 import type { BillingState } from "@/lib/billing"
 
 // The secret key bypasses RLS, so it does only what the server alone may do: send a public form
 // submission with the visitor IP it sees, reserve, save or fail an AI analysis, and write the billing
-// data from Stripe. If users could do those, they could skip the rate limits, write fake themes and
-// costs, or give themselves Pro.
+// data from Stripe, and record which analytics events a workspace has sent. If users could do those,
+// they could skip the rate limits, write fake themes and costs, or give themselves Pro.
 
 function adminClient() {
   return createClient<Database>(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!, {
@@ -108,7 +109,7 @@ export async function saveStripeCustomer(workspaceId: string, customerId: string
 
 // Only the Stripe webhook calls this. Skips the write when a read that started later is already saved:
 // one update, so Postgres checks the time again after waiting for a write running at the same moment.
-// Returns "unknown_customer" when no workspace has this customer.
+// Returns "unknown_customer" when no workspace has this customer, and the workspace when saved.
 export async function saveBilling(customerId: string, state: BillingState, readAt: Date) {
   const client = adminClient()
   const { data, error } = await client
@@ -126,11 +127,39 @@ export async function saveBilling(customerId: string, state: BillingState, readA
     .or(`stripe_synced_at.is.null,stripe_synced_at.lte.${readAt.toISOString()}`)
     .select("workspace_id")
   if (error) throw error
-  if (data.length > 0) return "saved" as const
+  if (data.length > 0) return { outcome: "saved" as const, workspaceId: data[0].workspace_id }
   const { count, error: countError } = await client
     .from("subscriptions")
     .select("workspace_id", { count: "exact", head: true })
     .eq("stripe_customer_id", customerId)
   if (countError) throw countError
-  return count ? ("stale" as const) : ("unknown_customer" as const)
+  return { outcome: count ? ("stale" as const) : ("unknown_customer" as const) }
+}
+
+// True only for the call that records the event first: that one sends it.
+export async function claimMilestone(workspaceId: string, event: Milestone["event"]) {
+  const { data, error } = await adminClient()
+    .from("analytics_milestones")
+    .upsert({ workspace_id: workspaceId, event }, { onConflict: "workspace_id,event", ignoreDuplicates: true })
+    .select("workspace_id")
+  if (error) throw error
+  return data.length > 0
+}
+
+// Today every user owns exactly one workspace.
+export async function workspaceOfUser(userId: string) {
+  const { data, error } = await adminClient()
+    .from("workspace_members")
+    .select("workspace_id")
+    .eq("user_id", userId)
+    .eq("role", "owner")
+    .maybeSingle()
+  if (error) throw error
+  return data?.workspace_id ?? null
+}
+
+export async function workspaceOfForm(slug: string) {
+  const { data, error } = await adminClient().from("workspaces").select("id").eq("form_slug", slug).maybeSingle()
+  if (error) throw error
+  return data?.id ?? null
 }

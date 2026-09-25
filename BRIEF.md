@@ -95,4 +95,4 @@ Scelte di dettaglio prese il 2026-09-25. Dove precisano il resto del brief, valg
 ### Fuori scope in modalità test
 
 13. **Legale e fiscale** restano fuori scope finché siamo in modalità test. Si tiene traccia di cosa manca in `docs/prima-dei-clienti-reali.md`.
-14. **Eventi di analytics:** si definiscono nel passo dedicato agli analytics.
+14. **Eventi di analytics:** quattro eventi di attivazione, mandati solo dal server, uno per workspace, senza testo dei feedback né dati personali. Elenco in `docs/analytics.md`.

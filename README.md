@@ -37,6 +37,14 @@ L'analisi usa Claude tramite Vercel AI Gateway. Il modello si sceglie con `AI_MO
 
 È predisposto ma spento. Per accenderlo in locale: crea le credenziali OAuth su Google Cloud (redirect `http://127.0.0.1:54321/auth/v1/callback`), mettile in `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` e `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET` nell'ambiente da cui lanci la CLI, imposta `enabled = true` in `[auth.external.google]` di `supabase/config.toml` e riavvia (`supabase stop && supabase start`). Il pulsante "Continua con Google" compare da solo quando Google è attivo.
 
+## Analytics con PostHog
+
+Il server manda a PostHog UE quattro eventi di attivazione, uno per workspace, senza testo dei feedback né dati personali: elenco e regole in `docs/analytics.md`. Senza la variabile non parte nulla.
+
+```
+POSTHOG_KEY=   # phc_...: Project API key di un progetto PostHog in regione UE, solo lato server
+```
+
 ## Pagamenti con Stripe (modalità test)
 
 Il piano Pro si compra con Stripe Checkout e si gestisce o disdice dal portale cliente di Stripe, dalla pagina **Piano**. Il piano del workspace cambia solo quando arriva il webhook firmato (`/api/stripe/webhook`): il webhook rilegge da Stripe gli abbonamenti del cliente e scrive lo stato attuale in `subscriptions`.

@@ -6,6 +6,8 @@ import { defineConfig } from "vitest/config"
 if (existsSync(".env.local")) process.loadEnvFile(".env.local")
 
 export default defineConfig({
+  // Tests never send analytics, even with a PostHog key in .env.local.
+  test: { env: { POSTHOG_KEY: "" } },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),

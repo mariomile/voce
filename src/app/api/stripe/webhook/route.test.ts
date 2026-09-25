@@ -21,6 +21,10 @@ vi.mock("@/lib/stripe", () => ({
   missingStripeVariables: () => ["STRIPE_SECRET_KEY"],
 }))
 
+// Which activation events the action asks for. Sending them is tested in src/lib/analytics.test.ts.
+const analytics = vi.hoisted(() => ({ trackMilestone: vi.fn() }))
+vi.mock("@/lib/analytics", () => analytics)
+
 const { POST } = await import("./route")
 
 let user: TestUser
@@ -123,6 +127,21 @@ describe("signature", () => {
     fake.subscriptions.set(customer, [subscription("sub_1", "active")])
     expect((await send(checkoutCompleted())).status).toBe(503)
     expect((await billing()).plan).toBe("free")
+  })
+})
+
+describe("analytics", () => {
+  it("asks for the upgrade event when a save makes the workspace Pro, not when it stays Free", async () => {
+    analytics.trackMilestone.mockClear()
+    fake.subscriptions.set(customer, [subscription("sub_1", "incomplete")])
+    await send(checkoutCompleted())
+    expect(analytics.trackMilestone).not.toHaveBeenCalled()
+    fake.subscriptions.set(customer, [subscription("sub_1", "active")])
+    await send(checkoutCompleted())
+    expect(analytics.trackMilestone).toHaveBeenCalledExactlyOnceWith(user.workspaceId, {
+      event: "upgraded_to_pro",
+      properties: {},
+    })
   })
 })
 
