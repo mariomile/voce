@@ -1,0 +1,209 @@
+# DESIGN.md
+
+Il sistema visivo di Voce. Nasce dalla direzione B (Voci): ogni tema si legge con le parole dei clienti, e la frase che conta è evidenziata come su carta.
+
+- Token e componenti: `design/kit.css`
+- Catalogo di tutti i componenti e stati: `design/kit.html`
+- Schermate costruite solo con il kit: `design/b-voci.html`
+- `design/presentation.css` è solo la cornice delle tavole (sfondo, finto browser, finto telefono). Non è prodotto.
+- Nell'app: token in `src/app/globals.css`, componenti in `src/components/ui/` (shadcn/ui con le varianti del kit), pezzi di schermata in `src/components/`.
+
+Una schermata nuova si costruisce con il kit. Se manca un pezzo, si aggiunge al kit e a questo file, non alla schermata. Da quando esiste l'app, il kit vivo sono i componenti in `src/components/`: `design/` resta come riferimento.
+
+## Principi
+
+1. **Le parole dei clienti sono il contenuto principale.** Citazioni in serif (Literata), interfaccia in sans (Hanken Grotesk). La serif si usa solo per ciò che dice o scrive una persona, e per i pochi titoli di tono (stato vuoto, domanda e messaggi del modulo pubblico).
+2. **Il giallo significa "guarda qui".** Evidenzia la frase chiave di una citazione, l'azione consigliata, il modulo pubblico. Mai decorativo, mai per più di una cosa per zona.
+3. **Superfici piatte.** Separazioni con linee e grigio velo, non con ombre. Le ombre servono solo a ciò che galleggia sopra la pagina.
+4. **Il numero guida.** I temi si ordinano per numero di feedback, e il numero è l'elemento più grande della riga.
+
+## Token
+
+### Colori
+
+| Token | Valore | Uso |
+|---|---|---|
+| `--color-paper` | #FFFFFF | Fondo della pagina |
+| `--color-veil` | #F3F3F0 | Superfici secondarie: card, campi, select, chip, pulsante secondario |
+| `--color-ink` | #1E2127 | Testo principale, pulsante primario, stato attivo |
+| `--color-ink-hover` | #000000 | Pulsante primario al passaggio del mouse |
+| `--color-ink-muted` | #5F6470 | Testo di supporto: sintesi, descrizioni, suggerimenti |
+| `--color-ink-subtle` | #9095A0 | Fonti delle citazioni, etichette leggere, placeholder, contatori |
+| `--color-line` | #E4E4DF | Divisori tra righe |
+| `--color-line-strong` | #C4C6C0 | Barre dell'andamento |
+| `--color-highlight` | #FFE45C | Evidenziatore, azione consigliata, testata del modulo pubblico |
+| `--color-highlight-hover` | #F5D83A | Pulsante giallo al passaggio del mouse |
+| `--color-highlight-soft` | #FFF4B8 | Avvisi che invitano ad agire |
+| `--color-on-highlight` | #4A4520 | Testo secondario su giallo |
+| `--color-problem` | #B8322A | Temi di tipo problema. Anche errori dei campi |
+| `--color-opportunity` | #2A56C6 | Temi di tipo opportunità |
+| `--color-praise` | #2B7D52 | Temi di tipo apprezzamento |
+| `--color-praise-soft` / `--color-praise-ink` | #E1F0E7 / #1F5E3C | Stato "Fatto" |
+
+Regole:
+- Testo secondario su giallo sempre in `--color-on-highlight`, mai in grigio: il grigio sul giallo sporca.
+- I tre colori dei tipi si usano solo per il tipo di tema (e il rosso per gli errori). Non per pulsanti o decorazioni.
+- `--color-ink-subtle` non regge testo che serve leggere: solo metadati, placeholder, contatori.
+
+### Tipografia
+
+Due famiglie: `--font-sans` (Hanken Grotesk) per l'interfaccia, `--font-serif` (Literata) per le parole dei clienti e i titoli di tono.
+
+| Token | px | Uso tipico |
+|---|---|---|
+| `--text-6xl` | 48 | Numero di feedback di un tema |
+| `--text-5xl` | 40 | Titolo dello stato vuoto, messaggio del modulo (serif) |
+| `--text-4xl` | 32 | Titolo di pagina, domanda del modulo pubblico |
+| `--text-3xl` | 24 | Titolo di un tema |
+| `--text-2xl` | 20 | Citazione, testo scritto nel modulo pubblico (serif) |
+| `--text-xl` | 18 | Titolo di card, citazione piccola |
+| `--text-lg` | 16 | Testo introduttivo, valore dei campi |
+| `--text-base` | 15 | Interfaccia: pulsanti, sintesi, testo delle card |
+| `--text-md` | 14 | Etichette, chip, tipo di tema |
+| `--text-sm` | 13 | Fonti, suggerimenti, contatori, badge |
+| `--text-xs` | 12 | Il minimo: note a margine, piè di pagina del modulo |
+
+Pesi: 400 testo e titolo dello stato vuoto (più calmo), 500 domanda e messaggi del modulo pubblico, 600 etichette e pulsanti, 700 titoli sans. Interlinea: `--leading-relaxed` (1.55) per testo lungo e citazioni, `--leading-normal` (1.5) per l'interfaccia, `--leading-snug`/`--leading-tight` per i titoli sans, `--leading-heading` (1.2) e `--leading-display` (1.1) per i titoli serif grandi.
+
+Regole:
+- I campi di testo non scendono sotto 16 px: sotto, iOS ingrandisce la pagina quando si tocca il campo.
+- Numeri che si confrontano in colonna: `font-variant-numeric: tabular-nums` (già in `.stat-value`, `.field-count`, `.table-num`).
+
+### Spaziature
+
+Scala a base 4: `--space-1` 4, `-2` 8, `-3` 12, `-4` 16, `-5` 20, `-6` 24, `-8` 32, `-10` 40, `-12` 48, `-16` 64, `-24` 96.
+
+- Dentro un componente: 4-16. Tra componenti: 16-32. Tra sezioni di pagina: 32-64.
+- Niente margini, padding o gap fuori scala. Se serve un valore nuovo, si discute qui prima.
+- Le dimensioni fisse di un componente (altezza della barra, lato di logo e avatar, larghezza delle colonne di un tema) stanno nel componente e non seguono la scala.
+
+### Raggi
+
+| Token | px | Uso |
+|---|---|---|
+| `--radius-sm` | 8 | Campi, select, avatar |
+| `--radius-md` | 12 | Riquadri piccoli (QR code) |
+| `--radius-lg` | 16 | Card |
+| `--radius-full` | 999 | Pulsanti, chip, badge |
+
+### Ombre
+
+| Token | Uso |
+|---|---|
+| `--shadow-sm` | Menu aperti, tooltip, toast |
+| `--shadow-md` | Dialog e pannelli sopra la pagina |
+
+Card, righe e campi non hanno ombra.
+
+## Componenti
+
+Ogni componente è in `design/kit.css` e in `design/kit.html` con tutti i suoi stati.
+
+### Pulsanti
+
+`.btn` primario (inchiostro) · `.btn-secondary` (velo; su una card diventa bianco da solo) · `.btn-highlight` (giallo) · `:disabled` · taglie `.btn-lg` e `.btn-block` · `.link` per le azioni testuali.
+
+- Un solo pulsante primario per zona dello schermo.
+- `.btn-highlight` solo per spingere un'azione di valore quando il primario è già usato (per esempio "Passa a Pro"). Mai dentro una superficie gialla.
+- Il testo del pulsante dice cosa succede, con il numero se c'è: "Analizza 37 feedback", non "Continua".
+- `.link` per azioni che portano altrove ("Leggi tutti i 58 feedback"), non per azioni che cambiano dati.
+
+### Filtri
+
+`.filter-bar` con `.chip` (`aria-pressed` per lo stato), `.chip-count`, `.chip-menu` per i filtri a menu, `.filter-bar-sep` tra gruppi.
+
+- I chip filtrano, non eseguono azioni.
+- La barra chiude con una linea inchiostro: sotto inizia l'elenco filtrato. Se sotto c'è una tabella, la linea è quella della sua intestazione: la barra non ne disegna una seconda.
+
+### Campi
+
+`.field` contiene `.field-label` (con `.field-optional` se facoltativo), il campo, poi `.field-hint`, `.field-count` o `.field-error`.
+
+- `.input` e `.textarea` (fondo velo) nell'app.
+- `.input-line` e `.textarea-line` (a riga, textarea in serif) solo nel modulo pubblico, dove si scrive come su un foglio.
+- Errore: `aria-invalid="true"` sul campo, `.field-error` sotto, collegato con `aria-describedby`. Il messaggio dice come rimediare.
+- `.field-quiet` rende l'etichetta leggera: quando il valore conta più del nome (priorità e stato di un tema).
+- L'altezza di una textarea si dà con `rows`, non con CSS.
+
+### Select
+
+`.select` nativo, con `.select-empty` quando non c'è un valore e due toni legati al valore scelto:
+
+- `.select-strong` per "In roadmap": è la decisione che si deve vedere da lontano.
+- `.select-positive` per "Fatto".
+- Tutti gli altri valori restano neutri. Il tono segue il valore, non si sceglie a mano.
+
+### Card
+
+`.card` (velo) con `.card-title`, `.card-text`, `.card-meta`, `.card-actions` (in fondo alla card).
+
+- `.card-highlight` (giallo): l'azione consigliata. Una per schermata.
+- `.card-soft` (giallo chiaro): un avviso che invita ad agire, con il pulsante sulla destra (`.card-row`).
+- `.card-media`: testo a sinistra dentro `.card-body`, un oggetto a destra (il QR code in `.qr-code`).
+
+### Badge
+
+- Tipo di tema: `.badge-problem`, `.badge-opportunity`, `.badge-praise`. Pallino e colore, senza fondo.
+- `.badge` neutro (pillola velo): piano (Free, Pro) e conteggi.
+- Un badge è un'etichetta, non si clicca.
+
+### Tabella
+
+`.table` con `.table-num` per numeri e date allineati a destra, `.table-muted` per le colonne di contorno.
+
+- La prima colonna è quella che si legge (il testo del feedback): nessun troncamento a una riga, va a capo.
+- Intestazione leggera, linea inchiostro sotto, linee sottili tra le righe. Niente righe alterne.
+
+### Stato vuoto
+
+`.empty` con `.empty-title` (serif grande), `.empty-text` e le azioni.
+
+- Il titolo dice cosa si vedrà qui, non che manca qualcosa.
+- `.empty-actions` mette in fila le strade per uscire dallo stato vuoto. La prima è quella consigliata: più larga e in `.card-highlight`.
+
+### Citazione evidenziata
+
+`.quote` (serif 20) o `.quote-sm` (serif 18), con `<cite>` per canale e data. `.quote-stack` per impilarle, `.quote-grid` per due colonne con linee, `.quote-bar` per riportare il testo appena scritto.
+
+- La citazione è sempre il testo del cliente, tra virgolette tipografiche, senza modifiche. Se si accorcia, i puntini lo dicono.
+- Un solo `<mark>` per citazione: la frase che riassume il tema. Se tutto è evidenziato, niente lo è.
+- Il testo dei feedback è input non fidato: si inserisce sempre come testo, mai come HTML. L'unico markup è il `<mark>` che l'app aggiunge attorno alla frase chiave.
+
+## Pezzi di schermata
+
+Composti dai componenti sopra, servono alle schermate della B.
+
+- **Barra dell'app**: `.appbar`, `.appbar-brand` con `.logo` (il marchio di Voce), `.tabs` con `.tab` (`aria-current="page"` per la pagina attiva), `.appbar-meta` con piano e quote.
+- **Pagina**: `.page`, `.page-header` con `.page-title` e `.page-lede`, `.page-section`, `.page-more`.
+- **Tema**: `.theme` a tre colonne (numero e andamento, contenuto, controlli). `.theme-compact` dal quarto tema in poi: niente sintesi, una citazione. `.stat-value`/`.stat-label` per il numero, `.trend` per l'andamento a 13 settimane (le ultime 2 in inchiostro) con `.trend-note`, `.theme-controls` per priorità e stato.
+- **Modulo pubblico**: `.form-page`; `.form-ask` con `.form-brand` (`.avatar` con l'iniziale del workspace), `.form-ask-title` e `.form-ask-text` su `.surface-highlight`; `.form-body` con i campi a riga e il pulsante in fondo; `.form-foot`. `.form-message` per inviato e non disponibile, `.form-message-title.is-long` quando il messaggio è lungo.
+  - La domanda (`.form-ask-title`) la sceglie il PM, con default "Cosa vuoi dire al team di …?". Va a capo su qualsiasi lunghezza; mentre si scrive, `.form-ask.is-compact` la riduce e nasconde il sottotitolo.
+  - La domanda è testo scritto dal PM e mostrato a sconosciuti: sempre come testo, mai come HTML. Massimo 140 caratteri.
+- **Landing**: barra con marchio, accesso e "Prova gratis"; titolo sans a `--text-6xl`; un tema d'esempio in una `card`; i tre passi separati da una linea inchiostro; i prezzi in due `card`, Pro in `card-highlight` (è l'azione consigliata della pagina).
+- **Accesso e registrazione**: colonna stretta, marchio in alto, campi `.input` con fondo velo, un solo pulsante primario a tutta larghezza.
+
+## Nell'app
+
+Il kit è nato in CSS semplice per essere provato senza app. In Next.js con Tailwind e shadcn/ui:
+
+- I token diventano il tema di Tailwind (`@theme` in `globals.css`), con gli stessi nomi.
+- Le variabili di shadcn/ui puntano ai token:
+
+| shadcn/ui | Token |
+|---|---|
+| `--background` | `--color-paper` |
+| `--foreground` | `--color-ink` |
+| `--muted` | `--color-veil` |
+| `--muted-foreground` | `--color-ink-muted` |
+| `--border`, `--input` | `--color-line` |
+| `--primary` / `--primary-foreground` | `--color-ink` / `--color-paper` |
+| `--secondary` / `--secondary-foreground` | `--color-veil` / `--color-ink` |
+| `--accent` / `--accent-foreground` | `--color-veil` / `--color-ink` |
+| `--destructive` | `--color-problem` |
+| `--ring` | `--color-ink` |
+| `--radius` | `--radius-sm` |
+
+- `--accent` di shadcn/ui colora gli stati hover dei menu: resta velo. Il giallo non entra nelle variabili di shadcn/ui, si usa solo attraverso i componenti del kit.
+- I componenti del kit diventano varianti dei componenti shadcn/ui corrispondenti (Button, Input, Textarea, NativeSelect, Card, Badge, Table), con gli stessi nomi di variante: `secondary`, `highlight`, `line`, `strong`, `positive`. Per NativeSelect il nome della prop è `tone` (i valori sono quelli del kit). `field.tsx` (etichetta, suggerimento, contatore, errore) è scritto a mano sulle classi del kit invece di usare il Field di shadcn/ui, più ricco del necessario; `chip.tsx` (barra dei filtri e chip) non ha un equivalente in shadcn/ui.
+- Le classi di Tailwind usano i token: `bg-veil`, `text-ink-muted`, `text-md`, `rounded-lg`, `p-6` (la scala di spaziature di Tailwind a passo 4 coincide con `--space-*`). I colori, le taglie di testo, le interlinee, i raggi e le ombre di default di Tailwind sono spenti: fuori dai token non c'è niente da usare.
+- I font si caricano con `next/font`, non da Google Fonts a runtime.

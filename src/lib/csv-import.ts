@@ -1,0 +1,148 @@
+import Papa from "papaparse";
+
+import { formatNumber } from "./format";
+import {
+  CHANNEL_MAX_LENGTH,
+  CSV_MAX_BYTES,
+  CSV_MAX_ROWS,
+  CUSTOMER_MAX_LENGTH,
+  FEEDBACK_MAX_LENGTH,
+} from "./plans";
+
+// Reads a feedback CSV as people export it: from Excel (semicolons, Windows-1252), Google Sheets,
+// support tools. Column `testo` is required; `canale`, `cliente`, `data` are optional.
+
+export const CSV_DEFAULT_CHANNEL = "Importazione CSV";
+
+export type CsvRow = {
+  // Row number as Excel shows it: the header is row 1.
+  line: number;
+  text: string;
+  channel: string;
+  customer: string | null;
+  receivedAt: string | null;
+};
+
+export type CsvInvalidRow = { line: number; text: string; reason: string };
+
+export type ParsedCsv =
+  | { ok: true; rows: CsvRow[]; invalid: CsvInvalidRow[] }
+  | { ok: false; error: string };
+
+const SNIPPET_LENGTH = 120;
+
+// UTF-8 first; a file that is not valid UTF-8 almost always comes from Excel on Windows.
+export function decodeCsv(bytes: Uint8Array) {
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return new TextDecoder("windows-1252").decode(bytes);
+  }
+}
+
+export function parseFeedbackCsv(bytes: Uint8Array, today: string): ParsedCsv {
+  if (bytes.byteLength === 0) return { ok: false, error: "Il file è vuoto." };
+  if (bytes.byteLength > CSV_MAX_BYTES)
+    return { ok: false, error: "Il file supera 1 MB. Dividilo in più file e importali uno alla volta." };
+
+  // Postgres text cannot hold NUL characters.
+  const content = decodeCsv(bytes).replace(/^\uFEFF/, "").replaceAll("\0", "");
+  // Blank lines stay in the result, so row numbers match what Excel shows.
+  const { data, errors } = Papa.parse<string[]>(content, { skipEmptyLines: false, delimiter: delimiterOf(content) });
+  const brokenQuotes = new Set(errors.flatMap((e) => (e.type === "Quotes" && e.row !== undefined ? [e.row] : [])));
+
+  const records = data.map((fields, i) => ({ fields, line: i + 1 }));
+  const header = records.shift();
+  const columns = header?.fields.map((name) => name.trim().toLowerCase()) ?? [];
+  const col = (name: string) => columns.indexOf(name);
+  if (col("testo") === -1) {
+    const found = columns.filter(Boolean);
+    return {
+      ok: false,
+      error: found.length
+        ? `Manca la colonna testo. Colonne trovate: ${found.join(", ")}.`
+        : "Manca la colonna testo nella prima riga del file.",
+    };
+  }
+
+  const filled = records.filter((r) => r.fields.some((f) => f.trim() !== ""));
+  if (filled.length === 0) return { ok: false, error: "Il file ha solo l'intestazione, nessun feedback." };
+  if (filled.length > CSV_MAX_ROWS)
+    return {
+      ok: false,
+      error: `Il file ha ${formatNumber(filled.length)} righe, il massimo è ${formatNumber(CSV_MAX_ROWS)}. Dividilo in più file.`,
+    };
+
+  const rows: CsvRow[] = [];
+  const invalid: CsvInvalidRow[] = [];
+  for (const { fields, line } of filled) {
+    const get = (name: string) => (col(name) === -1 ? "" : (fields[col(name)] ?? "").trim());
+    const text = get("testo").replace(/\r\n?/g, "\n");
+    const reason = rowError(fields, columns.length, line - 1, brokenQuotes);
+    const date = parseDate(get("data"), today);
+    const problem =
+      reason ??
+      (!text
+        ? "Il testo è vuoto."
+        : text.length > FEEDBACK_MAX_LENGTH
+          ? `Il testo ha ${formatNumber(text.length)} caratteri, il massimo è ${formatNumber(FEEDBACK_MAX_LENGTH)}.`
+          : get("canale").length > CHANNEL_MAX_LENGTH
+            ? `Il canale supera ${CHANNEL_MAX_LENGTH} caratteri.`
+            : get("cliente").length > CUSTOMER_MAX_LENGTH
+              ? `Il cliente supera ${CUSTOMER_MAX_LENGTH} caratteri.`
+              : date !== null && typeof date === "object"
+                ? date.error
+                : null);
+    if (problem) {
+      invalid.push({ line, text: snippet(text || fields.join(" ").trim()), reason: problem });
+      continue;
+    }
+    rows.push({
+      line,
+      text,
+      channel: get("canale") || CSV_DEFAULT_CHANNEL,
+      customer: get("cliente") || null,
+      receivedAt: typeof date === "string" ? date : null,
+    });
+  }
+  return { ok: true, rows, invalid };
+}
+
+// The separator the header uses. Papa's own guess falls back to a comma on short files, and Italian
+// Excel writes semicolons without quoting commas. A single-column file is not split at all.
+function delimiterOf(content: string) {
+  const header = content.split(/\r?\n/, 1)[0];
+  const counts = [";", "\t", ","].map((d) => ({ d, n: header.split(d).length - 1 }));
+  const best = counts.reduce((a, b) => (b.n > a.n ? b : a));
+  return best.n > 0 ? best.d : "\u001f";
+}
+
+function rowError(fields: string[], columnCount: number, recordIndex: number, brokenQuotes: Set<number>) {
+  if (brokenQuotes.has(recordIndex))
+    return "Le virgolette di questa riga non sono chiuse o sono fuori posto: il testo potrebbe essersi unito alle righe dopo.";
+  // Extra empty cells are harmless (trailing separators); extra text usually means a comma outside quotes.
+  if (fields.slice(columnCount).some((f) => f.trim() !== ""))
+    return "La riga ha più colonne dell'intestazione: forse c'è una virgola nel testo senza virgolette.";
+  return null;
+}
+
+// "2026-09-01", "01/09/2026", "1-9-2026", "01.09.2026", also followed by a time.
+// Returns the ISO date, null when empty, or the reason it is not valid.
+export function parseDate(value: string, today: string): string | null | { error: string } {
+  if (!value) return null;
+  const iso = value.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T\s].*)?$/);
+  const italian = value.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})(?:\s.*)?$/);
+  const parts = iso ? [iso[1], iso[2], iso[3]] : italian ? [italian[3], italian[2], italian[1]] : null;
+  const invalid = { error: `La data "${snippet(value, 30)}" non è valida. Usa 25/09/2026 o 2026-09-25.` };
+  if (!parts) return invalid;
+  const [year, month, day] = parts.map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (year < 2000 || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return invalid;
+  const result = date.toISOString().slice(0, 10);
+  if (result > today) return { error: `La data ${day}/${month}/${year} è nel futuro.` };
+  return result;
+}
+
+function snippet(text: string, length = SNIPPET_LENGTH) {
+  return text.length > length ? `${text.slice(0, length - 1)}…` : text;
+}

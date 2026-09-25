@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voce, schermate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400..800&family=Literata:ital,opsz,wght@0,7..72,400..700;1,7..72,400..600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="kit.css">
+<link rel="stylesheet" href="presentation.css">
+</head>
+<body>
+<main class="board">
+
+  <header class="board-head">
+    <h1>Voce: schermate</h1>
+    <p>Direzione B (Voci), costruita solo con il kit. Token e componenti sono in <a href="kit.html">kit.html</a>, le regole d'uso in <a href="../DESIGN.md">DESIGN.md</a>.</p>
+  </header>
+
+  <!-- ===== Dashboard piena ===== -->
+  <p class="caption"><strong>Dashboard dei temi</strong>, dopo l'analisi del 23 settembre. Pagina intera, si scorre.</p>
+  <section class="desk" aria-label="Dashboard dei temi">
+    <header class="appbar">
+      <div class="appbar-brand"><span class="logo">v</span>Fatturino</div>
+      <nav class="tabs"><a class="tab" href="#" aria-current="page">Temi</a><a class="tab" href="#">Feedback</a><a class="tab" href="#">Raccolta</a><a class="tab" href="#">Abbonamento</a></nav>
+      <div class="appbar-meta"><span class="badge">Pro</span>Analisi di settembre: <b>7 di 100</b></div>
+    </header>
+    <div class="page">
+      <div class="page-header">
+        <div>
+          <h2 class="page-title">Cosa dicono i clienti di Fatturino</h2>
+          <p class="page-lede"><b>412 feedback</b> dal 26 giugno al 23 settembre, raggruppati in <b>8 temi</b>. Il più frequente riguarda la sincronizzazione con la banca, ed è anche quello che cresce di più.</p>
+        </div>
+        <button class="btn">Nuova analisi</button>
+      </div>
+      <div class="filter-bar">
+        <button class="chip" aria-pressed="true">Tutti<span class="chip-count">8</span></button>
+        <button class="chip" aria-pressed="false">Problemi<span class="chip-count">4</span></button>
+        <button class="chip" aria-pressed="false">Opportunità<span class="chip-count">3</span></button>
+        <button class="chip" aria-pressed="false">Apprezzamenti<span class="chip-count">1</span></button>
+        <span class="filter-bar-sep"></span>
+        <button class="chip chip-menu">Canale: <b>tutti</b></button>
+        <button class="chip chip-menu">Stato: <b>aperti</b></button>
+      </div>
+
+      <article class="theme">
+        <div><div class="stat-value">58</div><div class="stat-label">feedback</div><div class="trend" data-w="1,2,1,3,2,3,4,3,5,6,7,9,12"></div><div class="trend-note">Ultime 13 settimane. In nero le ultime 2.</div></div>
+        <div>
+          <span class="badge badge-problem">Problema</span>
+          <h3 class="theme-title">La sincronizzazione con la banca si interrompe</h3>
+          <p class="theme-summary">Il collegamento scade o si blocca senza avviso e i movimenti smettono di arrivare. Chi se ne accorge lo scopre in ritardo, di solito quando riconcilia i pagamenti a fine mese.</p>
+          <div class="quote-stack">
+            <blockquote class="quote">“Ogni lunedì devo ricollegare Intesa, altrimenti <mark>i movimenti della settimana non arrivano</mark>.”<cite>Supporto, 18 settembre</cite></blockquote>
+            <blockquote class="quote">“Il collegamento con Fineco <mark>scade ogni 90 giorni e nessuno me lo dice</mark>. L'ho scoperto chiudendo il trimestre.”<cite>Sondaggio NPS, 9 settembre</cite></blockquote>
+          </div>
+          <a class="link" href="#">Leggi tutti i 58 feedback</a>
+        </div>
+        <div class="theme-controls">
+          <div class="field field-quiet"><label class="field-label" for="p1">Priorità</label><select class="select" id="p1"><option>Da impostare</option><option selected>Alta</option><option>Media</option><option>Bassa</option></select></div>
+          <div class="field field-quiet"><label class="field-label" for="s1">Stato</label><select class="select select-strong" id="s1"><option>Da valutare</option><option selected>In roadmap</option><option>Fatto</option><option>Scartato</option></select></div>
+        </div>
+      </article>
+
+      <article class="theme">
+        <div><div class="stat-value">47</div><div class="stat-label">feedback</div><div class="trend" data-w="3,4,3,2,4,5,3,4,4,3,4,4,4"></div><div class="trend-note">Ultime 13 settimane. In nero le ultime 2.</div></div>
+        <div>
+          <span class="badge badge-opportunity">Opportunità</span>
+          <h3 class="theme-title">Accesso diretto per il commercialista</h3>
+          <p class="theme-summary">Molti mandano ogni mese al commercialista un archivio di fatture a mano. Chiedono che possa entrare da solo, in sola lettura, e scaricare quello che gli serve.</p>
+          <div class="quote-stack">
+            <blockquote class="quote">“Il mio commercialista mi chiede ogni mese lo zip delle fatture: <mark>se potesse entrare lui</mark> mi risparmierei mezza mattina.”<cite>Call vendita, 15 settembre</cite></blockquote>
+            <blockquote class="quote">“Siamo in tre soci e lo studio è uno solo. <mark>Un accesso per lo studio</mark> e basta, senza passarci le password.”<cite>Modulo pubblico, 29 agosto</cite></blockquote>
+          </div>
+          <a class="link" href="#">Leggi tutti i 47 feedback</a>
+        </div>
+        <div class="theme-controls">
+          <div class="field field-quiet"><label class="field-label" for="p2">Priorità</label><select class="select" id="p2"><option>Da impostare</option><option selected>Alta</option><option>Media</option><option>Bassa</option></select></div>
+          <div class="field field-quiet"><label class="field-label" for="s2">Stato</label><select class="select" id="s2"><option selected>Da valutare</option><option>In roadmap</option><option>Fatto</option><option>Scartato</option></select></div>
+        </div>
+      </article>
+
+      <article class="theme">
+        <div><div class="stat-value">41</div><div class="stat-label">feedback</div><div class="trend" data-w="2,3,5,4,2,2,3,3,4,3,2,3,5"></div><div class="trend-note">Ultime 13 settimane. In nero le ultime 2.</div></div>
+        <div>
+          <span class="badge badge-opportunity">Opportunità</span>
+          <h3 class="theme-title">Promemoria per F24 e scadenze fiscali</h3>
+          <p class="theme-summary">Chi è in forfettario vorrebbe sapere prima quanto pagare e quando, senza aspettare la mail del commercialista.</p>
+          <div class="quote-stack">
+            <blockquote class="quote">“Il 30 giugno mi arriva sempre addosso. <mark>Un promemoria con l'importo stimato</mark> sarebbe oro.”<cite>Sondaggio NPS, 2 luglio</cite></blockquote>
+          </div>
+          <a class="link" href="#">Leggi tutti i 41 feedback</a>
+        </div>
+        <div class="theme-controls">
+          <div class="field field-quiet"><label class="field-label" for="p3">Priorità</label><select class="select" id="p3"><option>Da impostare</option><option>Alta</option><option selected>Media</option><option>Bassa</option></select></div>
+          <div class="field field-quiet"><label class="field-label" for="s3">Stato</label><select class="select select-strong" id="s3"><option>Da valutare</option><option selected>In roadmap</option><option>Fatto</option><option>Scartato</option></select></div>
+        </div>
+      </article>
+
+      <article class="theme theme-compact">
+        <div><div class="stat-value">33</div><div class="trend" data-w="1,1,2,2,1,2,3,2,3,3,4,4,5"></div></div>
+        <div>
+          <span class="badge badge-problem">Problema</span>
+          <h3 class="theme-title">Note di credito difficili da emettere</h3>
+          <div class="quote-stack">
+            <blockquote class="quote quote-sm">“Non trovo come fare una nota di credito parziale, <mark>ho dovuto annullare tutta la fattura</mark>.”<cite>Supporto, 19 settembre</cite></blockquote>
+          </div>
+        </div>
+        <div class="theme-controls">
+          <div class="field field-quiet"><label class="field-label" for="p4">Priorità</label><select class="select select-empty" id="p4"><option selected>Da impostare</option><option>Alta</option><option>Media</option><option>Bassa</option></select></div>
+          <div class="field field-quiet"><label class="field-label" for="s4">Stato</label><select class="select" id="s4"><option selected>Da valutare</option><option>In roadmap</option><option>Fatto</option><option>Scartato</option></select></div>
+        </div>
+      </article>
+
+      <article class="theme theme-compact">
+        <div><div class="stat-value">28</div><div class="trend" data-w="3,3,2,4,3,2,2,2,2,1,2,1,1"></div></div>
+        <div>
+          <span class="badge badge-problem">Problema</span>
+          <h3 class="theme-title">L'app mobile è lenta a caricare le ricevute</h3>
+          <div class="quote-stack">
+            <blockquote class="quote quote-sm">“Fotografo lo scontrino e poi resto lì <mark>a guardare la rotella per venti secondi</mark>.”<cite>App Store, 11 agosto</cite></blockquote>
+          </div>
+        </div>
+        <div class="theme-controls">
+          <div class="field field-quiet"><label class="field-label" for="p5">Priorità</label><select class="select" id="p5"><option>Da impostare</option><option>Alta</option><option selected>Media</option><option>Bassa</option></select></div>
+          <div class="field field-quiet"><label class="field-label" for="s5">Stato</label><select class="select" id="s5"><option selected>Da valutare</option><option>In roadmap</option><option>Fatto</option><option>Scartato</option></select></div>
+        </div>
+      </article>
+
+      <p class="page-more"><a class="link" href="#">Mostra altri 3 temi</a>con 26, 19 e 14 feedback</p>
+    </div>
+  </section>
+
+  <!-- ===== Stato vuoto 1 ===== -->
+  <p class="caption"><strong>Stato vuoto: workspace appena creato</strong>, nessun feedback.</p>
+  <section class="desk" aria-label="Dashboard vuota, nessun feedback">
+    <header class="appbar">
+      <div class="appbar-brand"><span class="logo">v</span>Fatturino</div>
+      <nav class="tabs"><a class="tab" href="#" aria-current="page">Temi</a><a class="tab" href="#">Feedback</a><a class="tab" href="#">Raccolta</a><a class="tab" href="#">Abbonamento</a></nav>
+      <div class="appbar-meta"><span class="badge">Free</span>Feedback: <b>0 di 100</b>. Analisi di settembre: <b>0 di 3</b></div>
+    </header>
+    <div class="page">
+      <div class="empty">
+        <h2 class="empty-title">Qui leggerai cosa dicono i tuoi clienti, raggruppato per tema.</h2>
+        <p class="empty-text">Per cominciare servono i feedback. Parti da quelli che hai già in giro: ticket, note delle call, risposte ai sondaggi. Più canali metti insieme, più i temi sono completi.</p>
+        <div class="empty-actions">
+          <div class="card card-highlight card-media">
+            <div class="card-body">
+              <h3 class="card-title">Chiedi ai clienti</h3>
+              <p class="card-text">Un modulo pubblico con una sola domanda, che scegli tu. Si risponde dal telefono, senza account.</p>
+              <p class="card-meta">voce.app/f/fatturino-k3m9</p>
+              <div class="card-actions"><button class="btn">Copia il link</button></div>
+            </div>
+            <div class="qr-code"><svg data-seed="11" width="92" height="92" aria-label="QR code del modulo pubblico"></svg></div>
+          </div>
+          <div class="card">
+            <h3 class="card-title">Importa un CSV</h3>
+            <p class="card-text">Serve una colonna <b>testo</b>. Canale, cliente e data sono facoltativi. Fino a 2.000 righe.</p>
+            <div class="card-actions"><button class="btn btn-secondary">Scegli il file</button></div>
+          </div>
+          <div class="card">
+            <h3 class="card-title">Incolla un feedback</h3>
+            <p class="card-text">Copiato da un'email, da Slack o dalle tue note, uno alla volta.</p>
+            <div class="card-actions"><button class="btn btn-secondary">Incolla un testo</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Stato vuoto 2 ===== -->
+  <p class="caption"><strong>Stato vuoto: feedback raccolti, nessuna analisi</strong>. È il momento dell'attivazione.</p>
+  <section class="desk" aria-label="Dashboard con feedback ma senza analisi">
+    <header class="appbar">
+      <div class="appbar-brand"><span class="logo">v</span>Fatturino</div>
+      <nav class="tabs"><a class="tab" href="#" aria-current="page">Temi</a><a class="tab" href="#">Feedback</a><a class="tab" href="#">Raccolta</a><a class="tab" href="#">Abbonamento</a></nav>
+      <div class="appbar-meta"><span class="badge">Free</span>Feedback: <b>37 di 100</b>. Analisi di settembre: <b>0 di 3</b></div>
+    </header>
+    <div class="page">
+      <div class="page-header">
+        <div>
+          <h2 class="page-title">37 feedback, ancora nessun tema</h2>
+          <p class="page-lede">Letti uno per uno dicono poco. L'analisi li raggruppa in problemi, opportunità e apprezzamenti, con le citazioni che li rappresentano meglio.</p>
+        </div>
+      </div>
+      <div class="page-section card card-soft card-row">
+        <div>
+          <h3 class="card-title">Pronti per la prima analisi</h3>
+          <p class="card-text">16 dal supporto, 10 dal modulo pubblico, 6 dalle call di vendita, 5 dall'App Store. Userai 1 delle 3 analisi di settembre.</p>
+        </div>
+        <button class="btn">Analizza 37 feedback</button>
+      </div>
+      <div class="quote-grid">
+        <blockquote class="quote quote-sm">“Non trovo come fare una nota di credito parziale, ho dovuto annullare tutta la fattura.”<cite>Supporto, oggi</cite></blockquote>
+        <blockquote class="quote quote-sm">“Mi piacerebbe vedere quanto manca alla soglia del forfettario senza fare i conti a mano.”<cite>Modulo pubblico, ieri</cite></blockquote>
+        <blockquote class="quote quote-sm">“La fattura allo SdI la mando dal telefono in un minuto. Prima ci mettevo mezz'ora.”<cite>App Store, 22 settembre</cite></blockquote>
+        <blockquote class="quote quote-sm">“Il collegamento con Fineco si è scollegato di nuovo.”<cite>Supporto, 21 settembre</cite></blockquote>
+        <blockquote class="quote quote-sm">“Codice errore 00305 e basta. Ho dovuto cercare su Google cosa volesse dire.”<cite>Supporto, 20 settembre</cite></blockquote>
+        <blockquote class="quote quote-sm">“Per noi il punto è il commercialista: se non lo convinci tu, non passiamo a Pro.”<cite>Call vendita, 19 settembre</cite></blockquote>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Modulo pubblico ===== -->
+  <p class="caption"><strong>Modulo pubblico</strong> su telefono. Stessa pagina in quattro stati. La domanda la sceglie il PM: il primo telefono mostra quella di default, il secondo una scelta dal PM.</p>
+  <div class="phones">
+    <div class="phone-wrap">
+      <p>Vuoto, appena aperto dal link o dal QR. Domanda di default</p>
+      <div class="phone">
+        <div class="phone-status surface-highlight">9:41<i></i></div>
+        <div class="form-page">
+          <div class="form-ask surface-highlight">
+            <p class="form-brand"><span class="avatar">F</span>Fatturino</p>
+            <h1 class="form-ask-title">Cosa vuoi dire al team di Fatturino?</h1>
+            <p class="form-ask-text">Un problema, un'idea, qualcosa che ti piace. Lo leggono le persone che costruiscono il prodotto.</p>
+          </div>
+          <form class="form-body" onsubmit="return false">
+            <div class="field">
+              <label class="field-label" for="c1">Il tuo feedback</label>
+              <textarea class="textarea textarea-line" id="c1" rows="6" placeholder="Scrivi come lo diresti a voce"></textarea>
+              <p class="field-count">0 / 2.000</p>
+            </div>
+            <div class="field">
+              <label class="field-label" for="c2">Email <span class="field-optional">facoltativa</span></label>
+              <input class="input input-line" id="c2" type="email" placeholder="nome@esempio.it">
+              <p class="field-hint">Lasciala solo se vuoi essere ricontattato.</p>
+            </div>
+            <button class="btn btn-lg btn-block" disabled>Invia</button>
+            <p class="form-foot">Raccolto con Voce. Non serve un account.</p>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone-wrap">
+      <p>In scrittura, con una domanda scelta dal PM</p>
+      <div class="phone">
+        <div class="phone-status surface-highlight">9:42<i></i></div>
+        <div class="form-page">
+          <div class="form-ask surface-highlight is-compact">
+            <p class="form-brand"><span class="avatar">F</span>Fatturino</p>
+            <h1 class="form-ask-title">Cosa ti ha fatto perdere tempo questa settimana con Fatturino?</h1>
+            <p class="form-ask-text">Un problema, un'idea, qualcosa che ti piace. Lo leggono le persone che costruiscono il prodotto.</p>
+          </div>
+          <form class="form-body" onsubmit="return false">
+            <div class="field">
+              <label class="field-label" for="d1">Il tuo feedback</label>
+              <textarea class="textarea textarea-line" id="d1" rows="7">Uso Fatturino da due anni e mi trovo bene. Però il collegamento con Fineco si stacca ogni tre mesi e me ne accorgo solo quando mancano i movimenti. Basterebbe un avviso qualche giorno prima della scadenza.</textarea>
+              <p class="field-count">214 / 2.000</p>
+            </div>
+            <div class="field">
+              <label class="field-label" for="d2">Email <span class="field-optional">facoltativa</span></label>
+              <input class="input input-line" id="d2" type="email" value="giulia.r@studiorossi.it">
+              <p class="field-hint">Lasciala solo se vuoi essere ricontattato.</p>
+            </div>
+            <button class="btn btn-lg btn-block">Invia</button>
+            <p class="form-foot">Raccolto con Voce. Non serve un account.</p>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone-wrap">
+      <p>Inviato</p>
+      <div class="phone">
+        <div class="phone-status surface-highlight">9:43<i></i></div>
+        <div class="form-page surface-highlight">
+          <div class="form-message">
+            <p class="form-brand"><span class="avatar">F</span>Fatturino</p>
+            <h1 class="form-message-title">Ricevuto. Grazie.</h1>
+            <p class="form-message-text">Il team di Fatturino lo legge insieme agli altri feedback e lo usa per decidere cosa migliorare.</p>
+            <blockquote class="quote quote-sm quote-bar">“Uso Fatturino da due anni e mi trovo bene. Però il collegamento con Fineco si stacca ogni tre mesi…”</blockquote>
+            <button class="btn btn-lg btn-block">Scrivi un altro feedback</button>
+            <p class="form-foot">Raccolto con Voce.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone-wrap">
+      <p>Non disponibile (limite Free raggiunto)</p>
+      <div class="phone">
+        <div class="phone-status">9:41<i></i></div>
+        <div class="form-page">
+          <div class="form-message">
+            <p class="form-brand"><span class="avatar">F</span>Fatturino</p>
+            <h1 class="form-message-title is-long">Per ora questo modulo non accetta nuovi feedback.</h1>
+            <p class="form-message-text">Se vuoi scrivere a Fatturino, usa il supporto dall'app o dal sito. Il tuo messaggio arriva comunque alle stesse persone.</p>
+            <p class="form-foot">Raccolto con Voce.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  // Andamento settimanale di ogni tema
+  document.querySelectorAll(".trend").forEach(el => {
+    const w = el.dataset.w.split(",").map(Number), max = Math.max(...w, 1);
+    el.setAttribute("role", "img");
+    el.setAttribute("aria-label", "Feedback per settimana: " + w.join(", "));
+    el.innerHTML = w.map(v => `<i style="height:${Math.max(6, v / max * 100)}%"></i>`).join("");
+  });
+
+  // QR finto ma credibile
+  document.querySelectorAll("svg[data-seed]").forEach(svg => {
+    const n = 25, s = svg.width.baseVal.value / n;
+    let seed = +svg.dataset.seed, out = "";
+    const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+    const inFinder = (x, y) => {
+      for (const [ox, oy] of [[0,0],[n-7,0],[0,n-7]]) {
+        const dx = x - ox, dy = y - oy;
+        if (dx >= 0 && dx < 7 && dy >= 0 && dy < 7)
+          return dx === 0 || dx === 6 || dy === 0 || dy === 6 || (dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4);
+      }
+      return null;
+    };
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      const f = inFinder(x, y);
+      if (f === null ? rnd() > 0.52 : f) out += `<rect x="${x*s}" y="${y*s}" width="${s+.2}" height="${s+.2}"/>`;
+    }
+    svg.innerHTML = `<g fill="currentColor">${out}</g>`;
+  });
+</script>
+</body>
+</html>
