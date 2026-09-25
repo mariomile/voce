@@ -45,6 +45,16 @@ export type Usage = {
   analysesLimit: number;
 };
 
+// Written only by the Stripe webhook. isOwner: only the owner manages the subscription.
+export type Billing = {
+  plan: Plan;
+  stripeCustomerId: string | null;
+  stripeStatus: string | null;
+  currentPeriodEnd: string | null;
+  cancelAt: string | null;
+  isOwner: boolean;
+};
+
 // Cached per request: the layout and the page both ask.
 export const getCurrentWorkspace = cache(async (): Promise<Workspace> => {
   const supabase = await createClient();
@@ -91,6 +101,34 @@ export const getUsage = cache(async (workspaceId: string, now = new Date()): Pro
     analysesLimit: PLAN_LIMITS[plan].analysesPerMonth,
   };
 });
+
+export async function getBilling(workspaceId: string): Promise<Billing> {
+  const supabase = await createClient();
+  const { data: auth, error: authError } = await supabase.auth.getClaims();
+  if (authError) throw authError;
+  const [subscription, member] = await Promise.all([
+    supabase
+      .from("subscriptions")
+      .select("plan, stripe_customer_id, stripe_status, current_period_end, cancel_at")
+      .eq("workspace_id", workspaceId)
+      .maybeSingle(),
+    supabase
+      .from("workspace_members")
+      .select("role")
+      .eq("workspace_id", workspaceId)
+      .eq("user_id", auth?.claims.sub ?? "")
+      .maybeSingle(),
+  ]);
+  const row = unwrap(subscription);
+  return {
+    plan: row?.plan ?? "free",
+    stripeCustomerId: row?.stripe_customer_id ?? null,
+    stripeStatus: row?.stripe_status ?? null,
+    currentPeriodEnd: row?.current_period_end ?? null,
+    cancelAt: row?.cancel_at ?? null,
+    isOwner: unwrap(member)?.role === "owner",
+  };
+}
 
 export async function getDashboard(
   workspaceId: string,

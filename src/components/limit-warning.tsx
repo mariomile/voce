@@ -1,4 +1,5 @@
-import { Button } from "@/components/ui/button"
+import Link from "next/link"
+import { buttonVariants } from "@/components/ui/button"
 import { Card, CardText, CardTitle } from "@/components/ui/card"
 import type { Usage } from "@/lib/data"
 
@@ -12,7 +13,9 @@ export function LimitWarning({ usage }: { usage: Usage }) {
           analisi diventano 100 al mese.
         </CardText>
       </div>
-      <Button>Passa a Pro</Button>
+      <Link href="/billing" className={buttonVariants()}>
+        Passa a Pro
+      </Link>
     </Card>
   )
 }

@@ -7,6 +7,7 @@ const TABS = [
   { href: "/themes", label: "Temi" },
   { href: "/feedback", label: "Feedback" },
   { href: "/collect", label: "Raccolta" },
+  { href: "/billing", label: "Piano" },
 ]
 
 // Kit: .tabs, .tab with aria-current="page"

@@ -18,6 +18,13 @@ Cose da risolvere prima di aprire Voce a clienti reali. Finché siamo in modalit
 - **IP condivisi.** Il limite per IP (300 all'ora) conta tutti i moduli insieme. Dietro il NAT di un operatore mobile molti sconosciuti condividono lo stesso IP: con traffico vero, se si vedono rifiuti tra workspace diversi, contare per IP e workspace. E uno script da un solo IP può mandare 300 invii in pochi secondi: il tetto resta l'ora del workspace, ma un Free si riempie subito. Da rivedere con dati veri (captcha o verifica leggera).
 - **Tentativi del modulo.** Per i limiti si salva un hash con chiave dell'IP (la chiave è `SUPABASE_SECRET_KEY`, il database non la conosce). Le righe più vecchie di un'ora si cancellano al primo invio successivo: se un modulo non riceve più invii restano lì. Da citare nel registro dei trattamenti, o da pulire con un job programmato.
 
+## Pagamenti
+
+- **Stripe in modalità live.** Chiavi live (una chiave con permessi limitati, non la segreta), prezzo Pro live, endpoint del webhook live con il suo segreto, portale cliente configurato in live. Le chiavi vanno su Vercel come variabili sensibili.
+- **Stripe riceve dati degli utenti**: email dell'owner e nome del workspace per il cliente, più i dati di pagamento. Va nell'elenco dei sub-responsabili e nel registro dei trattamenti; Stripe tratta dati anche fuori UE.
+- **Due abbonamenti per lo stesso workspace.** Un nuovo Checkout chiude quelli rimasti aperti e non parte se Stripe ha già un abbonamento Pro attivo. Resta un caso: due primi clic quasi simultanei da due schede diverse. Con clienti veri, attivare anche "Limita i clienti a un solo abbonamento" nelle impostazioni del Checkout.
+- **Ordine dei webhook tra server diversi.** Due webhook che arrivano insieme vengono messi in ordine per l'ora in cui hanno cominciato a leggere da Stripe, presa dall'orologio del server. Tra istanze diverse di Vercel gli orologi possono differire di pochi millisecondi: in quella finestra resta possibile scrivere uno stato vecchio, che si corregge al prossimo evento dello stesso cliente.
+
 ## Database in produzione
 
 - Il progetto Supabase di produzione non esiste ancora. Va creato in regione UE, con la conferma dell'email attiva, un SMTP vero per le email di Auth, il template di conferma di `supabase/templates/confirmation.html` e gli URL di redirect del dominio vero.
@@ -28,4 +35,4 @@ Cose da risolvere prima di aprire Voce a clienti reali. Finché siamo in modalit
 
 ## Fiscale
 
-- Da definire: fatturazione, IVA e configurazione fiscale di Stripe.
+- Da definire: fatturazione, IVA e configurazione fiscale di Stripe. Il Checkout oggi non calcola l'IVA: Stripe Tax (`automatic_tax`) va attivato solo dopo aver registrato la partita IVA in Stripe, altrimenti non incassa nulla e non dà errori.

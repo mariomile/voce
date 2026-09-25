@@ -186,6 +186,19 @@ describe("plan and billing", () => {
     expect(data!.plan).toBe("free")
   })
 
+  it("cannot write the Stripe billing fields either", async () => {
+    for (const change of [
+      { stripe_customer_id: "cus_someone_else" },
+      { stripe_status: "active" },
+      { cancel_at: null },
+      { current_period_end: "2099-01-01T00:00:00Z" },
+      { stripe_synced_at: "2099-01-01T00:00:00Z" },
+    ]) {
+      const { error } = await a.client.from("subscriptions").update(change).eq("workspace_id", a.workspaceId)
+      expect(error?.code).toBe("42501")
+    }
+  })
+
   it("cannot recreate or delete the subscription either", async () => {
     const upsert = await a.client.from("subscriptions").upsert({ workspace_id: a.workspaceId, plan: "pro" })
     expect(upsert.error?.code).toBe("42501")

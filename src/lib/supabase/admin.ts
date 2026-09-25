@@ -4,10 +4,12 @@ import { createHmac } from "node:crypto"
 import { createClient } from "@supabase/supabase-js"
 import type { Database, Json } from "@/lib/database.types"
 import type { CheckedTheme } from "@/lib/analysis"
+import type { BillingState } from "@/lib/billing"
 
 // The secret key bypasses RLS, so it does only what the server alone may do: send a public form
-// submission with the visitor IP it sees, and reserve, save or fail an AI analysis. If users could
-// call those, they could skip the rate limits or write fake themes and costs.
+// submission with the visitor IP it sees, reserve, save or fail an AI analysis, and write the billing
+// data from Stripe. If users could do those, they could skip the rate limits, write fake themes and
+// costs, or give themselves Pro.
 
 function adminClient() {
   return createClient<Database>(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!, {
@@ -83,4 +85,52 @@ export async function finishAnalysis(analysisId: string, themes: CheckedTheme[],
 export async function failAnalysis(analysisId: string, message: string, run: RunLog) {
   const { error } = await adminClient().rpc("fail_analysis", { analysis: analysisId, error: message, run })
   if (error) throw error
+}
+
+// The workspace id must come from the signed-in user's session. Sets the Stripe customer only once:
+// if two clicks both created one, the first saved wins and both use it.
+export async function saveStripeCustomer(workspaceId: string, customerId: string) {
+  const client = adminClient()
+  const { error } = await client
+    .from("subscriptions")
+    .update({ stripe_customer_id: customerId })
+    .eq("workspace_id", workspaceId)
+    .is("stripe_customer_id", null)
+  if (error) throw error
+  const { data, error: readError } = await client
+    .from("subscriptions")
+    .select("stripe_customer_id")
+    .eq("workspace_id", workspaceId)
+    .single()
+  if (readError) throw readError
+  return data.stripe_customer_id!
+}
+
+// Only the Stripe webhook calls this. Skips the write when a read that started later is already saved:
+// one update, so Postgres checks the time again after waiting for a write running at the same moment.
+// Returns "unknown_customer" when no workspace has this customer.
+export async function saveBilling(customerId: string, state: BillingState, readAt: Date) {
+  const client = adminClient()
+  const { data, error } = await client
+    .from("subscriptions")
+    .update({
+      plan: state.plan,
+      stripe_subscription_id: state.stripeSubscriptionId,
+      stripe_status: state.stripeStatus,
+      current_period_end: state.currentPeriodEnd,
+      cancel_at: state.cancelAt,
+      stripe_synced_at: readAt.toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("stripe_customer_id", customerId)
+    .or(`stripe_synced_at.is.null,stripe_synced_at.lte.${readAt.toISOString()}`)
+    .select("workspace_id")
+  if (error) throw error
+  if (data.length > 0) return "saved" as const
+  const { count, error: countError } = await client
+    .from("subscriptions")
+    .select("workspace_id", { count: "exact", head: true })
+    .eq("stripe_customer_id", customerId)
+  if (countError) throw countError
+  return count ? ("stale" as const) : ("unknown_customer" as const)
 }

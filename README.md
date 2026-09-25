@@ -36,3 +36,24 @@ L'analisi usa Claude tramite Vercel AI Gateway. Il modello si sceglie con `AI_MO
 ## Accesso con Google
 
 È predisposto ma spento. Per accenderlo in locale: crea le credenziali OAuth su Google Cloud (redirect `http://127.0.0.1:54321/auth/v1/callback`), mettile in `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` e `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET` nell'ambiente da cui lanci la CLI, imposta `enabled = true` in `[auth.external.google]` di `supabase/config.toml` e riavvia (`supabase stop && supabase start`). Il pulsante "Continua con Google" compare da solo quando Google è attivo.
+
+## Pagamenti con Stripe (modalità test)
+
+Il piano Pro si compra con Stripe Checkout e si gestisce o disdice dal portale cliente di Stripe, dalla pagina **Piano**. Il piano del workspace cambia solo quando arriva il webhook firmato (`/api/stripe/webhook`): il webhook rilegge da Stripe gli abbonamenti del cliente e scrive lo stato attuale in `subscriptions`.
+
+In `.env.local` servono tre variabili. Se ne manca una, i pagamenti sono spenti: la pagina Piano lo dice e ogni workspace resta sul piano che ha.
+
+```
+STRIPE_SECRET_KEY=      # meglio una chiave con permessi limitati (rk_test_...), solo lato server
+STRIPE_WEBHOOK_SECRET=  # whsec_...: da `stripe listen` in locale, dall'endpoint della dashboard su Vercel
+STRIPE_PRICE_ID=        # price_...: il prezzo Pro da 19 € al mese
+```
+
+In locale i webhook arrivano con la Stripe CLI:
+
+```bash
+stripe listen --forward-to localhost:3000/api/stripe/webhook
+```
+
+- **Carta di prova**: `4242 4242 4242 4242`, qualsiasi data futura e CVC.
+- **Test**: `pnpm test` non chiama mai Stripe. La firma del webhook è verificata davvero, le risposte di Stripe sono finte.
