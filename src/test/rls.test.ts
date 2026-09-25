@@ -30,6 +30,7 @@ async function seedWorkspace(user: TestUser, label: string) {
       kind: "problem",
       title: `Tema di ${label}`,
       summary: "Sintesi",
+      sentiment: "negative",
     })
     .select("id")
     .single()
@@ -362,5 +363,49 @@ describe("public form function", () => {
     expect((await anon().rpc("get_public_form", { slug: "non-esiste" })).data).toEqual([])
     expect(await send("Ciao", "", "non-esiste")).toBe("unavailable")
     await admin.from("workspaces").update({ form_enabled: true }).eq("id", b.workspaceId)
+  })
+})
+
+describe("AI analysis functions and log", () => {
+  it("only the server reserves, saves or fails an analysis", async () => {
+    const start = {
+      ws: a.workspaceId,
+      model: "finto",
+      period_start: "2026-07-01",
+      feedback_count: 1,
+      input: {},
+    }
+    const finish = {
+      analysis: aIds.analysis,
+      themes: [{ title: "Finto", summary: "", kind: "praise", sentiment: "positive", feedback: [aIds.feedback], quotes: [] }],
+      run: { cost_usd: 0 },
+    }
+    const fail = { analysis: aIds.analysis, error: "finto" }
+    for (const client of [anon(), a.client]) {
+      expect((await client.rpc("start_analysis", start)).error?.code).toBe("42501")
+      expect((await client.rpc("finish_analysis", finish)).error?.code).toBe("42501")
+      expect((await client.rpc("fail_analysis", fail)).error?.code).toBe("42501")
+    }
+    const { data } = await admin.from("analyses").select("status").eq("workspace_id", a.workspaceId)
+    expect(data).toEqual([{ status: "done" }])
+  })
+
+  it("nobody but the server reads or writes the run log, not even their own", async () => {
+    const { error } = await admin
+      .from("analysis_runs")
+      .insert({ analysis_id: aIds.analysis, workspace_id: a.workspaceId, model: "finto", input: { prompt: "segreto" } })
+    expect(error).toBeNull()
+    for (const client of [anon(), a.client]) {
+      expect((await client.from("analysis_runs").select("*")).error?.code).toBe("42501")
+      const insert = await client
+        .from("analysis_runs")
+        .insert({ analysis_id: bIds.analysis, workspace_id: b.workspaceId, model: "finto", input: {} })
+      expect(insert.error?.code).toBe("42501")
+    }
+  })
+
+  it("a user cannot mark their analysis as finished or change its status", async () => {
+    const { error } = await a.client.from("analyses").update({ status: "failed" }).eq("id", aIds.analysis)
+    expect(error?.code).toBe("42501")
   })
 })

@@ -8,7 +8,7 @@ import { Trend, TrendNote } from "@/components/trend"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import { getCurrentWorkspace, getTheme } from "@/lib/data"
-import { formatDate, KIND_LABELS } from "@/lib/format"
+import { formatDate, KIND_LABELS, SENTIMENT_LABELS } from "@/lib/format"
 
 export default async function ThemePage({ params }: PageProps<"/themes/[id]">) {
   const { id } = await params
@@ -34,7 +34,10 @@ export default async function ThemePage({ params }: PageProps<"/themes/[id]">) {
           <TrendNote />
         </div>
         <div>
-          <Badge variant={theme.kind}>{KIND_LABELS[theme.kind]}</Badge>
+          <div className="flex items-baseline gap-4">
+            <Badge variant={theme.kind}>{KIND_LABELS[theme.kind]}</Badge>
+            <span className="text-sm text-ink-muted">{SENTIMENT_LABELS[theme.sentiment]}</span>
+          </div>
           <h1 className="my-2 text-4xl leading-tight font-bold tracking-tight">{theme.title}</h1>
           <p className="mb-6 max-w-[64ch] text-lg leading-relaxed text-ink-muted">{theme.summary}</p>
           <div className="flex flex-col gap-4">

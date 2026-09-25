@@ -25,6 +25,14 @@ Poi `pnpm dev` e apri `http://localhost:3000`.
 - **Test**: `pnpm test` gira contro lo stack locale, con il seed caricato.
 - **Tipi del database** dopo una migrazione: `supabase gen types typescript --local > src/lib/database.types.ts`.
 
+## Analisi AI
+
+L'analisi usa Claude tramite Vercel AI Gateway. Il modello si sceglie con `AI_MODEL` (default `anthropic/claude-sonnet-5`). In locale le credenziali del Gateway arrivano da `vercel env pull` (`VERCEL_OIDC_TOKEN` in `.env.local`, dura 12 ore) oppure da `AI_GATEWAY_API_KEY`. Il Gateway risponde solo se il team Vercel ha una carta di credito registrata.
+
+- **Registro**: ogni analisi lascia una riga in `analysis_runs` (input, output grezzo, scarti, modello, token, durata, costo stimato, errore). Si legge da Studio: gli utenti non la vedono.
+- **Test**: `pnpm test` usa un modello finto, non chiama mai il Gateway.
+- **Evals**: `pnpm evals` chiama il modello vero sul set sintetico in `evals/dataset.json` (costa qualche centesimo). Il risultato va in `evals/results/` e si confronta con il precedente. Da eseguire dopo ogni modifica al prompt o ai controlli dell'analisi.
+
 ## Accesso con Google
 
 È predisposto ma spento. Per accenderlo in locale: crea le credenziali OAuth su Google Cloud (redirect `http://127.0.0.1:54321/auth/v1/callback`), mettile in `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` e `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET` nell'ambiente da cui lanci la CLI, imposta `enabled = true` in `[auth.external.google]` di `supabase/config.toml` e riavvia (`supabase stop && supabase start`). Il pulsante "Continua con Google" compare da solo quando Google è attivo.

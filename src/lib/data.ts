@@ -73,7 +73,13 @@ export const getUsage = cache(async (workspaceId: string, now = new Date()): Pro
   const [subscription, feedback, analyses] = await Promise.all([
     supabase.from("subscriptions").select("plan").eq("workspace_id", workspaceId).maybeSingle(),
     supabase.from("feedback").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId),
-    supabase.from("analyses").select("created_at").eq("workspace_id", workspaceId).gte("created_at", since),
+    // Failed analyses do not use the quota.
+    supabase
+      .from("analyses")
+      .select("created_at")
+      .eq("workspace_id", workspaceId)
+      .neq("status", "failed")
+      .gte("created_at", since),
   ]);
   const plan = unwrap(subscription)?.plan ?? "free";
   const month = monthOf(now);
@@ -96,6 +102,8 @@ export async function getDashboard(
       .from("analyses")
       .select("*")
       .eq("workspace_id", workspaceId)
+      // A running or failed analysis has no themes to show: the last finished one stays.
+      .eq("status", "done")
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
@@ -295,6 +303,7 @@ function toTheme(row: Tables<"themes">): Theme {
     kind: row.kind,
     title: row.title,
     summary: row.summary,
+    sentiment: row.sentiment,
     priority: row.priority,
     status: row.status,
   };

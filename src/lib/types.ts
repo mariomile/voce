@@ -4,6 +4,7 @@ export type Plan = "free" | "pro";
 export type ThemeKind = "problem" | "opportunity" | "praise";
 export type Priority = "high" | "medium" | "low";
 export type ThemeStatus = "to_review" | "roadmap" | "done" | "discarded";
+export type Sentiment = "positive" | "neutral" | "negative" | "mixed";
 
 export type Workspace = {
   id: string;
@@ -46,6 +47,7 @@ export type Theme = {
   kind: ThemeKind;
   title: string;
   summary: string;
+  sentiment: Sentiment;
   priority: Priority | null;
   status: ThemeStatus;
 };

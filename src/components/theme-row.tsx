@@ -6,7 +6,7 @@ import { Quote } from "@/components/quote"
 import { ThemeControls } from "@/components/theme-controls"
 import { Trend, TrendNote } from "@/components/trend"
 import type { ThemeSummary } from "@/lib/data"
-import { formatDate, KIND_LABELS } from "@/lib/format"
+import { formatDate, KIND_LABELS, SENTIMENT_LABELS } from "@/lib/format"
 
 // Kit: .theme, three columns (number and trend, content, controls).
 // Compact from the fourth theme on: no summary, one quote.
@@ -25,7 +25,10 @@ export function ThemeRow({ theme, compact = false }: { theme: ThemeSummary; comp
         {!compact && <TrendNote />}
       </div>
       <div>
-        <Badge variant={theme.kind}>{KIND_LABELS[theme.kind]}</Badge>
+        <div className="flex items-baseline gap-4">
+          <Badge variant={theme.kind}>{KIND_LABELS[theme.kind]}</Badge>
+          <span className="text-sm text-ink-muted">{SENTIMENT_LABELS[theme.sentiment]}</span>
+        </div>
         <h2
           className={cn(
             "my-2 leading-snug font-bold tracking-snug",

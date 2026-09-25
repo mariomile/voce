@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { AnalyzeButton } from "@/components/analyze-button"
 import { CopyLinkButton } from "@/components/copy-link-button"
 import { LimitWarning } from "@/components/limit-warning"
 import { Page, PageHeader, PageLede, PageMore, PageTitle } from "@/components/page"
@@ -6,7 +7,7 @@ import { Quote } from "@/components/quote"
 import { QrCode } from "@/components/qr-code"
 import { StatusMenu } from "@/components/status-menu"
 import { ThemeRow } from "@/components/theme-row"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import { Card, CardActions, CardBody, CardMeta, CardText, CardTitle } from "@/components/ui/card"
 import { ChipCount, chipVariants, FilterBar, FilterBarSep } from "@/components/ui/chip"
 import { getCurrentWorkspace, getDashboard, getUsage, type StatusFilter, type Usage } from "@/lib/data"
@@ -18,6 +19,9 @@ const KINDS: ThemeKind[] = ["problem", "opportunity", "praise"]
 const STATUSES: StatusFilter[] = ["open", "all", "to_review", "roadmap", "done", "discarded"]
 const VISIBLE_THEMES = 5
 const FULL_THEMES = 3
+
+// The analysis action runs from this page and can take a few minutes.
+export const maxDuration = 300
 
 export default async function ThemesPage({ searchParams }: PageProps<"/themes">) {
   const params = await searchParams
@@ -71,7 +75,7 @@ export default async function ThemesPage({ searchParams }: PageProps<"/themes">)
             <b>{dashboard.analysisThemeCount} temi</b>.
           </PageLede>
         </div>
-        <Button>Nuova analisi</Button>
+        <AnalyzeButton label="Nuova analisi" limitNote={limitNote(usage)} />
       </PageHeader>
 
       <FilterBar>
@@ -202,7 +206,7 @@ function EmptyNoAnalysis({
               : `Ti restano ${remaining} analisi di ${month}.`}
           </CardText>
         </div>
-        <Button>Analizza {dashboard.feedbackCount} feedback</Button>
+        <AnalyzeButton label={`Analizza ${dashboard.feedbackCount} feedback`} limitNote={limitNote(usage)} />
       </Card>
       <div className="grid grid-cols-2 gap-x-12">
         {dashboard.recentFeedback.map((f) => (
@@ -218,6 +222,15 @@ function EmptyNoAnalysis({
       </div>
     </>
   )
+}
+
+// Set when the monthly analyses are used up: the button is off and says why.
+function limitNote(usage: Usage) {
+  if (usage.analysesThisMonth < usage.analysesLimit) return undefined
+  const month = formatMonth(new Date())
+  return usage.plan === "free"
+    ? `Hai usato le ${usage.analysesLimit} analisi di ${month}. Con Pro diventano 100 al mese.`
+    : `Hai usato le ${usage.analysesLimit} analisi di ${month}.`
 }
 
 // ["26", "19", "14"] → "26, 19 e 14"

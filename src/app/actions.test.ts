@@ -22,7 +22,7 @@ async function addTheme(u: TestUser) {
     .single()
   const { data: theme } = await admin
     .from("themes")
-    .insert({ workspace_id: u.workspaceId, analysis_id: analysis!.id, kind: "problem", title: "Tema", summary: "Sintesi" })
+    .insert({ workspace_id: u.workspaceId, analysis_id: analysis!.id, kind: "problem", title: "Tema", summary: "Sintesi", sentiment: "negative" })
     .select("id")
     .single()
   return theme!.id

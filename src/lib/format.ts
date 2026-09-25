@@ -1,4 +1,4 @@
-import type { Priority, ThemeKind, ThemeStatus } from "./types";
+import type { Priority, Sentiment, ThemeKind, ThemeStatus } from "./types";
 
 export const KIND_LABELS: Record<ThemeKind, string> = {
   problem: "Problema",
@@ -10,6 +10,13 @@ export const KIND_PLURALS: Record<ThemeKind, string> = {
   problem: "Problemi",
   opportunity: "Opportunità",
   praise: "Apprezzamenti",
+};
+
+export const SENTIMENT_LABELS: Record<Sentiment, string> = {
+  positive: "Tono positivo",
+  neutral: "Tono neutro",
+  negative: "Tono negativo",
+  mixed: "Tono misto",
 };
 
 export const PRIORITY_LABELS: Record<Priority, string> = {
