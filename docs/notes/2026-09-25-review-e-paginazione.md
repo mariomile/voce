@@ -16,6 +16,14 @@
 
 Typecheck e lint senza errori, 190 test (137 unit e 53 RLS; il test dei 1.050 feedback ora controlla le 11 pagine, l'ultima pagina, il filtro per canale e la pagina fuori intervallo), build riuscita. Nel browser: workspace da 250 feedback, 3 pagine da 100, filtro "Supporto" con 2 pagine e 25 righe nella seconda.
 
+## Priorità medie corrette (secondo passo)
+
+- **M1, header di sicurezza.** `headers()` in `next.config.ts` su tutte le pagine: `Content-Security-Policy: frame-ancestors 'none'`, `X-Frame-Options: DENY` (per i browser vecchi), `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`. Nessuna pagina va incorniciata: Stripe apre il checkout con un redirect, non in un iframe. La CSP completa resta da fare, provandola con PostHog e Stripe.
+- **M2, indice per la pulizia.** Nuova migrazione `20260925200000_form_attempts_cleanup_index.sql` con un indice su `private.form_attempts (created_at)`. Scelto l'indice e non `pg_cron`: una riga, nessun job da mantenere, la pulizia resta dove già funziona.
+- **M3** resta com'è: il lock è ciò che rende affidabile il limite Free.
+
+Verifica: `supabase db reset` da zero riuscito; con 50.000 tentativi nell'ultima ora la cancellazione usa `form_attempts_created_at_idx` (0,03 ms), senza l'indice leggeva tutto `form_attempts_workspace_idx` (0,25 ms, in crescita con la tabella). Typecheck e lint senza errori, 190 test passati, build riuscita. Con `pnpm start` i quattro header arrivano su `/login` (200), su un link del modulo inesistente (404) e su `/feedback` (redirect 307).
+
 ## Cosa resta
 
-- Le priorità medie di `docs/review.md`: header di sicurezza (M1) e indice per la pulizia dei tentativi del modulo (M2).
+- Le priorità basse di `docs/review.md` e la CSP completa.

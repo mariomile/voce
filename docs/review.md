@@ -12,13 +12,13 @@ Data: 2026-09-25, commit di partenza `9153b61`. Due revisori indipendenti (sicur
 
 ## Priorità media
 
-### M1. Nessun header di sicurezza: l'app si può aprire in un iframe (sicurezza)
+### M1. Nessun header di sicurezza: l'app si può aprire in un iframe (sicurezza): corretta
 
 - **Dove:** `next.config.ts` (nessun `headers()`), nessun `vercel.json`.
 - **Scenario:** mancano `frame-ancestors`/`X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy` e una CSP. Un sito esterno carica `/collect` in un iframe trasparente e fa cliccare al PM "genera un nuovo link" (i QR già stampati smettono di funzionare), spegne il modulo o avvia un'analisi che consuma la quota del mese.
 - **Correzione:** `headers()` in `next.config.ts` con `Content-Security-Policy: frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`. Una CSP completa dopo, provandola con PostHog e Stripe.
 
-### M2. La pulizia dei tentativi del modulo pubblico scorre tutta la tabella a ogni invio (performance)
+### M2. La pulizia dei tentativi del modulo pubblico scorre tutta la tabella a ogni invio (performance): corretta
 
 - **Dove:** `supabase/migrations/20260924231853_collect_feedback.sql:50`, indici alle righe 15-16.
 - **Problema:** a ogni invio dal modulo pubblico la funzione cancella i tentativi più vecchi di un'ora da `private.form_attempts`. Non c'è un indice che inizi da `created_at`, quindi la cancellazione legge la tabella intera, condivisa da tutti i workspace, dentro il percorso critico della sala piena. Oggi la tabella è quasi vuota; il costo cresce con il traffico di tutto il sistema.
