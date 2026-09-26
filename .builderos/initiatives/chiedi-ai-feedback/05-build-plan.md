@@ -109,7 +109,7 @@ Ogni slice va da capo a piedi: pagina o action, logica, database, evento dove es
 | S6 | **Quota a vista.** Nota "Userai 1 delle…" e "Ti restano…", avviso E3 o E4 all'apertura e dopo la decima (o centesima) risposta con la risposta ancora visibile, `questionsPerMonth` in `PLAN_LIMITS`, righe dei piani in `/billing` e landing, riga in `docs/prima-dei-clienti-reali.md` | 34, 35, 39 | S3, S4 | piccola: 3 pagine toccate, 1 blocco E2E | done, E2E non eseguito |
 | S7 | **Nessun feedback su cui rispondere.** Stato vuoto testo A (0 feedback) e testo B (solo feedback oltre 90 giorni) con "Aggiungi feedback" verso `/collect`, senza casella | 33 | S1 | piccola: 1 pagina, 1 blocco E2E | done, E2E non eseguito |
 | S8 | **Attesa, testo sicuro e kit.** "Risposta in arrivo…", casella `readOnly` col focus, messaggio dei 15 secondi, un solo invio per due pressioni; `no_evidence` senza numero né testo; singolare "feedback ne parla"; risposta come testo semplice; variante `ask` di `Textarea` e `<cite>` in `ink-muted` in tutta l'app, con `DESIGN.md` della radice e `design/kit.*` aggiornati | 19, 20, 21, 36 | S1 | media: 2 componenti del kit, 2 componenti di Chiedi, test di render, 1 blocco E2E | done, E2E e verifica a mano non eseguiti |
-| S9 | **Chiusura.** Tutti i comandi di AC 40 da zero con output incollato, controllo del diff contro i 18 fuori scope, strumentazione verificata, revisione indipendente (`build-reviewer`), nota finale, `TECH.md` e roadmap | 40 | S2, S3, S4, S5, S6, S7, S8 | piccola nel codice, verifica completa | todo |
+| S9 | **Chiusura.** Tutti i comandi di AC 40 da zero con output incollato, controllo del diff contro i 18 fuori scope, strumentazione verificata, revisione indipendente (`build-reviewer`), nota finale, `TECH.md` e roadmap | 40 | S2, S3, S4, S5, S6, S7, S8 | piccola nel codice, verifica completa | done, senza E2E, evals e revisione indipendente (al parent) |
 
 **Perché S1 è la prima.** È la più rischiosa tra quelle piccole: mette insieme per la prima volta la migrazione nuova, il prompt nuovo, la action che riserva e chiude nel database, la risposta a schermo e l'evento. Se il modello di dati o il formato dell'output è sbagliato, si vede qui e non dopo tre slice. Il rischio più alto in assoluto, la qualità del modello sulle domande avversarie, arriva subito dopo con S2, che è la prima slice da fare dopo S1.
 
@@ -182,7 +182,7 @@ Nessun test di componente esiste oggi; `ask-answer.test.tsx` è il primo e usa s
 | 37 | Per ogni motivo (E1, E2, E3/E4, E5, E6, E7, E8, E9) il testo esatto di DESIGN.md, domanda e focus nella casella | E2E `ask.spec.ts`: un test per motivo; E6 dal finto gateway con output fuori schema, E7 con `page.route` che interrompe la action, E8 con cookie cancellati, E5, E3 ed E9 con righe create o tolte dalla chiave segreta dopo l'apertura | S4 | testi: pass (ask-copy.test.ts); pagina: E2E scritto, non eseguito (porta 3000 occupata) |
 | 38 | E2E da tastiera dalla scheda "Chiedi": registrazione, feedback, domanda con Invio, risposta con citazione e numero, focus nella casella, seconda domanda che sostituisce la prima | E2E `ask.spec.ts`: "ask a question from the keyboard and read the answer" (finto gateway esteso: risponde alle domande citando i feedback) | S1 | E2E scritto, non eseguito (porta 3000 occupata) |
 | 39 | `docs/prima-dei-clienti-reali.md` ha la riga sul testo delle domande nel Gateway; `/billing` e landing mostrano "10 domande ai feedback al mese" e "100 domande ai feedback al mese" da `PLAN_LIMITS` | `src/test/docs.test.ts`: "prima-dei-clienti-reali lists the question text"; E2E `ask.spec.ts`: "billing and landing show the question quota" | S6 | pass (docs.test.ts, plan-pages.test.tsx); E2E scritto, non eseguito |
-| 40 | Entro il 2026-09-30, con output: typecheck, lint, test, build, `supabase db reset`, `supabase test db`, `pnpm evals` (entrambi i file), `pnpm test:e2e` | Esecuzione finale in S9, output incollato in "Test output" | S9 | planned |
+| 40 | Entro il 2026-09-30, con output: typecheck, lint, test, build, `supabase db reset`, `supabase test db`, `pnpm evals` (entrambi i file), `pnpm test:e2e` | Esecuzione finale in S9, output incollato in "Test output" | S9 | parziale: typecheck, lint, test, build, db reset, test db pass; evals rimandate per decisione di Mario; test:e2e non eseguito (porta 3000 occupata) |
 
 **Criteri senza test pianificato: nessuno.** Tre criteri hanno una parte che non è un'asserzione su comportamento e che ho coperto così, dichiarandolo:
 
@@ -210,7 +210,45 @@ Fuori scope che una slice potrebbe tirare dentro "già che c'è", da controllare
 
 ## Test output
 
-Da incollare in S9, dopo l'ultima modifica.
+S9, 2026-09-27, dopo l'ultimo cambio di codice (`41af370`), da zero:
+
+```
+$ supabase db reset
+Applying migration 20260927120000_questions.sql...
+Finished supabase db reset on branch main.
+
+$ supabase test db
+.../supabase/tests/feedback_delete_policy.test.sql .. ok
+.../supabase/tests/questions.test.sql ............... ok
+All tests successful.
+Files=2, Tests=52,  1 wallclock secs
+Result: PASS
+
+$ pnpm typecheck
+✓ Types generated successfully
+typecheck exit=0
+
+$ pnpm lint
+> eslint
+(nessun problema)
+
+$ pnpm test
+ Test Files  22 passed (22)
+      Tests  267 passed (267)
+   Duration  3.22s
+
+$ pnpm build
+✓ Compiled successfully in 1721ms
+├ ƒ /ask
+
+$ pnpm test:e2e
+non eseguito: porta 3000 occupata (node 27760, worktree voce-prova-live), non fermato perché non è di questa sessione
+
+$ pnpm evals
+non eseguito: rimandato per decisione di Mario (2026-09-27)
+```
+
+Rispetto alla baseline: `pnpm test` da 202 a 267 test (13 a 22 file), nessun fallimento; pgTAP da 2 a 52.
 
 ## Instrumentation
 
@@ -226,9 +264,38 @@ Da incollare in S2 e di nuovo in S9 se istruzioni, schema o modello cambiano dop
 
 ## Scope check
 
-Da riempire in S9 con le 18 voci di `04-spec.md`.
+Diff `6a02ab8..HEAD` letto contro le 18 voci fuori scope di `04-spec.md` (grep sui segnali della tabella "Controllo dello scope da preparare", più lettura dei file di Chiedi).
+
+| Out-of-scope item (phase 4) | Built? | Note |
+|---|---|---|
+| Conversazione con memoria della domanda precedente | no | il prompt si costruisce solo da domanda e feedback (AC 22) |
+| Cronologia o link per riaprire una risposta | no | nessuna rotta `/ask/[id]`, nessuna lettura di `questions` o `question_runs` dal client dell'utente |
+| Feedback oltre 90 giorni o oltre i 500 | no | stessa finestra dell'analisi |
+| Ricerca semantica, embeddings | no | |
+| Filtri come controlli dell'interfaccia | no | |
+| Streaming | no | nessun `streamText`, `streamObject`, `useChat` |
+| Prompt personalizzabili | no | istruzioni costanti in `src/lib/questions.ts` |
+| Il modello che scrive il conteggio | no | schema con `answer`, `feedback`, `quotes`; il numero è `feedbackIds.length` del server |
+| Testo in PostHog | no | proprietà solo `citation_count` e `outcome` (AC 28, mutazione Ma) |
+| Voto sulla risposta | no | nessun evento o colonna oltre `question_answered` |
+| Copia, esportazione, condivisione | no | nessun `clipboard` |
+| Nomi dei clienti nelle citazioni | no | la query di Chiedi non legge `customer`; citazioni con canale e data |
+| Ingresso da Temi, quota nella barra dell'app | no | `app-bar.tsx` non toccato; `/ask` solo dalla scheda |
+| Tema dalla risposta, legame con i temi | no | `analysis.ts` e `themes/` non toccati, nessun import di `questions.ts` lì |
+| Domande extra a pagamento o altre quote | no | solo Free 10, Pro 100 |
+| Freno agli account Free in serie (B6) | no | |
+| Risposta in altre lingue | no | le istruzioni chiedono sempre l'italiano |
+| Layout per telefono | no | |
+
+**Nulla di fuori scope costruito.** Due tocchi fuori dai file di Chiedi, entrambi chiesti dalla spec: il colore di `<cite>` in `Quote` (tutta l'app, voce 13 in scope) e `getUsage` in `src/lib/data.ts` che chiama `question_usage` (Data model). La rimozione in un commit resta possibile ma tocca anche `data.ts`, `plans.ts`, le due pagine dei piani e `analytics.ts`, oltre ai file elencati in "Rimozione".
 
 ## Deviations from spec
+
+- **S2 ed evals (AC 23, 24, e `pnpm evals` di AC 40)**: rimandate per decisione di Mario (2026-09-27), "lascia stare le evals". Nessun `evals/questions.eval.ts`.
+- **Proxy**: su `/ask` le richieste della server action senza sessione non vengono mandate a `/login`, altrimenti E8 non potrebbe comparire (la action risponde `session` da sé). Non scritto nella spec, necessario per AC 37 (E8).
+- **`src/components/ask-copy.ts`**: un file in più oltre a `AskForm` e `AskAnswer`, con i testi che dipendono da numeri e motivi, testato da solo perché l'E2E qui non gira.
+- **`feedbackInWindow`** restituito dalla action: serve al perimetro parziale oltre 500 senza un'altra lettura.
+- **E6 al singolare** con 1 domanda rimasta ("ti resta 1 domanda di {mese}"): il design dà solo il plurale e il caso 0.
 
 - Il piano del repository si chiama `docs/plans/2026-09-27-chiedi-ai-feedback.md` e non `docs/plans/2026-09-27-chiedi.md` come scritto in `04-spec.md` (in scope, voce 14): il nome l'ha dato il dispatch di questa fase `[doc:user-2026-09-27-spec-dispatch]`. Nessun criterio dipende dal nome.
 
@@ -367,3 +434,7 @@ Verde:  pnpm typecheck exit 0 · pnpm lint exit 0 · pnpm test  Test Files 22 pa
         pnpm build ✓ Compiled successfully · pnpm test:e2e non eseguito (porta 3000 occupata)
 Verifica a mano nel browser: non fatta. Host dell'anteprima T3 assente, Playwright MCP bloccato dall'hook t3-browser-guard.sh.
 ```
+
+### S9, chiusura (2026-09-27)
+
+Nota: `docs/notes/2026-09-27-chiedi-s9-chiusura.md`. Output in "Test output", scope in "Scope check". Non eseguiti qui: `build-reviewer` e gate 5 (li esegue il parent), E2E (porta 3000), evals (decisione di Mario), verifica a mano nel browser (host T3 assente, Playwright bloccato dall'hook).
