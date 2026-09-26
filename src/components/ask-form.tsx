@@ -39,7 +39,10 @@ export function AskForm({
   const [question, setQuestion] = useState("")
   const [answer, setAnswer] = useState<Extract<AskResult, { ok: true }> | null>(null)
   const [failure, setFailure] = useState<Failure | null>(null)
-  const [usage, setUsage] = useState(initialUsage)
+  // Null only right after the quota could not be read following an answered question: the quota
+  // note is then left out rather than showing a stale number.
+  const [usage, setUsage] = useState<AskUsage | null>(initialUsage)
+  const [currentPlan, setCurrentPlan] = useState(plan)
   const [pending, startTransition] = useTransition()
   const [slow, setSlow] = useState(false)
   // Set at once on submit: two Enters in a row make one call, before React re-renders.
@@ -63,8 +66,8 @@ export function AskForm({
   const length = question.replace(/\s*[\r\n]+\s*/g, " ").trim().length
   const tooLong = length > MAX_LENGTH
   const invalid = failure === "invalid" ? (tooLong ? "tooLong" : "empty") : tooLong ? "tooLong" : null
-  const limitReached = failure === "limit" || usage.used >= usage.quota
-  const notice = limitReached ? limitNotice(plan, usage.quota, month, nextMonth) : null
+  const limitReached = failure === "limit" || (usage !== null && usage.used >= usage.quota)
+  const notice = limitReached && usage ? limitNotice(currentPlan, usage.quota, month, nextMonth) : null
 
   function submit() {
     if (sending.current || pending || limitReached) return
@@ -85,6 +88,12 @@ export function AskForm({
         } else {
           setFailure(result.reason)
           if (result.reason === "failed") setUsage(result.usage)
+          // The plan or the quota can have changed since the page loaded (upgrade from another
+          // tab, month rollover): the notice must use what the server saw, not the page's props.
+          if (result.reason === "limit") {
+            setUsage(result.usage)
+            setCurrentPlan(result.plan)
+          }
         }
       } catch {
         setFailure("network")
@@ -170,10 +179,10 @@ export function AskForm({
                 )}
               </span>
             ) : (
-              <FailureNote failure={failure} usage={usage} month={month} />
+              <FailureNote failure={failure} usage={usage} month={month} notice={notice} />
             )}
           </p>
-          {!pending && !limitReached && (!failure || failure === "invalid") && (
+          {!pending && !limitReached && (!failure || failure === "invalid") && usage && (
             <p className="text-sm text-ink-muted">{quotaNote(usage, month)}</p>
           )}
         </div>
@@ -183,12 +192,30 @@ export function AskForm({
   )
 }
 
-function FailureNote({ failure, usage, month }: { failure: Failure | null; usage: AskUsage; month: string }) {
+function FailureNote({
+  failure,
+  usage,
+  month,
+  notice,
+}: {
+  failure: Failure | null
+  usage: AskUsage | null
+  month: string
+  notice: { title: string; text: string } | null
+}) {
   switch (failure) {
+    case "limit":
+      // The E3/E4 notice already shows above the field: read it here too, so a screen reader
+      // hears that the quota ran out instead of the status region staying silent.
+      return notice ? (
+        <span className="text-problem">
+          {notice.title}. {notice.text}
+        </span>
+      ) : null
     case "busy":
       return <span className="text-problem">{ASK_ERRORS.busy}</span>
     case "failed":
-      return <span className="text-problem">{failedMessage(usage, month)}</span>
+      return usage ? <span className="text-problem">{failedMessage(usage, month)}</span> : null
     case "network":
       return <span className="text-problem">{ASK_ERRORS.network}</span>
     case "session":

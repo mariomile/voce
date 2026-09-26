@@ -11,11 +11,12 @@ import {
   type AnalysisFeedback,
 } from "@/lib/analysis"
 import { trackEvent } from "@/lib/analytics"
-import { getCurrentWorkspace } from "@/lib/data"
+import { getCurrentWorkspace, getUsage } from "@/lib/data"
 import { isoDateOf } from "@/lib/format"
 import { QUESTION_INSTRUCTIONS, QUESTION_MAX_LENGTH, normalizeQuestion, questionPrompt, runQuestion } from "@/lib/questions"
 import { failQuestion, finishQuestion, questionUsage, startQuestion } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
+import type { Plan } from "@/lib/types"
 
 // Only the question: the workspace always comes from the session.
 const askSchema = z.strictObject({ question: z.string() })
@@ -34,10 +35,20 @@ export type AskResult =
       feedbackConsidered: number
       feedbackInWindow: number
       quotes: AskQuote[]
-      usage: AskUsage
+      // Null only if the quota could not be read after the question was already answered: the
+      // answer is still shown, the quota note on screen is simply left as it was.
+      usage: AskUsage | null
     }
-  | { ok: true; outcome: "no_evidence"; question: string; feedbackConsidered: number; feedbackInWindow: number; usage: AskUsage }
-  | { ok: false; reason: "invalid" | "session" | "no_feedback" | "limit" | "busy" }
+  | {
+      ok: true
+      outcome: "no_evidence"
+      question: string
+      feedbackConsidered: number
+      feedbackInWindow: number
+      usage: AskUsage | null
+    }
+  | { ok: false; reason: "invalid" | "session" | "no_feedback" | "busy" }
+  | { ok: false; reason: "limit"; usage: AskUsage; plan: Plan }
   | { ok: false; reason: "failed"; usage: AskUsage }
 
 // One question, one answer. The feedback are read as the signed-in user, so RLS limits them to their
@@ -87,6 +98,12 @@ export async function ask(input: z.input<typeof askSchema>): Promise<AskResult> 
       feedback_ids: feedback.map((f) => f.id),
     },
   })
+  if (start.outcome === "limit") {
+    // Read fresh: the plan or the quota can have changed since the page was rendered (upgrade
+    // from another tab, month rollover), and the notice on screen must match what the server saw.
+    const fresh = await getUsage(workspace.id)
+    return { ok: false, reason: "limit", usage: { used: fresh.questionsThisMonth, quota: fresh.questionsLimit }, plan: fresh.plan }
+  }
   if (start.outcome !== "ok") return { ok: false, reason: start.outcome }
 
   const started = performance.now()
@@ -102,7 +119,9 @@ export async function ask(input: z.input<typeof askSchema>): Promise<AskResult> 
     })
     const outcome = kept.length > 0 ? "answered" : "no_evidence"
     trackEvent(workspace.id, { event: "question_answered", properties: { citation_count: kept.length, outcome } })
-    const usage = await questionUsage(workspace.id)
+    // The question is already closed at this point: a failure reading the quota must not turn an
+    // answered question into "the answer did not arrive". The quota note is simply left out.
+    const usage = await questionUsage(workspace.id).catch(() => null)
     if (outcome === "no_evidence")
       return { ok: true, outcome, question, feedbackConsidered: feedback.length, feedbackInWindow, usage }
     return {

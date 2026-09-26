@@ -32,7 +32,9 @@ export async function proxy(request: NextRequest) {
   const inApp = APP_PATHS.some((p) => path === p || path.startsWith(`${p}/`))
 
   // The question action answers "session" itself, so the page can say so and keep the question.
-  const askAction = path === "/ask" && request.headers.has("next-action")
+  // Only a POST is ever a server action call: a GET carrying the same header is a page load, and a
+  // forged header must not skip the redirect and reach the page's own queries without a session.
+  const askAction = path === "/ask" && request.method === "POST" && request.headers.has("next-action")
   if (inApp && !signedIn && !askAction) return redirectKeepingSession(request, response, "/login")
   if (AUTH_PATHS.includes(path) && signedIn) return redirectKeepingSession(request, response, "/themes")
   return response

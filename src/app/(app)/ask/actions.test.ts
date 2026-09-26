@@ -17,9 +17,14 @@ vi.mock("@/lib/analysis", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/analysis")>()),
   analysisLanguageModel: () => ai.model,
 }))
+vi.mock("@/lib/supabase/admin", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/supabase/admin")>()
+  return { ...actual, questionUsage: vi.fn(actual.questionUsage) }
+})
 
 const { ask } = await import("./actions")
 const { getUsage } = await import("@/lib/data")
+const { questionUsage } = await import("@/lib/supabase/admin")
 
 let user: TestUser
 
@@ -193,6 +198,30 @@ describe("ask", () => {
     expect(question).toMatchObject({ status: "done", outcome: "no_evidence", feedback_count: 1, citation_count: 0 })
   })
 
+  it("shows the answer even if the quota cannot be read after the question is closed", async () => {
+    await addFeedback()
+    reply(bank)
+    vi.mocked(questionUsage).mockRejectedValueOnce(new Error("db blip"))
+    const result = await ask({ question: "Cosa dicono della banca?" })
+    expect(result).toEqual({
+      ok: true,
+      outcome: "answered",
+      question: "Cosa dicono della banca?",
+      answer: bank.answer,
+      feedbackCount: 2,
+      feedbackConsidered: 3,
+      feedbackInWindow: 3,
+      quotes: [
+        { text: TEXTS[0], highlight: "si scollega ogni lunedì", channel: "Supporto", receivedAt: daysAgo(0) },
+        { text: TEXTS[1], highlight: "ricollegare la banca ogni settimana", channel: "Supporto", receivedAt: daysAgo(1) },
+      ],
+      usage: null,
+    })
+    // The question is still closed as answered: only the quota read afterward failed.
+    const [question] = await questions()
+    expect(question).toMatchObject({ status: "done", outcome: "answered" })
+  })
+
   it("asks for question_answered once, for answered and for no_evidence, with counts only", async () => {
     await addFeedback()
     reply(bank)
@@ -213,11 +242,32 @@ describe("ask", () => {
 })
 
 describe("ask: guards before the model", () => {
-  it("returns limit without calling the model", async () => {
+  it("returns limit with the quota and plan read fresh from the server", async () => {
     await addFeedback()
     await insertQuestions(10, "done")
     const model = reply(bank)
-    expect(await ask({ question: "La banca?" })).toEqual({ ok: false, reason: "limit" })
+    expect(await ask({ question: "La banca?" })).toEqual({
+      ok: false,
+      reason: "limit",
+      usage: { used: 10, quota: 10 },
+      plan: "free",
+    })
+    expect(model.doGenerateCalls).toHaveLength(0)
+  })
+
+  it("returns the Pro quota and plan when the plan changed after the page was opened", async () => {
+    // The page can be open on Free while another tab (or Mario) upgrades the workspace: the reason
+    // must reflect the plan at the moment of the request, not the one read when the page loaded.
+    await addFeedback()
+    await admin.from("subscriptions").update({ plan: "pro" }).eq("workspace_id", user.workspaceId)
+    await insertQuestions(100, "done")
+    const model = reply(bank)
+    expect(await ask({ question: "La banca?" })).toEqual({
+      ok: false,
+      reason: "limit",
+      usage: { used: 100, quota: 100 },
+      plan: "pro",
+    })
     expect(model.doGenerateCalls).toHaveLength(0)
   })
 

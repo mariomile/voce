@@ -6,8 +6,15 @@ import { createServer } from "node:http"
 // (a prompt with <question_data>) by linking and quoting the first feedback, so the output passes
 // the checks in src/lib/questions.ts. A question with FUORI_SCHEMA gets text that is not JSON, and one
 // with LENTA gets its answer after 20 seconds. No real model is ever called.
+// GET /calls?marker=X counts how many prompts received so far contain X: how a test proves the
+// model was called once for a given question, even across submits that raced on the client.
 
 const PORT = Number(process.env.FAKE_GATEWAY_PORT ?? 4010)
+
+// Counts calls to the fake model, so a test can prove the client sent exactly one prompt for a
+// given question even when two submits raced: GET /calls?marker=X returns how many prompts this
+// gateway received that contain the string X.
+const prompts: string[] = []
 
 type PromptPart = { type: string; text?: string }
 type Feedback = { n: number; text: string }
@@ -56,11 +63,18 @@ createServer((req, res) => {
       res.writeHead(200).end("ok")
       return
     }
+    if (req.method === "GET" && req.url?.startsWith("/calls")) {
+      const marker = new URL(req.url, "http://localhost").searchParams.get("marker") ?? ""
+      const count = prompts.filter((p) => p.includes(marker)).length
+      res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify({ count }))
+      return
+    }
     if (req.method !== "POST" || !req.url?.endsWith("/language-model")) {
       res.writeHead(404).end()
       return
     }
     const text = userText(JSON.parse(body).prompt)
+    prompts.push(text)
     const question = text.match(/<question_data>([\s\S]*)<\/question_data>/)?.[1] ?? ""
     const output = question.includes("FUORI_SCHEMA")
       ? "Ecco la risposta, senza JSON."

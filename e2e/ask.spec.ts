@@ -4,6 +4,10 @@ import { admin, confirmationLink, insertFeedback, signedInUser } from "./helpers
 // "Chiedi ai tuoi feedback" in the browser. The fake gateway (e2e/fake-gateway.mts) answers every
 // question by citing the first feedback it received: no real model is ever called.
 
+// Same default and same env var as e2e/fake-gateway.mts and playwright.config.ts, so a run on a
+// different port (FAKE_GATEWAY_PORT set before invoking Playwright) still reaches GET /calls.
+const FAKE_GATEWAY_PORT = Number(process.env.FAKE_GATEWAY_PORT ?? 4010)
+
 test("ask a question from the keyboard and read the answer", async ({ page }) => {
   const email = `e2e-ask-${crypto.randomUUID().slice(0, 8)}@test.voce`
   await page.goto("/signup")
@@ -66,9 +70,24 @@ test("/ask without a session goes to /login", async ({ page }) => {
   await expect(page).toHaveURL(/\/login$/)
 })
 
+test("GET /ask with a forged next-action header still redirects to /login", async ({ request }) => {
+  // The proxy skips its own redirect on /ask when a server action is calling in without a session,
+  // so the action can answer "session" itself (E8) instead of a bare redirect. That exception must
+  // only apply to the POST a server action actually uses: a GET carrying the same header is a page
+  // load, and must still be sent to /login rather than rendering the page and failing on RLS.
+  const response = await request.get("/ask", { headers: { "next-action": "forged" }, maxRedirects: 0 })
+  expect(response.status()).toBe(307)
+  expect(response.headers()["location"]).toMatch(/\/login$/)
+})
+
 // ===== One message per reason (AC 37): exact text, the question stays, the focus stays =====
 
 const month = new Intl.DateTimeFormat("it-IT", { month: "long", timeZone: "Europe/Rome" }).format(new Date())
+// The month after the current one, on the Italian calendar: when the quota comes back.
+const nextMonth = () =>
+  new Intl.DateTimeFormat("it-IT", { month: "long", timeZone: "Europe/Rome" }).format(
+    new Date(new Date().getFullYear(), new Date().getMonth() + 1, 15)
+  )
 
 async function openAsk(page: import("@playwright/test").Page, label: string) {
   const user = await signedInUser(page, label)
@@ -122,6 +141,10 @@ test("E3: Free quota used up from another tab", async ({ page }) => {
   await page.keyboard.press("Enter")
   await expect(page.getByRole("heading", { name: `Hai usato le 10 domande di ${month}` })).toBeVisible()
   await expect(page.getByRole("link", { name: "Passa a Pro" })).toHaveAttribute("href", "/billing")
+  // Accessibility: the status region announces the same notice a sighted user sees above the field.
+  await expect(status(page)).toHaveText(
+    `Hai usato le 10 domande di ${month}. Con Pro diventano 100 al mese. Altrimenti tornano disponibili il 1 ${nextMonth()}.`
+  )
   await expect(field).toHaveValue("Cosa chiedono del PDF?")
   await expect(field).toBeFocused()
 })
@@ -134,6 +157,8 @@ test("E4: Pro quota used up from another tab", async ({ page }) => {
   await page.keyboard.press("Enter")
   await expect(page.getByRole("heading", { name: `Hai usato le 100 domande di ${month}` })).toBeVisible()
   await expect(page.getByRole("link", { name: "Passa a Pro" })).toHaveCount(0)
+  // Accessibility: the plan is read fresh from the server (this workspace was Free at page load).
+  await expect(status(page)).toHaveText(`Hai usato le 100 domande di ${month}. Tornano disponibili il 1 ${nextMonth()}.`)
   await expect(field).toHaveValue("Cosa chiedono del PDF?")
   await expect(field).toBeFocused()
 })
@@ -291,16 +316,18 @@ test("waiting state and the 15-second message", async ({ page }) => {
   await expect(page.getByRole("region", { name: "Risposta a «LENTA sul PDF?»" })).toBeVisible({ timeout: 30_000 })
 })
 
-test("two quick submits make one ask call", async ({ page }) => {
+test("two quick submits make one model call", async ({ page, request }) => {
   const { field } = await openAsk(page, "double")
-  let calls = 0
-  page.on("request", (request) => {
-    if (request.method() === "POST" && request.headers()["next-action"]) calls++
-  })
-  await field.fill("Cosa chiedono del PDF?")
+  // A marker unique to this test run, so GET /calls only counts prompts this test sent: with the
+  // LENTA marker the fake gateway holds its answer for 20 real seconds, so both submits below land
+  // while the first question is still in flight (a fast reply would make the second submit, once
+  // the button is enabled again, a legitimate second question rather than a doubled one).
+  const marker = `LENTA-DOPPIO-${crypto.randomUUID().slice(0, 8)}`
+  const question = `${marker} sul PDF?`
+  await field.fill(question)
   await page.keyboard.press("Enter")
   await page.keyboard.press("Enter")
-  await page.getByRole("button", { name: /Risposta in arrivo|Chiedi a 1 feedback/ }).click()
-  await expect(page.getByRole("region", { name: "Risposta a «Cosa chiedono del PDF?»" })).toBeVisible()
-  expect(calls).toBe(1)
+  await expect(page.getByRole("region", { name: `Risposta a «${question}»` })).toBeVisible({ timeout: 30_000 })
+  const calls = await request.get(`http://127.0.0.1:${FAKE_GATEWAY_PORT}/calls?marker=${marker}`)
+  expect((await calls.json()).count).toBe(1)
 })
