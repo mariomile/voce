@@ -156,7 +156,10 @@ export async function getDashboard(
   ]);
   const analysisRow = unwrap(latest);
   const analysis = analysisRow ? toAnalysis(analysisRow) : null;
-  const allThemes = analysis ? await summarizeAnalysis(workspaceId, analysis) : [];
+  // A theme whose feedback were all deleted has nothing left to show.
+  const allThemes = analysis
+    ? (await summarizeAnalysis(workspaceId, analysis)).filter((t) => t.feedbackCount > 0)
+    : [];
 
   const status = filters.status ?? "open";
   const byStatus = allThemes.filter((t) =>

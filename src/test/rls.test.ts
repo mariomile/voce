@@ -130,10 +130,15 @@ describe("a user cannot change another workspace", () => {
   })
 
   it("cannot delete B's feedback", async () => {
-    const { error } = await a.client.from("feedback").delete().eq("id", bIds.feedback)
-    expect(error?.code).toBe("42501")
+    const { data, error } = await a.client.from("feedback").delete().eq("id", bIds.feedback).select("id")
+    expect(error).toBeNull()
+    expect(data).toEqual([])
+    const all = await a.client.from("feedback").delete().eq("workspace_id", b.workspaceId).select("id")
+    expect(all.data).toEqual([])
     const { count } = await admin.from("feedback").select("id", { count: "exact", head: true }).eq("id", bIds.feedback)
     expect(count).toBe(1)
+    const links = await admin.from("theme_feedback").select("feedback_id").eq("feedback_id", bIds.feedback)
+    expect(links.data).toHaveLength(1)
   })
 
   it("cannot import feedback into B's workspace, not even as a dry run", async () => {
@@ -242,6 +247,19 @@ describe("in their own workspace", () => {
       .eq("id", aIds.theme)
       .select("priority, status")
     expect(data).toEqual([{ priority: "high", status: "roadmap" }])
+  })
+
+  it("can delete their feedback, and its theme links go with it", async () => {
+    const { data: feedback } = await admin
+      .from("feedback")
+      .insert({ workspace_id: a.workspaceId, text: "Da eliminare", channel: "Supporto" })
+      .select("id")
+      .single()
+    await admin.from("theme_feedback").insert({ workspace_id: a.workspaceId, theme_id: aIds.theme, feedback_id: feedback!.id })
+    const { data } = await a.client.from("feedback").delete().eq("id", feedback!.id).select("id")
+    expect(data).toEqual([{ id: feedback!.id }])
+    const links = await admin.from("theme_feedback").select("feedback_id").eq("feedback_id", feedback!.id)
+    expect(links.data).toEqual([])
   })
 
   it("cannot add a feedback longer than 2,000 characters, even through the API", async () => {
