@@ -1,24 +1,8 @@
 import { expect, test } from "@playwright/test"
+import { confirmationLink } from "./helpers"
 
 // The main flow of a new PM: sign up, confirm the email, add feedback, run the first analysis.
 // The confirmation email is read from Mailpit, the local Supabase inbox.
-
-const MAILPIT = "http://127.0.0.1:54324"
-
-async function confirmationLink(email: string) {
-  for (let attempt = 0; attempt < 20; attempt++) {
-    const search = await fetch(`${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:"${email}"`)}`)
-    const { messages } = (await search.json()) as { messages: { ID: string }[] }
-    if (messages.length > 0) {
-      const message = await fetch(`${MAILPIT}/api/v1/message/${messages[0].ID}`)
-      const { HTML } = (await message.json()) as { HTML: string }
-      const href = HTML.match(/href="([^"]*\/auth\/confirm[^"]*)"/)?.[1]
-      if (href) return href.replaceAll("&amp;", "&")
-    }
-    await new Promise((resolve) => setTimeout(resolve, 500))
-  }
-  throw new Error(`No confirmation email for ${email} in Mailpit`)
-}
 
 test("sign up, add feedback and get the first themes", async ({ page }) => {
   const email = `e2e-${crypto.randomUUID().slice(0, 8)}@test.voce`

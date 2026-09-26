@@ -2,18 +2,37 @@ import { createServer } from "node:http"
 
 // A fake Vercel AI Gateway for the end-to-end test: the app points AI_GATEWAY_BASE_URL here.
 // It answers every analysis with one theme that groups all the feedback it received, quoting the
-// first two, so the output passes the checks in src/lib/analysis.ts. No real model is ever called.
+// first two, so the output passes the checks in src/lib/analysis.ts. It answers every question
+// (a prompt with <question_data>) by linking and quoting the first feedback, so the output passes
+// the checks in src/lib/questions.ts. No real model is ever called.
 
 const PORT = Number(process.env.FAKE_GATEWAY_PORT ?? 4010)
 
 type PromptPart = { type: string; text?: string }
 type Feedback = { n: number; text: string }
 
-function themesFor(prompt: { role: string; content: PromptPart[] | string }[]) {
+type Message = { role: string; content: PromptPart[] | string }
+
+function userText(prompt: Message[]) {
   const user = prompt.find((m) => m.role === "user")
-  const text = Array.isArray(user?.content) ? user.content.map((p) => p.text ?? "").join("") : (user?.content ?? "")
-  const data = text.match(/<feedback_data>([\s\S]*)<\/feedback_data>/)?.[1] ?? "[]"
-  const feedback: Feedback[] = JSON.parse(data)
+  return Array.isArray(user?.content) ? user.content.map((p) => p.text ?? "").join("") : (user?.content ?? "")
+}
+
+function feedbackIn(text: string): Feedback[] {
+  return JSON.parse(text.match(/<feedback_data>([\s\S]*)<\/feedback_data>/)?.[1] ?? "[]")
+}
+
+function answerFor(text: string) {
+  const [first] = feedbackIn(text)
+  return {
+    answer: "I clienti chiedono di esportare i report in PDF.",
+    feedback: [first.n],
+    quotes: [{ feedback: first.n, text: first.text }],
+  }
+}
+
+function themesFor(text: string) {
+  const feedback = feedbackIn(text)
   return {
     themes: [
       {
@@ -40,7 +59,8 @@ createServer((req, res) => {
       res.writeHead(404).end()
       return
     }
-    const output = themesFor(JSON.parse(body).prompt)
+    const text = userText(JSON.parse(body).prompt)
+    const output = text.includes("<question_data>") ? answerFor(text) : themesFor(text)
     res.writeHead(200, { "content-type": "application/json" })
     res.end(
       JSON.stringify({

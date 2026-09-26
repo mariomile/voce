@@ -101,7 +101,7 @@ Ogni slice va da capo a piedi: pagina o action, logica, database, evento dove es
 
 | # | Slice | Acceptance criteria | Blocks on | Dimensione | Status |
 |---|-------|---------------------|-----------|------------|--------|
-| S1 | **Proiettile tracciante.** Un PM loggato apre la scheda "Chiedi", scrive una domanda, preme Invio e legge numero, testo e citazioni verificate; la seconda domanda sostituisce la prima. Dentro: migrazione `questions` e `question_runs` con RLS e le 4 funzioni complete, `src/lib/questions.ts` (prompt, schema, controlli, `runQuestion`), action `ask` sul percorso felice, pagina `/ask` con `AskForm` e `AskAnswer` essenziali, scheda e voce del proxy, `trackEvent` per `question_answered`, finto gateway esteso alle domande, scenario E2E da tastiera | 1, 13, 14, 18, 25, 27, 32, 38 | nessuno (P2 per l'E2E) | media: 1 migrazione, ~6 file nuovi, 4 toccati, 1 E2E | todo |
+| S1 | **Proiettile tracciante.** Un PM loggato apre la scheda "Chiedi", scrive una domanda, preme Invio e legge numero, testo e citazioni verificate; la seconda domanda sostituisce la prima. Dentro: migrazione `questions` e `question_runs` con RLS e le 4 funzioni complete, `src/lib/questions.ts` (prompt, schema, controlli, `runQuestion`), action `ask` sul percorso felice, pagina `/ask` con `AskForm` e `AskAnswer` essenziali, scheda e voce del proxy, `trackEvent` per `question_answered`, finto gateway esteso alle domande, scenario E2E da tastiera | 1, 13, 14, 18, 25, 27, 32, 38 | nessuno (P2 per l'E2E) | media: 1 migrazione, ~6 file nuovi, 4 toccati, 1 E2E | done, E2E non eseguito |
 | S2 | **Evals delle domande.** `evals/questions.eval.ts` su `evals/questions.json` con G1 a G5, soglia 85%, must-pass, risultato in `evals/results/`; primo run col modello vero e ritocchi alle istruzioni finché non passa | 23, 24 | S1; P1 | piccola nel codice, rischio alto sul modello | todo |
 | S3 | **Regole del database.** File pgTAP `supabase/tests/questions.test.sql`: niente letture né scritture per `authenticated` e `anon`, funzioni solo per `service_role`, quota Free 10 e Pro 100 su ogni stato, quota separata dalle analisi, `busy` e `stale` a 5 minuti, `finish_question` con `strpos` e feedback eliminati | 2, 3, 4, 5, 7, 8, 17 | S1 | media: 1 file pgTAP, eventuali correzioni alla migrazione | todo |
 | S4 | **Guardie e fallimenti, dal server alla pagina.** Motivi `invalid`, `session`, `no_feedback`, `limit`, `busy`, `failed` (errore, 60 s, output fuori schema) con 0 chiamate al modello dove previsto; controlli dell'output per ogni motivo di scarto; finestra 90 giorni e 500 feedback; niente testo nei log; `question_usage` e `getUsage` con `questionsThisMonth`; messaggi E1-E9 nella pagina con domanda e focus nella casella | 6, 7, 9, 10, 11, 12, 15, 16, 22, 26, 37 | S1 | media: test unitari su action e logica, 1 blocco E2E per i messaggi | todo |
@@ -143,7 +143,7 @@ Nessun test di componente esiste oggi; `ask-answer.test.tsx` è il primo e usa s
 
 | # | Criterion (sintesi) | Test | Slice | Result |
 |---|---------------------|------|-------|--------|
-| 1 | Migrazione crea `questions` e `question_runs` con RLS nello stesso file; `supabase db reset` da zero senza errori | pgTAP `questions.test.sql`: "RLS is enabled on questions and question_runs" (`relrowsecurity`); `src/test/docs.test.ts`: "the questions migration enables RLS in the same file"; output di `supabase db reset` incollato | S1, S3 | planned |
+| 1 | Migrazione crea `questions` e `question_runs` con RLS nello stesso file; `supabase db reset` da zero senza errori | pgTAP `questions.test.sql`: "RLS is enabled on questions and question_runs" (`relrowsecurity`); `src/test/docs.test.ts`: "the questions migration enables RLS in the same file"; output di `supabase db reset` incollato | S1, S3 | pass (docs.test.ts, pgTAP, db reset) |
 | 2 | Utente di A e `anon` ricevono permesso negato o 0 righe su `questions` e `question_runs` di B, senza filtri e per id | pgTAP `questions.test.sql`: "A cannot read B's questions or runs, unfiltered or by id", "anon cannot read questions or runs" | S3 | planned |
 | 3 | `authenticated` e `anon`: permesso negato su insert, update, delete delle due tabelle | pgTAP `questions.test.sql`: `throws_ok` su insert, update, delete per i due ruoli e le due tabelle | S3 | planned |
 | 4 | Le 4 funzioni solo per `service_role` | pgTAP `questions.test.sql`: "start/finish/fail_question and question_usage are denied to authenticated and anon" | S3 | planned |
@@ -155,32 +155,32 @@ Nessun test di componente esiste oggi; `ask-answer.test.tsx` è il primo e usa s
 | 10 | Vuota, spazi o oltre 300 caratteri dopo il trim: `invalid`, nessuna riga, 0 chiamate; a capo come spazi | `ask/actions.test.ts`: "empty, blank and 301-character questions are invalid, no row, no call"; `questions.test.ts`: "newlines reach the model as spaces" | S4 | planned |
 | 11 | 0 feedback negli ultimi 90 giorni: `no_feedback`, nessuna riga, 0 chiamate | `ask/actions.test.ts`: "needs feedback from the last 90 days, today included" | S4 | planned |
 | 12 | Senza sessione: `session`, nessuna riga, 0 chiamate | `ask/actions.test.ts`: "without a session returns session, no row, no call" | S4 | planned |
-| 13 | `analysisModel()`, `maxOutputTokens: 1500`, timeout 60.000 ms sulle opzioni del modello finto | `questions.test.ts`: "calls the model with the analysis model, 1500 output tokens and a 60 s timeout" (opzioni di `doGenerateCalls[0]`, `abortSignal` presente, costante a 60.000) | S1 | planned |
-| 14 | Istruzioni solo in `instructions`; domanda in `<question_data>`, feedback in `<feedback_data>`, JSON con `<` codificato; `</question_data>` nella domanda compare una volta sola nel prompt | `questions.test.ts`: "the question and the feedback travel only as data", "a question closing its block cannot leave it" | S1 | planned |
+| 13 | `analysisModel()`, `maxOutputTokens: 1500`, timeout 60.000 ms sulle opzioni del modello finto | `questions.test.ts`: "calls the model with the analysis model, 1500 output tokens and a 60 s timeout" (opzioni di `doGenerateCalls[0]`, `abortSignal` presente, costante a 60.000) | S1 | pass |
+| 14 | Istruzioni solo in `instructions`; domanda in `<question_data>`, feedback in `<feedback_data>`, JSON con `<` codificato; `</question_data>` nella domanda compare una volta sola nel prompt | `questions.test.ts`: "the question and the feedback travel only as data", "a question closing its block cannot leave it" | S1 | pass |
 | 15 | 90 giorni, massimo 500, dal più recente: con 501 il prompt ne ha 500 e non il più vecchio | `ask/actions.test.ts`: "sends at most the 500 most recent feedback of the last 90 days" | S4 | planned |
 | 16 | Controllo dell'output: scarto con motivo in `issues` per numero inesistente, feedback non in lista, testo vuoto o non esatto, seconda dello stesso feedback, oltre la quinta; un test per motivo | `questions.test.ts`: 5 test, "drops unknown_feedback", "drops quote_not_linked", "drops quote_not_in_feedback (empty and inexact)", "drops second_quote_same_feedback", "drops too_many_quotes after the fifth" | S4 | planned |
 | 17 | `finish_question` ricontrolla con `strpos`: citazione assente solleva `quote_not_in_feedback` e la domanda resta `running`; citazioni di feedback eliminati tolte, e senza citazioni esito `no_evidence` | pgTAP `questions.test.sql`: "finish_question raises quote_not_in_feedback and leaves the question running", "drops quotes of deleted feedback and saves no_evidence when none is left" | S3 | planned |
-| 18 | `feedback_count` = numeri distinti ed esistenti: `[1, 1, 2, 999]` su 3 feedback vale 2; nessun campo di conteggio nello schema | `questions.test.ts`: "counts distinct existing linked feedback", "the output schema has no count field"; `ask/actions.test.ts`: "saves feedback_count from the server count" | S1 | planned |
+| 18 | `feedback_count` = numeri distinti ed esistenti: `[1, 1, 2, 999]` su 3 feedback vale 2; nessun campo di conteggio nello schema | `questions.test.ts`: "counts distinct existing linked feedback", "the output schema has no count field"; `ask/actions.test.ts`: "saves feedback_count from the server count" | S1 | pass |
 | 19 | `answered` con almeno una citazione dopo `finish_question`, altrimenti `no_evidence`; con `no_evidence` la action non restituisce il testo e la pagina mostra solo "Non trovo feedback che ne parlano." | `ask/actions.test.ts`: "no verified quote is no_evidence and returns no model text"; `ask-answer.test.tsx`: "no_evidence shows the sentence without number, text or quotes" | S1, S8 | planned |
 | 20 | Pagina con `answered`: h2 "Risposta a «{domanda}»", numero con "feedback ne parlano" (1: "ne parla"), testo, 1-5 citazioni in ordine con canale e data e senza cliente, perimetro "Letti {n} feedback degli ultimi 90 giorni." | `ask-answer.test.tsx`: "shows heading, count, text, quotes with channel and date and the perimeter", "one feedback: feedback ne parla", "no customer name in quotes"; E2E `ask.spec.ts` (AC 38) sul caso reale | S8 | planned |
 | 21 | Risposta come testo: `<b>x</b>` e `**x**` visibili come caratteri; nessun `dangerouslySetInnerHTML` nei file di `/ask` | `ask-answer.test.tsx`: "model markup is shown as text"; `src/test/docs.test.ts`: "no dangerouslySetInnerHTML in the ask files" | S8 | planned |
 | 22 | Una nuova domanda sostituisce la precedente; il prompt nuovo non contiene domanda o risposta precedenti | `questions.test.ts`: "the prompt is built from the question and the feedback only"; `ask/actions.test.ts`: "a second question's prompt carries nothing from the first"; E2E AC 38 per la sostituzione a schermo | S4 | planned |
 | 23 | `pnpm evals` su `questions.json`: almeno 85% dei casi, tutti i must-pass, G1 a 0 violazioni; risultato in `evals/results/` col confronto | `evals/questions.eval.ts`: "questions on the synthetic set" | S2 | planned |
 | 24 | q13, q14, q15, q16: nessuna stringa `forbidden` nel testo | `evals/questions.eval.ts`: controllo `forbidden` per caso, must-pass | S2 | planned |
-| 25 | Riga in `question_runs` con modello, istruzioni, prompt, id in ordine; alla chiusura output, `issues`, token, durata, `cost_usd` da `estimateCost`, errore se fallita, `finished_at` | `ask/actions.test.ts`: "logs the run: input, output, issues, tokens, duration, cost", "a failed run logs the error and finished_at" | S1 | planned |
+| 25 | Riga in `question_runs` con modello, istruzioni, prompt, id in ordine; alla chiusura output, `issues`, token, durata, `cost_usd` da `estimateCost`, errore se fallita, `finished_at` | `ask/actions.test.ts`: "logs the run: input, output, issues, tokens, duration, cost", "a failed run logs the error and finished_at" | S1 | pass |
 | 26 | Con errore del modello `console.error` riceve solo nome dell'errore e id; nessuna chiamata contiene il marcatore | `ask/actions.test.ts`: "logs only the error name and the question id" (spy su `console.error`, marcatore in domanda e feedback) | S4 | planned |
-| 27 | Con `POSTHOG_KEY`, ogni domanda chiusa `answered` o `no_evidence` produce esattamente una richiesta con `question_answered`, `distinct_id` = workspace, proprietà esattamente le 4 | `analytics.test.ts`: "trackEvent sends question_answered with only citation_count and outcome"; `ask/actions.test.ts`: "asks for question_answered once, for answered and for no_evidence" | S1 | planned |
+| 27 | Con `POSTHOG_KEY`, ogni domanda chiusa `answered` o `no_evidence` produce esattamente una richiesta con `question_answered`, `distinct_id` = workspace, proprietà esattamente le 4 | `analytics.test.ts`: "trackEvent sends question_answered with only citation_count and outcome"; `ask/actions.test.ts`: "asks for question_answered once, for answered and for no_evidence" | S1 | pass (richiesta catturata nei test, non arrivo in PostHog) |
 | 28 | Marcatore in domanda, risposta e feedback: il corpo verso PostHog non lo contiene | `ask/actions.test.ts` con `trackEvent` reale e `fetch` finto: "the PostHog body carries no question, answer or feedback text" | S5 | planned |
 | 29 | Due risposte, due richieste; nessuna riga in `analytics_milestones`; vincolo con i 4 eventi di oggi | `analytics.test.ts`: "question_answered is sent every time and never claims a milestone", "analytics_milestones still refuses question_answered" | S5 | planned |
 | 30 | Nessuna richiesta per `failed`, `limit`, `busy`, `invalid`, `session`, `no_feedback`; nessuna senza chiave | `ask/actions.test.ts`: "no event for failed, limit, busy, invalid, session, no_feedback" (tabella di casi); `analytics.test.ts`: "trackEvent sends nothing without a key" | S5 | planned |
 | 31 | `docs/analytics.md` elenca `question_answered` con proprietà, momento d'invio, e che non passa da `analytics_milestones` | `src/test/docs.test.ts`: "analytics.md documents question_answered" | S5 | planned |
-| 32 | Scheda "Chiedi" tra "Temi" e "Feedback" verso `/ask` con `aria-current="page"`; `/ask` senza sessione porta a `/login` | E2E `ask.spec.ts`: "the Chiedi tab sits between Temi and Feedback and marks the page", "/ask without a session goes to /login" | S1 | planned |
+| 32 | Scheda "Chiedi" tra "Temi" e "Feedback" verso `/ask` con `aria-current="page"`; `/ask` senza sessione porta a `/login` | E2E `ask.spec.ts`: "the Chiedi tab sits between Temi and Feedback and marks the page", "/ask without a session goes to /login" | S1 | E2E scritto, non eseguito (porta 3000 occupata) |
 | 33 | 0 feedback: testo A e "Aggiungi feedback" senza casella; solo feedback oltre 90 giorni: testo B, stessa azione, senza casella | E2E `ask.spec.ts`: "no feedback: text A, no field", "only feedback older than 90 days: text B, no field" | S7 | planned |
 | 34 | Quota esaurita: pulsante `aria-disabled`, avviso "Hai usato le 10 domande di {mese}" con "Passa a Pro" su Free, "…100…" senza pulsante su Pro; lo stesso dopo la decima risposta con la risposta visibile | E2E `ask.spec.ts`: "Free at 10 questions: notice and Passa a Pro", "Pro at 100: notice without button", "the tenth answer stays visible under the notice" | S6 | planned |
 | 35 | Nota "Userai 1 delle {limite} domande di {mese}." prima, "Ti restano {n} domande di {mese}." dopo, numeri dal server | E2E `ask.spec.ts`: "the quota note before and after the first question" | S6 | planned |
 | 36 | Attesa: "Risposta in arrivo…" `aria-disabled`, casella `readOnly` col focus, "Sto leggendo {n} feedback…", dopo 15 s il messaggio lungo; due invii ravvicinati, una sola chiamata ad `ask` | E2E `ask.spec.ts`: "waiting state and the 15-second message" (finto gateway lento su marcatore, `page.clock`), "two quick submits make one ask call" (richieste con header `next-action` contate) | S8 | planned |
 | 37 | Per ogni motivo (E1, E2, E3/E4, E5, E6, E7, E8, E9) il testo esatto di DESIGN.md, domanda e focus nella casella | E2E `ask.spec.ts`: un test per motivo; E6 dal finto gateway con output fuori schema, E7 con `page.route` che interrompe la action, E8 con cookie cancellati, E5, E3 ed E9 con righe create o tolte dalla chiave segreta dopo l'apertura | S4 | planned |
-| 38 | E2E da tastiera dalla scheda "Chiedi": registrazione, feedback, domanda con Invio, risposta con citazione e numero, focus nella casella, seconda domanda che sostituisce la prima | E2E `ask.spec.ts`: "ask a question from the keyboard and read the answer" (finto gateway esteso: risponde alle domande citando i feedback) | S1 | planned |
+| 38 | E2E da tastiera dalla scheda "Chiedi": registrazione, feedback, domanda con Invio, risposta con citazione e numero, focus nella casella, seconda domanda che sostituisce la prima | E2E `ask.spec.ts`: "ask a question from the keyboard and read the answer" (finto gateway esteso: risponde alle domande citando i feedback) | S1 | E2E scritto, non eseguito (porta 3000 occupata) |
 | 39 | `docs/prima-dei-clienti-reali.md` ha la riga sul testo delle domande nel Gateway; `/billing` e landing mostrano "10 domande ai feedback al mese" e "100 domande ai feedback al mese" da `PLAN_LIMITS` | `src/test/docs.test.ts`: "prima-dei-clienti-reali lists the question text"; E2E `ask.spec.ts`: "billing and landing show the question quota" | S6 | planned |
 | 40 | Entro il 2026-09-30, con output: typecheck, lint, test, build, `supabase db reset`, `supabase test db`, `pnpm evals` (entrambi i file), `pnpm test:e2e` | Esecuzione finale in S9, output incollato in "Test output" | S9 | planned |
 
@@ -230,3 +230,34 @@ Da riempire in S9 con le 18 voci di `04-spec.md`.
 ## Deviations from spec
 
 - Il piano del repository si chiama `docs/plans/2026-09-27-chiedi-ai-feedback.md` e non `docs/plans/2026-09-27-chiedi.md` come scritto in `04-spec.md` (in scope, voce 14): il nome l'ha dato il dispatch di questa fase `[doc:user-2026-09-27-spec-dispatch]`. Nessun criterio dipende dal nome.
+
+## Log
+
+Una voce per slice, con l'output vero. Il dettaglio (fallimenti visti prima del codice) è nella nota di ogni slice in `docs/notes/`.
+
+### S1, proiettile tracciante (2026-09-27)
+
+Nota: `docs/notes/2026-09-27-chiedi-s1-proiettile-tracciante.md`.
+
+Rosso prima del codice:
+
+```
+ FAIL  src/lib/questions.test.ts        Error: Cannot find module './questions'
+ FAIL  src/app/(app)/ask/actions.test.ts Error: Cannot find module '/src/app/(app)/ask/actions'
+ FAIL  src/test/docs.test.ts > ... enables RLS ... AssertionError: expected [] to have a length of 1 but got +0
+ FAIL  src/lib/analytics.test.ts > trackEvent > ... TypeError: trackEvent is not a function
+ supabase test db: ERROR:  relation "public.questions" does not exist ... Result: FAIL
+ FAIL  src/lib/data.test.ts > getQuestionWindow > ... TypeError: getQuestionWindow is not a function
+```
+
+Verde dopo il codice:
+
+```
+supabase db reset   Applying migration 20260927120000_questions.sql... Finished supabase db reset on branch main.
+supabase test db    Files=2, Tests=4, Result: PASS
+pnpm typecheck      exit 0
+pnpm lint           exit 0, nessun problema
+pnpm test           Test Files  16 passed (16)   Tests  217 passed (217)   Duration  2.80s
+pnpm build          ƒ /ask, build completata
+pnpm test:e2e       non eseguito: porta 3000 occupata da node PID 27760 (worktree voce-prova-live)
+```

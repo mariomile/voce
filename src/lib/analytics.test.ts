@@ -7,7 +7,7 @@ const pending = vi.hoisted(() => ({ tasks: [] as Promise<unknown>[], ip: "203.0.
 vi.mock("next/server", () => ({ after: (task: () => Promise<unknown>) => pending.tasks.push(task()) }))
 vi.mock("next/headers", () => ({ headers: async () => new Headers({ "x-real-ip": pending.ip }) }))
 
-const { trackMilestone } = await import("./analytics")
+const { trackEvent, trackMilestone } = await import("./analytics")
 const { submitFeedback } = await import("@/app/actions")
 
 // Only PostHog is fake: Supabase keeps the real fetch.
@@ -81,6 +81,22 @@ describe("trackMilestone", () => {
     await settle()
     expect(log).toHaveBeenCalledWith("PostHog: signed_up not sent,", "TypeError")
     log.mockRestore()
+  })
+})
+
+describe("trackEvent", () => {
+  it("sends question_answered with only citation_count and outcome", async () => {
+    trackEvent(user.workspaceId, { event: "question_answered", properties: { citation_count: 3, outcome: "answered" } })
+    await settle()
+    expect(posthog).toHaveBeenCalledTimes(1)
+    expect(posthog.mock.calls[0][0]).toBe("https://eu.i.posthog.com/i/v0/e/")
+    expect(sent()[0]).toEqual({
+      api_key: "phc_test",
+      event: "question_answered",
+      distinct_id: user.workspaceId,
+      timestamp: expect.any(String),
+      properties: { citation_count: 3, outcome: "answered", $process_person_profile: false, $geoip_disable: true },
+    })
   })
 })
 
