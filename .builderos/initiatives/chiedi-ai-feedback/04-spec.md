@@ -40,7 +40,7 @@ Vincoli di `TECH.md` rispettati: RLS nella stessa migrazione, schema lato server
 
 ## In scope
 
-1. **Scheda "Chiedi"** tra Temi e Feedback, pagina `/ask`, `/ask` in `APP_PATHS` del proxy `[code:src/proxy.ts]`.
+1. **Scheda "Chiedi"** tra Temi e Feedback, pagina `/ask`, `/ask` in `APP_PATHS` del proxy `[code:src/proxy.ts]`. Il proxy fa un'eccezione solo alla chiamata POST della server action `ask` senza sessione, così l'esito `session` (E8) può arrivare dalla action invece che da un redirect anticipato; una GET su `/ask` senza sessione, anche con un header `next-action` forzato, resta mandata a `/login` `[code:src/proxy.ts:35]`.
 2. **Una casella di domanda** (da 1 a 300 caratteri dopo il trim, a capo ridotti a spazi) e un pulsante, come in DESIGN.md. Una domanda alla volta per workspace, come per le analisi `[code:supabase/migrations/20260925120000_ai_analysis.sql:76]`.
 3. **Server action `ask`** che valida la domanda, legge i feedback come l'analisi (90 giorni, massimo 500, dal più recente), riserva la domanda nel database, chiama il modello, controlla l'output, chiude la domanda nel database, manda l'evento e restituisce la risposta al browser `[code:src/app/(app)/themes/actions.ts:35]`.
 4. **Prompt fisso** in `src/lib/questions.ts`: istruzioni costanti, domanda dentro `<question_data>` e feedback dentro `<feedback_data>`, entrambi JSON con `<` codificato. Stesso modello (`analysisModel()`), tetto di uscita 1.500 token `[doc:user-2026-09-27-deroga-gate-3-quota]`, timeout 60 secondi.
@@ -260,7 +260,7 @@ Una migrazione nuova, `supabase/migrations/20260927{hhmmss}_questions.sql`, con 
 - `fail_question(question, error, run)`: come `fail_analysis` `[code:supabase/migrations/20260925120000_ai_analysis.sql:179]`.
 - `question_usage(ws)` restituisce `(used, quota)` del mese Europe/Rome, contando ogni stato. La chiama `getUsage` in `src/lib/data.ts` con il workspace della sessione, perché `questions` non è leggibile dagli utenti; `getUsage` aggiunge `questionsThisMonth` e `questionsLimit`.
 
-**Rimozione** (criteri di stop): una migrazione che elimina tabelle, funzioni e tipi; cartella `/ask`, `src/lib/questions.ts`, scheda, voce del proxy, righe dei piani ed evento si tolgono nello stesso commit.
+**Rimozione** (criteri di stop): una migrazione che elimina tabelle, funzioni e tipi; cartella `/ask`, `src/lib/questions.ts`, `src/components/ask-copy.ts`, scheda, voce del proxy (inclusa l'eccezione POST di `src/proxy.ts:35`), righe dei piani ed evento si tolgono nello stesso commit.
 
 ## Tracking plan
 
