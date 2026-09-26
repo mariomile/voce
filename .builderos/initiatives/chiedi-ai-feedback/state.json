@@ -8,7 +8,7 @@
   "current_phase": 1,
   "cycle": 1,
   "created_at": "2026-09-26T16:41:02.367Z",
-  "updated_at": "2026-09-26T17:26:34.720Z",
+  "updated_at": "2026-09-26T17:46:53.000Z",
   "review_due": null,
   "phases": {
     "0": {
@@ -34,8 +34,29 @@
     },
     "1": {
       "status": "in_progress",
-      "artifact": null,
-      "gate": null
+      "artifact": "01-discovery.md",
+      "gate": {
+        "passed": false,
+        "checked_at": "2026-09-26T17:46:53.000Z",
+        "checked_by": {
+          "script": [
+            "E.1",
+            "1.3",
+            "1.4"
+          ],
+          "model": [
+            "1.1",
+            "1.2",
+            "1.5"
+          ]
+        },
+        "failed_conditions": [
+          "1.1",
+          "1.2",
+          "1.3"
+        ],
+        "overridden": false
+      }
     },
     "2": {
       "status": "pending",
@@ -87,6 +108,12 @@
       "event": "gate_passed",
       "phase": 0,
       "note": "0.3 and 0.4 judged PASS by an independent model reviewer; framing decisions taken by delegation of Mario (2026-09-26), see 00-frame.md"
+    },
+    {
+      "at": "2026-09-26T17:46:53.000Z",
+      "event": "gate_failed",
+      "phase": 1,
+      "note": "Research plan ready (guide, sampling, async questionnaire). 23 mined web sources, all doc: 5 first-person episodes, none from the ICP or matching the riskiest assumption. 1.1 and 1.2 judged FAIL by the model, 1.3 fails: verdict pending until interviews. No override (reserved to Mario)."
     }
   ]
 }
