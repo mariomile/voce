@@ -33,3 +33,15 @@ describe("prima-dei-clienti-reali", () => {
     expect(doc).toMatch(/\*\*Testo delle domande[^\n]*Vercel AI Gateway/)
   })
 })
+
+describe("analytics.md", () => {
+  it("documents question_answered, its properties, when it is sent, and that it skips analytics_milestones", () => {
+    const doc = readFileSync("docs/analytics.md", "utf8")
+    const row = doc.split("\n").find((line) => line.startsWith("| `question_answered`"))
+    expect(row).toBeDefined()
+    expect(row).toContain("`citation_count`")
+    expect(row).toContain("`outcome`")
+    expect(row).toMatch(/ogni domanda/i)
+    expect(doc).toMatch(/`question_answered`[^\n]*non passa da `analytics_milestones`/)
+  })
+})
