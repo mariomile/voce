@@ -13,7 +13,7 @@ Risponde a una sola domanda: **questo commit si può rilasciare in produzione?**
 bash .claude/skills/controllo-rilascio/scripts/controllo.sh
 ```
 
-Lo script dura qualche minuto (build e reset del database): lancialo con un timeout di 10 minuti. Esegue otto controlli e stampa una riga per ciascuno:
+Lo script dura qualche minuto (build e reset del database): lancialo con un timeout di 10 minuti. Esegue nove controlli e stampa una riga per ciascuno:
 
 ```
 RISULTATO|<controllo>|<OK|FALLITO|NON VERIFICABILE>|<dettaglio>
@@ -26,6 +26,7 @@ Cosa fa ogni controllo, per poterlo spiegare:
 | Controllo | Comando | Note |
 |---|---|---|
 | test-database | `supabase db reset` + `src/test/rls.test.ts` | Migrazioni applicate da zero in locale e test di accesso RLS. Richiede Supabase locale avviato. Cancella i dati locali e ricarica il seed. |
+| test-database-sql | `supabase test db` | Test SQL in `supabase/tests/` (pgTAP): regole RLS che dalle API non si possono isolare, come quella di eliminazione. |
 | typecheck | `pnpm typecheck` | |
 | lint | `pnpm lint` | |
 | test | `vitest run` escluso il file RLS | Legge dal seed locale, quindi dipende dal reset. |
@@ -54,6 +55,7 @@ Rispondi in italiano con questo formato:
 | Lint | ✅ | 0 errori |
 | Test | ✅ | 78 passati, 0 falliti |
 | Test del database | ✅ | migrazioni da zero ok, 43 test RLS passati |
+| Test SQL del database | ✅ | 2 test pgTAP passati |
 | Build | ✅ | riuscita |
 | Segreti nel codice | ✅ | nessuno trovato |
 | Migrazioni non applicate | ⚠️ | non verificabile: nessun progetto remoto collegato |
@@ -67,4 +69,4 @@ Rispondi in italiano con questo formato:
 
 Legenda esiti: ✅ OK, ❌ FALLITO, ⚠️ NON VERIFICABILE. Nel dettaglio metti numeri veri presi dai log (test passati e falliti, errori, nomi delle variabili), non il testo grezzo dello script.
 
-Il verdetto è **SÌ** solo se tutte e otto le voci sono ✅. Altrimenti **NO**. Nessuna via di mezzo: se Mario vuole rilasciare lo stesso, lo decide lui leggendo il perché.
+Il verdetto è **SÌ** solo se tutte e nove le voci sono ✅. Altrimenti **NO**. Nessuna via di mezzo: se Mario vuole rilasciare lo stesso, lo decide lui leggendo il perché.

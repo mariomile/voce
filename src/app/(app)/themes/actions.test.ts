@@ -20,6 +20,7 @@ vi.mock("@/lib/analysis", async (importOriginal) => ({
 }))
 
 const { analyze } = await import("./actions")
+const { deleteFeedback } = await import("@/app/(app)/feedback/actions")
 const { getDashboard, getUsage } = await import("@/lib/data")
 
 let user: TestUser
@@ -368,6 +369,41 @@ describe("analyze", () => {
     expect(results).toContainEqual({ ok: true })
     expect(results).toContainEqual({ ok: false, reason: "busy" })
     expect((await analyses()).map((a) => a.status)).toEqual(["done"])
+  })
+
+  it("a feedback deleted while the analysis runs is left out, and the analysis still finishes", async () => {
+    const ids = await addFeedback()
+    // The model holds its answer until the feedback is deleted: it still names it in a theme and a quote.
+    const model = answer({ themes: [bank, phone] })
+    let release = () => {}
+    const held = new Promise<void>((resolve) => (release = resolve))
+    let called = () => {}
+    const modelCalled = new Promise<void>((resolve) => (called = resolve))
+    ai.model = new MockLanguageModelV4({
+      doGenerate: async (options) => {
+        called()
+        await held
+        return model.doGenerate(options)
+      },
+    })
+    const running = analyze()
+    await modelCalled
+    expect(await deleteFeedback(ids[0])).toEqual({ ok: true })
+    release()
+    expect(await running).toEqual({ ok: true })
+
+    const [analysis] = await analyses()
+    expect(analysis.status).toBe("done")
+    const themes = await themesOf(analysis.id)
+    expect(themes.map((t) => [t.title, t.theme_feedback.map((l) => [l.feedback_id, l.quote_rank, l.highlight])])).toEqual([
+      [phone.title, expect.arrayContaining([[ids[2], null, null], [ids[3], 1, "velocissimo"]])],
+      [bank.title, [[ids[1], 2, "ricollegare la banca ogni settimana"]]],
+    ])
+    const dashboard = await getDashboard(user.workspaceId, { status: "all" })
+    expect(dashboard.themes.map((t) => [t.title, t.feedbackCount])).toEqual([
+      [phone.title, 2],
+      [bank.title, 1],
+    ])
   })
 
   it("needs feedback from the last 90 days, today included", async () => {

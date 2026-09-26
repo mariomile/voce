@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { DeleteFeedbackButton } from "@/components/delete-feedback-button"
 import { Page, PageHeader, PageLede, PageMore, PageTitle } from "@/components/page"
 import { buttonVariants } from "@/components/ui/button"
 import { ChipCount, chipVariants, FilterBar } from "@/components/ui/chip"
@@ -64,6 +65,9 @@ export default async function FeedbackPage({ searchParams }: PageProps<"/feedbac
                 <TableHead>Canale</TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead className="text-right">Data</TableHead>
+                <TableHead>
+                  <span className="sr-only">Azioni</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -74,6 +78,9 @@ export default async function FeedbackPage({ searchParams }: PageProps<"/feedbac
                   <TableCell className="whitespace-nowrap text-ink-muted">{f.customer}</TableCell>
                   <TableCell className="text-right whitespace-nowrap tabular-nums">
                     {formatDate(f.receivedAt)}
+                  </TableCell>
+                  <TableCell className="text-right whitespace-nowrap">
+                    <DeleteFeedbackButton feedbackId={f.id} />
                   </TableCell>
                 </TableRow>
               ))}
