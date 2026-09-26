@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useRef, useState, useTransition } from "react"
 import { ask, type AskResult, type AskUsage } from "@/app/(app)/ask/actions"
 import { AskAnswer } from "@/components/ask-answer"
-import { ASK_ERRORS, failedMessage, limitNotice } from "@/components/ask-copy"
+import { ASK_ERRORS, failedMessage, limitNotice, quotaNote } from "@/components/ask-copy"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardText, CardTitle } from "@/components/ui/card"
 import { Field, FieldCount, FieldError, FieldHint, FieldLabel } from "@/components/ui/field"
@@ -137,6 +137,9 @@ export function AskForm({
           <p role="status" className="text-sm text-ink-muted empty:hidden">
             {pending ? `Sto leggendo ${feedbackConsidered} feedback…` : <FailureNote failure={failure} usage={usage} month={month} />}
           </p>
+          {!pending && !limitReached && (!failure || failure === "invalid") && (
+            <p className="text-sm text-ink-muted">{quotaNote(usage, month)}</p>
+          )}
         </div>
       </form>
       {answer && <AskAnswer result={answer} />}

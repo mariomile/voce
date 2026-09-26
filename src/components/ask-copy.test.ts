@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { ASK_ERRORS, failedMessage, limitNotice, nextMonthName } from "./ask-copy"
+import { PLAN_LIMITS } from "@/lib/plans"
+import { ASK_ERRORS, failedMessage, limitNotice, nextMonthName, quotaNote } from "./ask-copy"
 
 // The exact texts of DESIGN.md (initiative chiedi-ai-feedback, "Error copy").
 
@@ -55,5 +56,22 @@ describe("error copy", () => {
     // 23:30 on 30 September in UTC is already 1 October in Rome.
     expect(nextMonthName(new Date("2026-09-30T22:30:00Z"))).toBe("novembre")
     expect(nextMonthName(new Date("2026-12-15T10:00:00Z"))).toBe("gennaio")
+  })
+})
+
+describe("quota note", () => {
+  it("before the first question of the month, then what is left, with numbers from the server", () => {
+    expect(quotaNote({ used: 0, quota: 10 }, "settembre")).toBe("Userai 1 delle 10 domande di settembre.")
+    expect(quotaNote({ used: 3, quota: 10 }, "settembre")).toBe("Ti restano 7 domande di settembre.")
+    expect(quotaNote({ used: 9, quota: 10 }, "settembre")).toBe("Ti resta 1 domanda di settembre.")
+    expect(quotaNote({ used: 0, quota: 100 }, "ottobre")).toBe("Userai 1 delle 100 domande di ottobre.")
+  })
+
+  it("E3 names the Pro quota from PLAN_LIMITS", () => {
+    expect(PLAN_LIMITS.free.questionsPerMonth).toBe(10)
+    expect(PLAN_LIMITS.pro.questionsPerMonth).toBe(100)
+    expect(limitNotice("free", 10, "settembre", "ottobre").text).toContain(
+      `Con Pro diventano ${PLAN_LIMITS.pro.questionsPerMonth} al mese.`
+    )
   })
 })

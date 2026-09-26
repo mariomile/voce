@@ -1,8 +1,9 @@
 import type { Plan } from "./types";
 
-export const PLAN_LIMITS: Record<Plan, { feedback: number | null; analysesPerMonth: number }> = {
-  free: { feedback: 100, analysesPerMonth: 3 },
-  pro: { feedback: null, analysesPerMonth: 100 },
+// questionsPerMonth mirrors private.questions_limit in the database, which enforces it.
+export const PLAN_LIMITS: Record<Plan, { feedback: number | null; analysesPerMonth: number; questionsPerMonth: number }> = {
+  free: { feedback: 100, analysesPerMonth: 3, questionsPerMonth: 10 },
+  pro: { feedback: null, analysesPerMonth: 100, questionsPerMonth: 100 },
 };
 
 export const FEEDBACK_MAX_LENGTH = 2000;

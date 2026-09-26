@@ -58,7 +58,7 @@ export default async function BillingPage({ searchParams }: PageProps<"/billing"
           <PlanHeading name="Free" price="0 €" period="per sempre" current={!pro} />
           <CardText>
             Fino a {PLAN_LIMITS.free.feedback} feedback, {PLAN_LIMITS.free.analysesPerMonth} analisi AI al
-            mese.
+            mese, {PLAN_LIMITS.free.questionsPerMonth} domande ai feedback al mese.
           </CardText>
           {!pro && billing.stripeCustomerId && configured && billing.isOwner && (
             <CardActions>
@@ -69,7 +69,8 @@ export default async function BillingPage({ searchParams }: PageProps<"/billing"
         <Card variant={pro ? "default" : "highlight"}>
           <PlanHeading name="Pro" price="19 €" period="al mese" current={pro} />
           <CardText>
-            Feedback illimitati, {PLAN_LIMITS.pro.analysesPerMonth} analisi AI al mese.
+            Feedback illimitati, {PLAN_LIMITS.pro.analysesPerMonth} analisi AI al mese,{" "}
+            {PLAN_LIMITS.pro.questionsPerMonth} domande ai feedback al mese.
             {pro && <> {proStatus(billing)}</>}
           </CardText>
           <CardActions>

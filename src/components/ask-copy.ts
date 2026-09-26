@@ -1,4 +1,5 @@
 import { formatMonth, monthOf } from "@/lib/format"
+import { PLAN_LIMITS } from "@/lib/plans"
 import type { Plan } from "@/lib/types"
 
 // The texts of "Chiedi" that depend on numbers or on the reason a question did not get an answer.
@@ -25,10 +26,17 @@ export function failedMessage(usage: { used: number; quota: number }, month: str
   return `La risposta non è arrivata. La domanda conta lo stesso tra quelle del mese: ${rest}. Riprova tra poco.`
 }
 
+// Under the button: what the next question costs, with the numbers read by the server.
+export function quotaNote(usage: { used: number; quota: number }, month: string) {
+  if (usage.used === 0) return `Userai 1 delle ${usage.quota} domande di ${month}.`
+  const left = Math.max(0, usage.quota - usage.used)
+  return left === 1 ? `Ti resta 1 domanda di ${month}.` : `Ti restano ${left} domande di ${month}.`
+}
+
 export function limitNotice(plan: Plan, quota: number, month: string, nextMonth: string) {
   const title = `Hai usato le ${quota} domande di ${month}`
   return plan === "free"
-    ? { title, text: `Con Pro diventano 100 al mese. Altrimenti tornano disponibili il 1 ${nextMonth}.`, upgrade: true }
+    ? { title, text: `Con Pro diventano ${PLAN_LIMITS.pro.questionsPerMonth} al mese. Altrimenti tornano disponibili il 1 ${nextMonth}.`, upgrade: true }
     : { title, text: `Tornano disponibili il 1 ${nextMonth}.`, upgrade: false }
 }
 

@@ -30,6 +30,7 @@ const PLANS = [
     features: [
       `Fino a ${PLAN_LIMITS.free.feedback} feedback`,
       `${PLAN_LIMITS.free.analysesPerMonth} analisi AI al mese`,
+      `${PLAN_LIMITS.free.questionsPerMonth} domande ai feedback al mese`,
       "Modulo pubblico, CSV e inserimento manuale",
     ],
     cta: "Inizia gratis",
@@ -41,6 +42,7 @@ const PLANS = [
     features: [
       "Feedback illimitati",
       `${PLAN_LIMITS.pro.analysesPerMonth} analisi AI al mese`,
+      `${PLAN_LIMITS.pro.questionsPerMonth} domande ai feedback al mese`,
       "Tutto quello che c'è in Free",
     ],
     cta: "Prova Pro",

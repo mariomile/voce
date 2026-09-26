@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
+import { PLAN_LIMITS } from "@/lib/plans"
 
 // Rules that live in files rather than in behavior: read the files and check them.
 
@@ -15,5 +16,20 @@ describe("the questions migration", () => {
     expect(sql).toMatch(/create table public\.question_runs\b/)
     expect(sql).toMatch(/alter table public\.questions enable row level security;/)
     expect(sql).toMatch(/alter table public\.question_runs enable row level security;/)
+  })
+})
+
+describe("the question quota", () => {
+  it("PLAN_LIMITS mirrors private.questions_limit", () => {
+    const sql = readFileSync("supabase/migrations/20260927120000_questions.sql", "utf8")
+    const limit = sql.match(/create function private\.questions_limit[\s\S]*?then (\d+)\s+else (\d+)/)!
+    expect([Number(limit[1]), Number(limit[2])]).toEqual([PLAN_LIMITS.pro.questionsPerMonth, PLAN_LIMITS.free.questionsPerMonth])
+  })
+})
+
+describe("prima-dei-clienti-reali", () => {
+  it("lists the question text that goes through the Vercel AI Gateway", () => {
+    const doc = readFileSync("docs/prima-dei-clienti-reali.md", "utf8")
+    expect(doc).toMatch(/\*\*Testo delle domande[^\n]*Vercel AI Gateway/)
   })
 })

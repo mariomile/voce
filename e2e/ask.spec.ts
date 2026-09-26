@@ -196,3 +196,58 @@ test("E9: the feedback of the last 90 days are gone", async ({ page }) => {
   await expect(field).toHaveValue("Cosa chiedono del PDF?")
   await expect(field).toBeFocused()
 })
+
+// ===== The quota on screen (AC 34, 35, 39) =====
+
+test("the quota note before and after the first question", async ({ page }) => {
+  const { field } = await openAsk(page, "quota-note")
+  await expect(page.getByText(`Userai 1 delle 10 domande di ${month}.`)).toBeVisible()
+  await field.fill("Cosa chiedono del PDF?")
+  await page.keyboard.press("Enter")
+  await expect(page.getByRole("region", { name: /Risposta a/ })).toBeVisible()
+  await expect(page.getByText(`Ti restano 9 domande di ${month}.`)).toBeVisible()
+})
+
+test("Free at 10 questions: notice and Passa a Pro, button off", async ({ page }) => {
+  const user = await signedInUser(page, "free-full")
+  await insertFeedback(user.workspaceId, ["Vorrei esportare il report mensile in PDF."])
+  await addQuestions(user.workspaceId, 10)
+  await page.goto("/ask")
+  await expect(page.getByRole("heading", { name: `Hai usato le 10 domande di ${month}` })).toBeVisible()
+  await expect(page.getByRole("link", { name: "Passa a Pro" })).toHaveAttribute("href", "/billing")
+  await expect(page.getByRole("button", { name: "Chiedi a 1 feedback" })).toHaveAttribute("aria-disabled", "true")
+  await expect(page.getByLabel("La tua domanda")).not.toBeFocused()
+})
+
+test("Pro at 100 questions: notice without button", async ({ page }) => {
+  const user = await signedInUser(page, "pro-full")
+  await admin.from("subscriptions").update({ plan: "pro" }).eq("workspace_id", user.workspaceId)
+  await insertFeedback(user.workspaceId, ["Vorrei esportare il report mensile in PDF."])
+  await addQuestions(user.workspaceId, 100)
+  await page.goto("/ask")
+  await expect(page.getByRole("heading", { name: `Hai usato le 100 domande di ${month}` })).toBeVisible()
+  await expect(page.getByRole("link", { name: "Passa a Pro" })).toHaveCount(0)
+  await expect(page.getByRole("button", { name: "Chiedi a 1 feedback" })).toHaveAttribute("aria-disabled", "true")
+})
+
+test("the tenth answer stays visible under the notice", async ({ page }) => {
+  const { workspaceId, field } = await openAsk(page, "tenth")
+  await addQuestions(workspaceId, 9)
+  await page.reload()
+  await expect(page.getByText(`Ti resta 1 domanda di ${month}.`)).toBeVisible()
+  await field.fill("Cosa chiedono del PDF?")
+  await page.keyboard.press("Enter")
+  await expect(page.getByRole("region", { name: "Risposta a «Cosa chiedono del PDF?»" })).toBeVisible()
+  await expect(page.getByRole("heading", { name: `Hai usato le 10 domande di ${month}` })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Chiedi a 1 feedback" })).toHaveAttribute("aria-disabled", "true")
+})
+
+test("billing and landing show the question quota", async ({ page }) => {
+  await page.goto("/")
+  await expect(page.getByText("10 domande ai feedback al mese")).toBeVisible()
+  await expect(page.getByText("100 domande ai feedback al mese")).toBeVisible()
+  await signedInUser(page, "billing")
+  await page.goto("/billing")
+  await expect(page.getByText(/10 domande ai feedback al mese/)).toBeVisible()
+  await expect(page.getByText(/100 domande ai feedback al mese/)).toBeVisible()
+})

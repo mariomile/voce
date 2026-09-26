@@ -6,6 +6,7 @@ Cose da risolvere prima di aprire Voce a clienti reali. Finché siamo in modalit
 
 - **Elaborazione AI in UE.** Oggi Claude passa da Vercel AI Gateway e l'elaborazione in UE non è garantita. Serve una soluzione che tenga i dati dei feedback in UE, o una scelta esplicita e documentata.
 
+- **Testo delle domande nel Vercel AI Gateway.** Con "Chiedi ai tuoi feedback" anche il testo delle domande del PM passa dal Vercel AI Gateway, insieme ai feedback, sotto la stessa eccezione accettata in modalità test. Con clienti reali va deciso se l'eccezione copre anche le domande. Il registro `question_runs` conserva domanda, prompt e risposta: stesse regole di conservazione di `analysis_runs`.
 - **AI Gateway attivo.** Il Gateway rifiuta le richieste (403) finché sul team Vercel non c'è una carta di credito. Su Vercel l'analisi si autentica da sola (OIDC); `AI_MODEL` resta facoltativa.
 - **Registro delle analisi.** `analysis_runs` conserva per sempre il testo dei feedback inviati al modello e la risposta. Da citare nel registro dei trattamenti e da decidere per quanto tempo tenerlo. Un feedback eliminato dalla lista resta nel registro delle analisi che lo hanno letto: se l'eliminazione deve valere come cancellazione dei dati, va tolto anche da lì.
 - **Analisi rimaste a metà.** Se la funzione viene interrotta, l'analisi resta "in corso" e si chiude come fallita solo al tentativo successivo, dopo 10 minuti. Con traffico vero valutare un job che le chiuda.
