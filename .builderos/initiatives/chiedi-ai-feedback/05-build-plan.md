@@ -1,15 +1,15 @@
 # Build: Chiedi ai tuoi feedback (forma minima)
 
 **Phase:** 5 · **Cycle:** 1 · **Mode:** lite · **Date:** 2026-09-27 · **Owner:** Mario Miletta (piano scritto dal modello, delivery-planner)
-**Branch:** `feat/ask-your-feedback` @ `6a02ab8`, worktree `voce-chiedi` `[code:git rev-parse --short HEAD]`
+**Branch:** `feat/ask-your-feedback` @ `6a02ab8`, worktree `voce-chiedi` (da `git rev-parse --short HEAD`). Revisione su `98d7939`, diff `e4efade..HEAD` (`e4efade` differisce da `6a02ab8` solo per piano e canvas, nessun file di codice)
 **Scadenza:** costruita e verificata entro il 2026-09-30, demo PHC26 il 2026-10-01 `[doc:user-2026-09-27-spec-dispatch]`
 **Fonte:** `04-spec.md` (40 criteri, 14 voci in scope, 18 fuori scope) e `DESIGN.md` di questa iniziativa. Il piano del repository è `docs/plans/2026-09-27-chiedi-ai-feedback.md` e rimanda qui.
 
-Stato di questo file: **piano**. Le sezioni "Test output", "Instrumentation", "Eval results" e "Scope check" si riempiono durante il ciclo, slice per slice. Nessuna riga "pass" è scritta prima di un output incollato.
+Stato di questo file: **revisione chiusa, gate 5 non superato** (build-reviewer, 2026-09-27). Esiti ed evidenze in "Test output", "Instrumentation", "Eval results", "Scope check" e "Revisione" vengono dall'esecuzione della revisione, non dai log delle slice.
 
 ## Test baseline
 
-Registrata il 2026-09-27 alle 00:55 CEST, prima di qualsiasi modifica al codice, su `6a02ab8` con albero pulito (`git status`: "nothing to commit, working tree clean"). Stack Supabase locale acceso (db, auth, rest, kong, storage, realtime, inbucket, pg_meta "Up 10 hours"), migrazioni locali e applicate allineate (9 su 9, da `20260924225437` a `20260926120000`) `[code:supabase migration list --local]`. Preparazione: `pnpm install --frozen-lockfile` (il worktree non aveva `node_modules`), `.env.local` creato da `supabase status -o env` con le tre chiavi del README, senza stamparle.
+Registrata il 2026-09-27 alle 00:55 CEST, prima di qualsiasi modifica al codice, su `6a02ab8` con albero pulito (`git status`: "nothing to commit, working tree clean"). Stack Supabase locale acceso (db, auth, rest, kong, storage, realtime, inbucket, pg_meta "Up 10 hours"), migrazioni locali e applicate allineate (9 su 9, da `20260924225437` a `20260926120000`), da `supabase migration list --local`. Preparazione: `pnpm install --frozen-lockfile` (il worktree non aveva `node_modules`), `.env.local` creato da `supabase status -o env` con le tre chiavi del README, senza stamparle.
 
 ```
 $ pnpm typecheck
@@ -141,48 +141,50 @@ File di test previsti. Nuovi: `supabase/tests/questions.test.sql` (pgTAP), `src/
 
 Nessun test di componente esiste oggi; `ask-answer.test.tsx` è il primo e usa solo `renderToStaticMarkup` in Node, senza dipendenze nuove. `tsconfig.json` ha `"jsx": "react-jsx"` `[code:tsconfig.json]`.
 
-| # | Criterion (sintesi) | Test | Slice | Result |
-|---|---------------------|------|-------|--------|
-| 1 | Migrazione crea `questions` e `question_runs` con RLS nello stesso file; `supabase db reset` da zero senza errori | pgTAP `questions.test.sql`: "RLS is enabled on questions and question_runs" (`relrowsecurity`); `src/test/docs.test.ts`: "the questions migration enables RLS in the same file"; output di `supabase db reset` incollato | S1, S3 | pass (docs.test.ts, pgTAP, db reset) |
-| 2 | Utente di A e `anon` ricevono permesso negato o 0 righe su `questions` e `question_runs` di B, senza filtri e per id | pgTAP `questions.test.sql`: "A cannot read B's questions or runs, unfiltered or by id", "anon cannot read questions or runs" | S3 | pass (pgTAP, mutazione M1) |
-| 3 | `authenticated` e `anon`: permesso negato su insert, update, delete delle due tabelle | pgTAP `questions.test.sql`: `throws_ok` su insert, update, delete per i due ruoli e le due tabelle | S3 | pass (pgTAP) |
-| 4 | Le 4 funzioni solo per `service_role` | pgTAP `questions.test.sql`: "start/finish/fail_question and question_usage are denied to authenticated and anon" | S3 | pass (pgTAP, mutazione M2) |
-| 5 | Free: 10 domande del mese Europe/Rome in qualsiasi stato danno `limit`, 9 danno `ok`; Pro 100 e 99 | pgTAP `questions.test.sql`: "Free: 9 mixed questions ok, 10 limit", "Pro: 99 ok, 100 limit", con righe `running` vecchie, `done`, `failed` | S3 | pass (pgTAP, mutazioni M3, M4) |
-| 6 | Con `limit` o `busy` la action restituisce il motivo e il modello finto registra 0 chiamate | `ask/actions.test.ts`: "returns limit without calling the model", "returns busy without calling the model" (`doGenerateCalls.length === 0`) | S4 | pass |
-| 7 | Quote separate: 3 analisi `done` su Free non cambiano `start_question`; 10 domande non cambiano `analysesThisMonth` | pgTAP `questions.test.sql`: "3 done analyses do not reduce the question quota"; `data.test.ts`: "getUsage: questions do not count as analyses" | S3, S4 | pass (pgTAP, mutazione M4; data.test.ts) |
-| 8 | `running` di meno di 5 minuti dà `busy`; di più di 5 minuti diventa `failed` con `stale`, conta nella quota, la nuova si riserva | pgTAP `questions.test.sql`: "a running question under 5 minutes is busy", "over 5 minutes it is failed as stale, counted, and the new one is reserved" | S3 | pass (pgTAP, mutazione M5) |
-| 9 | Errore del modello, oltre 60.000 ms o output fuori schema: `failed` con errore in `question_runs`, `ask` restituisce `failed`, `questionsThisMonth` +1 | `ask/actions.test.ts`: "model error is failed and counted", "a model slower than 60 s is failed and counted" (timer finti), "output out of schema is failed and counted, raw text saved" | S4 | pass |
-| 10 | Vuota, spazi o oltre 300 caratteri dopo il trim: `invalid`, nessuna riga, 0 chiamate; a capo come spazi | `ask/actions.test.ts`: "empty, blank and 301-character questions are invalid, no row, no call"; `questions.test.ts`: "newlines reach the model as spaces" | S4 | pass |
-| 11 | 0 feedback negli ultimi 90 giorni: `no_feedback`, nessuna riga, 0 chiamate | `ask/actions.test.ts`: "needs feedback from the last 90 days, today included" | S4 | pass |
-| 12 | Senza sessione: `session`, nessuna riga, 0 chiamate | `ask/actions.test.ts`: "without a session returns session, no row, no call" | S4 | pass |
-| 13 | `analysisModel()`, `maxOutputTokens: 1500`, timeout 60.000 ms sulle opzioni del modello finto | `questions.test.ts`: "calls the model with the analysis model, 1500 output tokens and a 60 s timeout" (opzioni di `doGenerateCalls[0]`, `abortSignal` presente, costante a 60.000) | S1 | pass |
-| 14 | Istruzioni solo in `instructions`; domanda in `<question_data>`, feedback in `<feedback_data>`, JSON con `<` codificato; `</question_data>` nella domanda compare una volta sola nel prompt | `questions.test.ts`: "the question and the feedback travel only as data", "a question closing its block cannot leave it" | S1 | pass |
-| 15 | 90 giorni, massimo 500, dal più recente: con 501 il prompt ne ha 500 e non il più vecchio | `ask/actions.test.ts`: "sends at most the 500 most recent feedback of the last 90 days" | S4 | pass (comportamento da S1, passato al primo giro) |
-| 16 | Controllo dell'output: scarto con motivo in `issues` per numero inesistente, feedback non in lista, testo vuoto o non esatto, seconda dello stesso feedback, oltre la quinta; un test per motivo | `questions.test.ts`: 5 test, "drops unknown_feedback", "drops quote_not_linked", "drops quote_not_in_feedback (empty and inexact)", "drops second_quote_same_feedback", "drops too_many_quotes after the fifth" | S4 | pass |
-| 17 | `finish_question` ricontrolla con `strpos`: citazione assente solleva `quote_not_in_feedback` e la domanda resta `running`; citazioni di feedback eliminati tolte, e senza citazioni esito `no_evidence` | pgTAP `questions.test.sql`: "finish_question raises quote_not_in_feedback and leaves the question running", "drops quotes of deleted feedback and saves no_evidence when none is left" | S3 | pass (pgTAP, mutazioni M6, M7) |
-| 18 | `feedback_count` = numeri distinti ed esistenti: `[1, 1, 2, 999]` su 3 feedback vale 2; nessun campo di conteggio nello schema | `questions.test.ts`: "counts distinct existing linked feedback", "the output schema has no count field"; `ask/actions.test.ts`: "saves feedback_count from the server count" | S1 | pass |
-| 19 | `answered` con almeno una citazione dopo `finish_question`, altrimenti `no_evidence`; con `no_evidence` la action non restituisce il testo e la pagina mostra solo "Non trovo feedback che ne parlano." | `ask/actions.test.ts`: "no verified quote is no_evidence and returns no model text"; `ask-answer.test.tsx`: "no_evidence shows the sentence without number, text or quotes" | S1, S8 | pass (ask-actions.test.ts, ask-answer.test.tsx) |
-| 20 | Pagina con `answered`: h2 "Risposta a «{domanda}»", numero con "feedback ne parlano" (1: "ne parla"), testo, 1-5 citazioni in ordine con canale e data e senza cliente, perimetro "Letti {n} feedback degli ultimi 90 giorni." | `ask-answer.test.tsx`: "shows heading, count, text, quotes with channel and date and the perimeter", "one feedback: feedback ne parla", "no customer name in quotes"; E2E `ask.spec.ts` (AC 38) sul caso reale | S8 | pass (ask-answer.test.tsx); E2E scritto, non eseguito |
-| 21 | Risposta come testo: `<b>x</b>` e `**x**` visibili come caratteri; nessun `dangerouslySetInnerHTML` nei file di `/ask` | `ask-answer.test.tsx`: "model markup is shown as text"; `src/test/docs.test.ts`: "no dangerouslySetInnerHTML in the ask files" | S8 | pass (mutazione: HTML reso fa fallire 2 test) |
-| 22 | Una nuova domanda sostituisce la precedente; il prompt nuovo non contiene domanda o risposta precedenti | `questions.test.ts`: "the prompt is built from the question and the feedback only"; `ask/actions.test.ts`: "a second question's prompt carries nothing from the first"; E2E AC 38 per la sostituzione a schermo | S4 | pass (comportamento da S1, passato al primo giro); E2E scritto, non eseguito |
-| 23 | `pnpm evals` su `questions.json`: almeno 85% dei casi, tutti i must-pass, G1 a 0 violazioni; risultato in `evals/results/` col confronto | `evals/questions.eval.ts`: "questions on the synthetic set" | S2 | rimandato per decisione di Mario (2026-09-27) |
-| 24 | q13, q14, q15, q16: nessuna stringa `forbidden` nel testo | `evals/questions.eval.ts`: controllo `forbidden` per caso, must-pass | S2 | rimandato per decisione di Mario (2026-09-27) |
-| 25 | Riga in `question_runs` con modello, istruzioni, prompt, id in ordine; alla chiusura output, `issues`, token, durata, `cost_usd` da `estimateCost`, errore se fallita, `finished_at` | `ask/actions.test.ts`: "logs the run: input, output, issues, tokens, duration, cost", "a failed run logs the error and finished_at" | S1 | pass |
-| 26 | Con errore del modello `console.error` riceve solo nome dell'errore e id; nessuna chiamata contiene il marcatore | `ask/actions.test.ts`: "logs only the error name and the question id" (spy su `console.error`, marcatore in domanda e feedback) | S4 | pass |
-| 27 | Con `POSTHOG_KEY`, ogni domanda chiusa `answered` o `no_evidence` produce esattamente una richiesta con `question_answered`, `distinct_id` = workspace, proprietà esattamente le 4 | `analytics.test.ts`: "trackEvent sends question_answered with only citation_count and outcome"; `ask/actions.test.ts`: "asks for question_answered once, for answered and for no_evidence" | S1 | pass (richiesta catturata nei test, non arrivo in PostHog) |
-| 28 | Marcatore in domanda, risposta e feedback: il corpo verso PostHog non lo contiene | `ask/actions.test.ts` con `trackEvent` reale e `fetch` finto: "the PostHog body carries no question, answer or feedback text" | S5 | pass (mutazione Ma) |
-| 29 | Due risposte, due richieste; nessuna riga in `analytics_milestones`; vincolo con i 4 eventi di oggi | `analytics.test.ts`: "question_answered is sent every time and never claims a milestone", "analytics_milestones still refuses question_answered" | S5 | pass (mutazione Mb) |
-| 30 | Nessuna richiesta per `failed`, `limit`, `busy`, `invalid`, `session`, `no_feedback`; nessuna senza chiave | `ask/actions.test.ts`: "no event for failed, limit, busy, invalid, session, no_feedback" (tabella di casi); `analytics.test.ts`: "trackEvent sends nothing without a key" | S5 | pass (mutazioni Mc, Md) |
-| 31 | `docs/analytics.md` elenca `question_answered` con proprietà, momento d'invio, e che non passa da `analytics_milestones` | `src/test/docs.test.ts`: "analytics.md documents question_answered" | S5 | pass (docs.test.ts) |
-| 32 | Scheda "Chiedi" tra "Temi" e "Feedback" verso `/ask` con `aria-current="page"`; `/ask` senza sessione porta a `/login` | E2E `ask.spec.ts`: "the Chiedi tab sits between Temi and Feedback and marks the page", "/ask without a session goes to /login" | S1 | E2E scritto, non eseguito (porta 3000 occupata) |
-| 33 | 0 feedback: testo A e "Aggiungi feedback" senza casella; solo feedback oltre 90 giorni: testo B, stessa azione, senza casella | E2E `ask.spec.ts`: "no feedback: text A, no field", "only feedback older than 90 days: text B, no field" | S7 | pass (page.test.tsx); E2E scritto, non eseguito |
-| 34 | Quota esaurita: pulsante `aria-disabled`, avviso "Hai usato le 10 domande di {mese}" con "Passa a Pro" su Free, "…100…" senza pulsante su Pro; lo stesso dopo la decima risposta con la risposta visibile | E2E `ask.spec.ts`: "Free at 10 questions: notice and Passa a Pro", "Pro at 100: notice without button", "the tenth answer stays visible under the notice" | S6 | E2E scritto, non eseguito (porta 3000 occupata); logica dell'avviso: pass (ask-copy.test.ts) |
-| 35 | Nota "Userai 1 delle {limite} domande di {mese}." prima, "Ti restano {n} domande di {mese}." dopo, numeri dal server | E2E `ask.spec.ts`: "the quota note before and after the first question" | S6 | testi: pass (ask-copy.test.ts); pagina: E2E scritto, non eseguito |
-| 36 | Attesa: "Risposta in arrivo…" `aria-disabled`, casella `readOnly` col focus, "Sto leggendo {n} feedback…", dopo 15 s il messaggio lungo; due invii ravvicinati, una sola chiamata ad `ask` | E2E `ask.spec.ts`: "waiting state and the 15-second message" (finto gateway lento su marcatore, `page.clock`), "two quick submits make one ask call" (richieste con header `next-action` contate) | S8 | testi: pass (ask-copy.test.ts); comportamento: E2E scritto, non eseguito |
-| 37 | Per ogni motivo (E1, E2, E3/E4, E5, E6, E7, E8, E9) il testo esatto di DESIGN.md, domanda e focus nella casella | E2E `ask.spec.ts`: un test per motivo; E6 dal finto gateway con output fuori schema, E7 con `page.route` che interrompe la action, E8 con cookie cancellati, E5, E3 ed E9 con righe create o tolte dalla chiave segreta dopo l'apertura | S4 | testi: pass (ask-copy.test.ts); pagina: E2E scritto, non eseguito (porta 3000 occupata) |
-| 38 | E2E da tastiera dalla scheda "Chiedi": registrazione, feedback, domanda con Invio, risposta con citazione e numero, focus nella casella, seconda domanda che sostituisce la prima | E2E `ask.spec.ts`: "ask a question from the keyboard and read the answer" (finto gateway esteso: risponde alle domande citando i feedback) | S1 | E2E scritto, non eseguito (porta 3000 occupata) |
-| 39 | `docs/prima-dei-clienti-reali.md` ha la riga sul testo delle domande nel Gateway; `/billing` e landing mostrano "10 domande ai feedback al mese" e "100 domande ai feedback al mese" da `PLAN_LIMITS` | `src/test/docs.test.ts`: "prima-dei-clienti-reali lists the question text"; E2E `ask.spec.ts`: "billing and landing show the question quota" | S6 | pass (docs.test.ts, plan-pages.test.tsx); E2E scritto, non eseguito |
-| 40 | Entro il 2026-09-30, con output: typecheck, lint, test, build, `supabase db reset`, `supabase test db`, `pnpm evals` (entrambi i file), `pnpm test:e2e` | Esecuzione finale in S9, output incollato in "Test output" | S9 | parziale: typecheck, lint, test, build, db reset, test db pass; evals rimandate per decisione di Mario; test:e2e non eseguito (porta 3000 occupata) |
+Tabella riscritta in revisione (build-reviewer, 2026-09-27): quattro colonne come nel contratto di fase 5, slice dentro la cella del test, nomi dei test corretti su quelli veri dei file, esiti dall'esecuzione della revisione ("Test output"), E2E compreso.
+
+| # | Criterion (sintesi) | Test | Result |
+|---|---------------------|------|--------|
+| 1 | Migrazione crea `questions` e `question_runs` con RLS nello stesso file; `supabase db reset` da zero senza errori | S1, S3. `src/test/docs.test.ts`: "enables RLS on questions and question_runs in the same file that creates them"; output di `supabase db reset` | pass |
+| 2 | Utente di A e `anon` ricevono permesso negato o 0 righe su `questions` e `question_runs` di B, senza filtri e per id | S3. pgTAP `supabase/tests/questions.test.sql`: "A cannot read questions, unfiltered", "A cannot read question_runs, unfiltered", lettura per id, "anon cannot read a question by id", "anon cannot read a run by id" | pass |
+| 3 | `authenticated` e `anon`: permesso negato su insert, update, delete delle due tabelle | S3. pgTAP: "authenticated cannot insert/update/delete questions" e "question_runs", stessi sei per `anon` | pass |
+| 4 | Le 4 funzioni solo per `service_role` | S3. pgTAP: "authenticated cannot call start_question / finish_question / fail_question / question_usage", stessi quattro per `anon` | pass |
+| 5 | Free: 10 domande del mese in qualsiasi stato danno `limit`, 9 danno `ok`; Pro 100 e 99 | S3. pgTAP: "Free: with 9 questions this month in mixed states, the tenth is reserved", "Free: with 10 questions this month, the next one is refused", "Pro: with 99 …", "Pro: with 100 …" | pass |
+| 6 | Con `limit` o `busy` la action restituisce il motivo e il modello finto registra 0 chiamate | S4. `src/app/(app)/ask/actions.test.ts`: "returns limit without calling the model", "returns busy without calling the model" | pass |
+| 7 | Quote separate: 3 analisi `done` su Free non cambiano `start_question`; 10 domande non cambiano `analysesThisMonth` | S3, S4. pgTAP: "Free with 3 done analyses this month can still ask", "analyses do not count as questions"; `src/lib/data.test.ts`: "counts the questions of the month apart from the analyses" | pass |
+| 8 | `running` sotto 5 minuti dà `busy`; oltre diventa `failed` con `stale`, conta, la nuova si riserva | S3. pgTAP: "a running question under 5 minutes old makes the next one busy", "over 5 minutes the stuck question no longer blocks: the new one is reserved", "the stuck question is failed as stale in question_runs", "the stale question still counts, with the new one" | pass |
+| 9 | Errore del modello, oltre 60.000 ms o output fuori schema: `failed` con errore in `question_runs`, `ask` restituisce `failed`, `questionsThisMonth` +1 | S4. `ask/actions.test.ts`: "model error is failed and counted", "a model slower than 60 s is failed and counted", "output out of schema is failed and counted, raw text saved" | pass |
+| 10 | Vuota, spazi o oltre 300 caratteri: `invalid`, nessuna riga, 0 chiamate; a capo come spazi | S4. `ask/actions.test.ts`: "empty, blank and 301-character questions are invalid, no row, no call"; `src/lib/questions.test.ts`: "newlines reach the model as spaces" | pass |
+| 11 | 0 feedback negli ultimi 90 giorni: `no_feedback`, nessuna riga, 0 chiamate | S4. `ask/actions.test.ts`: "needs feedback from the last 90 days, today included" | pass |
+| 12 | Senza sessione: `session`, nessuna riga, 0 chiamate | S4. `ask/actions.test.ts`: "without a session returns session, no row, no call" | pass |
+| 13 | `analysisModel()`, `maxOutputTokens: 1500`, timeout 60.000 ms | S1. `questions.test.ts`: "calls the model with the analysis model, 1500 output tokens and a 60 s timeout" | pass |
+| 14 | Istruzioni solo in `instructions`; domanda e feedback nei blocchi dati con `<` codificato; `</question_data>` una volta sola | S1. `questions.test.ts`: "the question and the feedback travel only as data", "a question closing its block cannot leave it" | pass |
+| 15 | 90 giorni, massimo 500, dal più recente: con 501 il prompt ne ha 500 e non il più vecchio | S4. `ask/actions.test.ts`: "sends at most the 500 most recent feedback of the last 90 days" | pass |
+| 16 | Scarto con motivo in `issues`, un test per motivo | S4. `questions.test.ts`: "drops unknown_feedback", "drops quote_not_linked", "drops quote_not_in_feedback (empty and inexact)", "drops second_quote_same_feedback", "drops too_many_quotes after the fifth" | pass |
+| 17 | `finish_question` ricontrolla con `strpos`; citazioni di feedback eliminati tolte, e senza citazioni `no_evidence` | S3. pgTAP: "a quote not in the saved text is refused", "the refused question stays running", "the quote of a deleted feedback is dropped", "with no quote left the outcome is no_evidence" | pass |
+| 18 | `feedback_count` = numeri distinti ed esistenti (`[1, 1, 2, 999]` vale 2); nessun campo di conteggio nello schema | S1. `questions.test.ts`: "counts distinct existing linked feedback", "the output schema has no count field"; `ask/actions.test.ts`: "saves feedback_count from the server count" | pass |
+| 19 | `answered` con almeno una citazione, altrimenti `no_evidence` senza testo del modello, numero o citazioni | S1, S8. `ask/actions.test.ts`: "no verified quote is no_evidence and returns no model text"; `src/components/ask-answer.test.tsx`: "no_evidence shows the sentence without number, text or quotes" | pass |
+| 20 | Pagina con `answered`: h2, numero con "ne parlano"/"ne parla", testo, 1-5 citazioni con canale e data senza cliente, perimetro | S8. `ask-answer.test.tsx`: "shows heading, count, text, quotes with channel and date and the perimeter", "one feedback: feedback ne parla", "no customer name in quotes: …"; E2E `e2e/ask.spec.ts`: "ask a question from the keyboard and read the answer" | pass |
+| 21 | Risposta come testo; nessun `dangerouslySetInnerHTML` nei file di `/ask` | S8. `ask-answer.test.tsx`: "model markup is shown as text"; `src/test/docs.test.ts`: "never use dangerouslySetInnerHTML" | pass |
+| 22 | Una nuova domanda sostituisce la precedente; il prompt nuovo non contiene la domanda o la risposta precedenti | S4. `questions.test.ts`: "has the same text for the same question, whatever was asked before"; `ask/actions.test.ts`: "a second question's prompt carries nothing from the first"; E2E "ask a question from the keyboard and read the answer" (seconda domanda) | pass |
+| 23 | `pnpm evals` su `questions.json`: soglia, must-pass, G1 a 0 violazioni; risultato in `evals/results/` | S2. `evals/questions.eval.ts`: non esiste | non eseguito: S2 rimandata per decisione di Mario `[doc:user-2026-09-27-niente-evals]` |
+| 24 | q13, q14, q15, q16: nessuna stringa `forbidden` nel testo | S2. `evals/questions.eval.ts`: non esiste | non eseguito: S2 rimandata per decisione di Mario `[doc:user-2026-09-27-niente-evals]` |
+| 25 | Riga in `question_runs` con input completo; alla chiusura output, `issues`, token, durata, `cost_usd`, errore se fallita, `finished_at` | S1. `ask/actions.test.ts`: "logs the run: input, output, issues, tokens, duration, cost", "model error is failed and counted" (errore e `finished_at`) | pass |
+| 26 | Con errore del modello `console.error` riceve solo nome dell'errore e id | S4. `ask/actions.test.ts`: "logs only the error name and the question id" | pass |
+| 27 | Con `POSTHOG_KEY`, una sola richiesta `question_answered` con `distinct_id` = workspace e proprietà esattamente le 4 | S1. `src/lib/analytics.test.ts`: "sends question_answered with only citation_count and outcome"; `ask/actions.test.ts`: "asks for question_answered once, for answered and for no_evidence, with counts only" | pass |
+| 28 | Marcatore in domanda, risposta e feedback: assente dal corpo verso PostHog | S5. `src/app/(app)/ask/analytics.test.ts`: "the PostHog body carries no question, answer or feedback text" | pass |
+| 29 | Due risposte, due richieste; nessuna riga in `analytics_milestones`; vincolo invariato | S5. `ask/analytics.test.ts`: "is sent every time and never claims a milestone", "analytics_milestones still refuses question_answered" | pass |
+| 30 | Nessuna richiesta per `failed`, `limit`, `busy`, `invalid`, `session`, `no_feedback`; nessuna senza chiave | S5. `ask/analytics.test.ts`: "no event for failed, limit, busy, invalid, session, no_feedback", "without POSTHOG_KEY no question sends anything" | pass |
+| 31 | `docs/analytics.md` elenca `question_answered` con proprietà, momento d'invio, senza `analytics_milestones` | S5. `docs.test.ts`: "documents question_answered, its properties, when it is sent, and that it skips analytics_milestones" | pass |
+| 32 | Scheda "Chiedi" tra "Temi" e "Feedback" con `aria-current="page"`; `/ask` senza sessione porta a `/login` | S1. E2E: "the Chiedi tab sits between Temi and Feedback and marks the page", "/ask without a session goes to /login" | pass |
+| 33 | 0 feedback: testo A senza casella; solo feedback oltre 90 giorni: testo B senza casella | S7. `src/app/(app)/ask/page.test.tsx`: "no feedback: text A …", "only feedback older than 90 days: text B …"; E2E: "no feedback: text A, no field", "only feedback older than 90 days: text B, no field" | pass |
+| 34 | Quota esaurita: pulsante `aria-disabled`, avviso Free con "Passa a Pro", Pro senza; lo stesso dopo la decima risposta | S6. E2E: "Free at 10 questions: notice and Passa a Pro, button off", "Pro at 100 questions: notice without button", "the tenth answer stays visible under the notice"; `ask-copy.test.ts`: "E3 on Free offers Pro, E4 on Pro does not" | pass |
+| 35 | Nota "Userai 1 delle…" prima, "Ti restano…" dopo, numeri dal server | S6. E2E: "the quota note before and after the first question"; `ask-copy.test.ts`: "before the first question of the month, then what is left, with numbers from the server" | pass |
+| 36 | Attesa: pulsante, casella `readOnly` col focus, "Sto leggendo…", messaggio dei 15 s; due invii ravvicinati, una sola chiamata | S8. E2E: "waiting state and the 15-second message" (passa), "two quick submits make one ask call" (fallisce: 2 chiamate, vedi Revisione, R2) | fail |
+| 37 | Per ogni motivo il testo esatto di DESIGN.md, domanda e focus nella casella | S4. E2E: un test per motivo, E1-E9. Passano E1, E2, E3, E5, E6, E7, E8, E9; fallisce "E4: Pro quota used up from another tab" (vedi Revisione, R1) | fail |
+| 38 | E2E da tastiera dalla scheda "Chiedi": registrazione, feedback, domanda con Invio, risposta con citazione e numero, focus, seconda domanda | S1. E2E: "ask a question from the keyboard and read the answer" | pass |
+| 39 | Riga in `docs/prima-dei-clienti-reali.md`; `/billing` e landing con le quote da `PLAN_LIMITS` | S6. `docs.test.ts`: "lists the question text that goes through the Vercel AI Gateway"; `src/test/plan-pages.test.tsx`: "the landing shows the question quota of Free and Pro", "/billing shows the question quota of Free and Pro"; E2E: "billing and landing show the question quota" | pass |
+| 40 | Con output: typecheck, lint, test, build, `supabase db reset`, `supabase test db`, `pnpm evals` (entrambi i file), `pnpm test:e2e` | S9. Esecuzione della revisione in "Test output" | fail: `pnpm evals` non eseguito (decisione di Mario), `pnpm test:e2e` 20 passati e 2 falliti |
 
 **Criteri senza test pianificato: nessuno.** Tre criteri hanno una parte che non è un'asserzione su comportamento e che ho coperto così, dichiarandolo:
 
@@ -190,7 +192,7 @@ Nessun test di componente esiste oggi; `ask-answer.test.tsx` è il primo e usa s
 - **AC 31** e **AC 39** (metà sui documenti): un test che legge il documento. È una verifica debole, dice che le parole ci sono, non che siano giuste; la revisione di S9 le rilegge.
 - **AC 40** è un criterio di processo: il suo "test" è l'esecuzione dei comandi, con output incollato.
 
-**Evidenza per la strumentazione.** Non c'è `analytics.query`: `POSTHOG_KEY` non è configurata. La prova di AC 27-30 sarà la richiesta costruita davvero da `trackEvent` e catturata da un `fetch` finto nei test, con corpo incollato, etichettata `[code:...]` come evidenza più debole di un arrivo in PostHog. La verifica in PostHog UE resta alla fase 6, quando Mario decide la chiave di produzione (domanda aperta della spec).
+**Evidenza per la strumentazione.** Non c'è `analytics.query`: `POSTHOG_KEY` non è configurata. La prova di AC 27-30 sarà la richiesta costruita davvero da `trackEvent` e catturata da un `fetch` finto nei test, con corpo incollato, etichettata come tag `code` sul file di test, come evidenza più debole di un arrivo in PostHog. La verifica in PostHog UE resta alla fase 6, quando Mario decide la chiave di produzione (domanda aperta della spec).
 
 ## Controllo dello scope da preparare
 
@@ -210,61 +212,136 @@ Fuori scope che una slice potrebbe tirare dentro "già che c'è", da controllare
 
 ## Test output
 
-S9, 2026-09-27, dopo l'ultimo cambio di codice (`41af370`), da zero:
+Esecuzione della revisione (build-reviewer), 2026-09-27 dalle 01:24 CEST, su `98d7939` con albero pulito, dopo l'ultimo cambio di codice (`41af370`). Output copiato dal log, righe vuote e avvisi di aggiornamento della CLI tolti.
 
 ```
-$ supabase db reset
+===== supabase db reset 01:24:51
+Resetting local database...
+Recreating database...
+Initialising schema...
+Seeding globals from roles.sql...
+Applying migration 20260924225437_create_core_schema.sql...
+Applying migration 20260924231853_collect_feedback.sql...
+Applying migration 20260925090000_form_limit_for_full_rooms.sql...
+Applying migration 20260925120000_ai_analysis.sql...
+Applying migration 20260925150000_stripe_billing.sql...
+Applying migration 20260925180000_analytics_milestones.sql...
+Applying migration 20260925200000_form_attempts_cleanup_index.sql...
+Applying migration 20260926090000_delete_feedback.sql...
+Applying migration 20260926120000_finish_analysis_skips_deleted_feedback.sql...
 Applying migration 20260927120000_questions.sql...
+Seeding data from supabase/seed.sql...
+Restarting containers...
 Finished supabase db reset on branch main.
-
-$ supabase test db
+exit=0
+===== supabase test db
+Connecting to local database...
 .../supabase/tests/feedback_delete_policy.test.sql .. ok
 .../supabase/tests/questions.test.sql ............... ok
 All tests successful.
-Files=2, Tests=52,  1 wallclock secs
+Files=2, Tests=52,  0 wallclock secs ( 0.01 usr +  0.00 sys =  0.01 CPU)
 Result: PASS
-
-$ pnpm typecheck
+exit=0
+===== pnpm typecheck
+> next typegen && tsc --noEmit
+Generating route types...
 ✓ Types generated successfully
-typecheck exit=0
-
-$ pnpm lint
+exit=0
+===== pnpm lint
 > eslint
-(nessun problema)
-
-$ pnpm test
+exit=0
+===== pnpm test
+> vitest run
+ RUN  v5.0.1 /Users/mariomiletta/Dev Projects/voce-chiedi
  Test Files  22 passed (22)
       Tests  267 passed (267)
-   Duration  3.22s
-
-$ pnpm build
-✓ Compiled successfully in 1721ms
+   Start at  01:25:22
+   Duration  3.04s (tests 80%, import 13%, transform 7%)
+exit=0
+===== pnpm build
+▲ Next.js 16.3.6 (Turbopack)
+✓ Compiled successfully in 1785ms
+  Finished TypeScript in 2.6s ...
+✓ Generating static pages using 11 workers (14/14) in 170ms
 ├ ƒ /ask
-
-$ pnpm test:e2e
-non eseguito: porta 3000 occupata (node 27760, worktree voce-prova-live), non fermato perché non è di questa sessione
-
-$ pnpm evals
-non eseguito: rimandato per decisione di Mario (2026-09-27)
+ƒ Proxy (Middleware)
+exit=0
 ```
 
-Rispetto alla baseline: `pnpm test` da 202 a 267 test (13 a 22 file), nessun fallimento; pgTAP da 2 a 52.
+**E2E, eseguito in revisione.** La porta 3000 resta del dev server di `voce-prova-live` (PID 27760, non toccato). La suite è girata sulla 3001 con una copia temporanea di `playwright.config.ts` (solo `localhost:3000` → `3001` e `pnpm dev --port 3001`), cancellata subito dopo; nessun file del repository modificato. Il link di conferma di Mailpit punta ancora al `site_url` sulla 3000: nei due test che si registrano via email la conferma l'ha servita il dev server dell'altro worktree (stesso database locale, i cookie di `localhost` valgono su entrambe le porte). Entrambi passano; è una condizione di prova da ricordare, non una prova della rotta `/auth/confirm` di questo branch.
+
+```
+$ pnpm exec playwright test --config playwright.review-3001.config.ts
+  ✓   1 [chromium] › e2e/main-flow.spec.ts:7:5 › sign up, add feedback and get the first themes (3.1s)
+  ✓   2 [chromium] › e2e/ask.spec.ts:7:5 › ask a question from the keyboard and read the answer (3.4s)
+  ✓   3 [chromium] › e2e/ask.spec.ts:56:5 › the Chiedi tab sits between Temi and Feedback and marks the page (616ms)
+  ✓   4 [chromium] › e2e/ask.spec.ts:64:5 › /ask without a session goes to /login (209ms)
+  ✓   5 [chromium] › e2e/ask.spec.ts:96:5 › E1: an empty question is not sent (632ms)
+  ✓   6 [chromium] › e2e/ask.spec.ts:106:5 › E2: over 300 characters, while typing and on Enter (632ms)
+  ✓   7 [chromium] › e2e/ask.spec.ts:118:5 › E3: Free quota used up from another tab (687ms)
+  ✘   8 [chromium] › e2e/ask.spec.ts:129:5 › E4: Pro quota used up from another tab (5.7s)
+  ✓   9 [chromium] › e2e/ask.spec.ts:141:5 › E5: another question is running (726ms)
+  ✓  10 [chromium] › e2e/ask.spec.ts:153:5 › E6: the answer did not arrive, and the question counts (725ms)
+  ✓  11 [chromium] › e2e/ask.spec.ts:164:5 › E7: the request does not reach Voce (693ms)
+  ✓  12 [chromium] › e2e/ask.spec.ts:178:5 › E8: the session expired (671ms)
+  ✓  13 [chromium] › e2e/ask.spec.ts:189:5 › E9: the feedback of the last 90 days are gone (701ms)
+  ✓  14 [chromium] › e2e/ask.spec.ts:202:5 › the quota note before and after the first question (716ms)
+  ✓  15 [chromium] › e2e/ask.spec.ts:211:5 › Free at 10 questions: notice and Passa a Pro, button off (637ms)
+  ✓  16 [chromium] › e2e/ask.spec.ts:222:5 › Pro at 100 questions: notice without button (624ms)
+  ✓  17 [chromium] › e2e/ask.spec.ts:233:5 › the tenth answer stays visible under the notice (791ms)
+  ✓  18 [chromium] › e2e/ask.spec.ts:245:5 › billing and landing show the question quota (1.1s)
+  ✓  19 [chromium] › e2e/ask.spec.ts:257:5 › no feedback: text A, no field (607ms)
+  ✓  20 [chromium] › e2e/ask.spec.ts:265:5 › only feedback older than 90 days: text B, no field (609ms)
+  ✓  21 [chromium] › e2e/ask.spec.ts:277:5 › waiting state and the 15-second message (21.1s)
+  ✘  22 [chromium] › e2e/ask.spec.ts:294:5 › two quick submits make one ask call (846ms)
+
+  1) E4: Pro quota used up from another tab
+    Locator: getByRole('heading', { name: 'Hai usato le 100 domande di settembre' })
+    Expected: visible   Error: element(s) not found
+    (la pagina mostra: heading "Hai usato le 10 domande di settembre", link "Passa a Pro")
+  2) two quick submits make one ask call
+    Expected: 1
+    Received: 2
+
+  2 failed
+  20 passed (45.1s)
+exit=1
+```
+
+Ripetizione dei due falliti, 4 volte ciascuno: `8 failed`, esito identico ogni volta. Deterministici, non instabili.
+
+**`pnpm evals`**: non eseguito. S2 rimandata per decisione di Mario `[doc:user-2026-09-27-niente-evals]`; `evals/questions.eval.ts` non esiste.
+
+Rispetto alla baseline: `pnpm test` da 202 a 267 test (da 13 a 22 file), nessun fallimento; pgTAP da 2 a 52; E2E da non eseguito a 20 passati e 2 falliti su 22.
 
 ## Instrumentation
 
-Da riempire in S1 e S5.
+Nessuna `analytics.query`: `POSTHOG_KEY` non è configurata. L'evidenza è la richiesta costruita davvero da `trackEvent` dentro la action `ask` e catturata da un `fetch` finto al posto di PostHog UE: più debole di un arrivo, perché non prova la chiave, la rete né l'ingestione. L'arrivo in PostHog UE resta da verificare in fase 6, dopo la decisione di Mario sulla chiave di produzione.
 
 | Event | Triggered by | Arrived | Properties verified | Evidence |
 |-------|--------------|---------|---------------------|----------|
-| `question_answered` | domanda chiusa con `answered` o `no_evidence` (action `ask`) | non verificato in PostHog: `POSTHOG_KEY` non configurata. Richiesta costruita e catturata dal `fetch` finto nei test | `event`, `distinct_id` = workspace, proprietà esattamente `citation_count`, `outcome`, `$process_person_profile: false`, `$geoip_disable: true`; nessun testo (marcatore assente) | `[code:src/app/(app)/ask/analytics.test.ts]`, evidenza più debole di un arrivo; corpo incollato in `docs/notes/2026-09-27-chiedi-s5-evento-e-riservatezza.md` |
+| `question_answered` | domanda chiusa con `answered` o `no_evidence` dalla action `ask` (database locale, modello finto) | yes, come richiesta catturata al confine della rete; non come evento in PostHog | URL `https://eu.i.posthog.com/i/v0/e/`, `event`, `distinct_id` = id del workspace, proprietà esattamente `citation_count`, `outcome`, `$process_person_profile: false`, `$geoip_disable: true` (`toEqual` sull'intero corpo); nessun marcatore di testo; una richiesta per risposta; nessuna per `failed`, `limit`, `busy`, `invalid`, `session`, `no_feedback` o senza chiave | `[code:src/app/(app)/ask/analytics.test.ts]` `[code:src/lib/analytics.test.ts]`, eseguiti in revisione: output sotto |
+
+```
+$ pnpm exec vitest run "src/app/(app)/ask/analytics.test.ts" src/lib/analytics.test.ts --reporter=verbose
+ ✓ src/app/(app)/ask/analytics.test.ts > question_answered > the PostHog body carries no question, answer or feedback text 74ms
+ ✓ src/lib/analytics.test.ts > trackEvent > sends question_answered with only citation_count and outcome 2ms
+ ✓ src/app/(app)/ask/analytics.test.ts > question_answered > is sent every time and never claims a milestone 41ms
+ ✓ src/app/(app)/ask/analytics.test.ts > question_answered > analytics_milestones still refuses question_answered 8ms
+ ✓ src/app/(app)/ask/analytics.test.ts > question_answered > no event for failed, limit, busy, invalid, session, no_feedback 36ms
+ ✓ src/app/(app)/ask/analytics.test.ts > question_answered > without POSTHOG_KEY no question sends anything 16ms
+ (più 5 test di trackMilestone, tutti passati)
+ Test Files  2 passed (2)
+      Tests  11 passed (11)
+```
 
 ## Eval results
 
-Da incollare in S2 e di nuovo in S9 se istruzioni, schema o modello cambiano dopo S2.
+Nessun run. La spec dichiara `Model output: yes` (set di 20 casi, soglia 17 casi su 20, 7 must-pass più G1 su tutto il set), ma S2 non è stata costruita: `evals/questions.eval.ts` non esiste e nessun run del modello vero è avvenuto, per decisione di Mario `[doc:user-2026-09-27-niente-evals]`. La condizione 5.5 non è soddisfatta. Il messaggio di Mario rimanda la slice; non è una deroga al gate, che resta sua da firmare.
 
 ## Scope check
 
-Diff `6a02ab8..HEAD` letto contro le 18 voci fuori scope di `04-spec.md` (grep sui segnali della tabella "Controllo dello scope da preparare", più lettura dei file di Chiedi).
+Ricontrollato in revisione sul diff `e4efade..HEAD` di `src`, `supabase`, `e2e`, `evals` (3.370 righe): grep dei segnali (`streamText`, `streamObject`, `useChat`, `clipboard`, `customer`, embedding e vettori, voto, `/ask/[`, `localStorage`, cronologia, filtri) con zero occorrenze nel codice di prodotto (`customer` compare solo nei test che ne verificano l'assenza, `dangerouslySetInnerHTML` solo nel test che lo vieta); `analysis.ts`, `themes/` e `app-bar.tsx` non toccati; lettura di action, pagina, componenti, migrazione. Esito del builder confermato, voce per voce. Diff `6a02ab8..HEAD` letto contro le 18 voci fuori scope di `04-spec.md` (grep sui segnali della tabella "Controllo dello scope da preparare", più lettura dei file di Chiedi).
 
 | Out-of-scope item (phase 4) | Built? | Note |
 |---|---|---|
@@ -291,13 +368,15 @@ Diff `6a02ab8..HEAD` letto contro le 18 voci fuori scope di `04-spec.md` (grep s
 
 ## Deviations from spec
 
-- **S2 ed evals (AC 23, 24, e `pnpm evals` di AC 40)**: rimandate per decisione di Mario (2026-09-27), "lascia stare le evals". Nessun `evals/questions.eval.ts`.
-- **Proxy**: su `/ask` le richieste della server action senza sessione non vengono mandate a `/login`, altrimenti E8 non potrebbe comparire (la action risponde `session` da sé). Non scritto nella spec, necessario per AC 37 (E8).
-- **`src/components/ask-copy.ts`**: un file in più oltre a `AskForm` e `AskAnswer`, con i testi che dipendono da numeri e motivi, testato da solo perché l'E2E qui non gira.
-- **`feedbackInWindow`** restituito dalla action: serve al perimetro parziale oltre 500 senza un'altra lettura.
-- **E6 al singolare** con 1 domanda rimasta ("ti resta 1 domanda di {mese}"): il design dà solo il plurale e il caso 0.
+Ogni deviazione è dichiarata; nessuna scoperta in revisione che non fosse scritta. Giudizio del revisore accanto a ciascuna.
 
+- **S2 ed evals (AC 23, 24, e `pnpm evals` di AC 40)**: rimandate per decisione di Mario (2026-09-27), "lascia stare le evals" `[doc:user-2026-09-27-niente-evals]`. Nessun `evals/questions.eval.ts`. *Giudizio:* dichiarata, ma non è una modifica della spec (la spec dice ancora `Model output: yes` e AC 23-24) né una deroga al gate: fa fallire 5.5 e, per AC 23, 24 e 40, 5.2. Vedi Revisione, B1.
+- **Proxy**: su `/ask` le richieste della server action senza sessione non vengono mandate a `/login`, altrimenti E8 non potrebbe comparire (la action risponde `session` da sé). *Giudizio:* nessun aggiramento dell'autenticazione, provato su un dev server locale (Revisione, R3). Spec da emendare con una riga in "In scope", voce 1.
+- **`src/components/ask-copy.ts`**: un file in più oltre a `AskForm` e `AskAnswer`, con i testi che dipendono da numeri e motivi. *Giudizio:* struttura, non comportamento; fa parte della rimozione in un commit (va aggiunto all'elenco "Rimozione" della spec).
+- **`feedbackInWindow`** restituito dalla action: serve al perimetro parziale oltre 500 senza un'altra lettura. *Giudizio:* è un numero, non testo, e realizza uno stato già in spec (F1 risposta, parziale). Accettabile.
+- **E6 al singolare** con 1 domanda rimasta ("ti resta 1 domanda di {mese}"): il design dà solo il plurale e il caso 0. *Giudizio:* correzione grammaticale di un caso che il design non copre; da riportare in DESIGN.md dell'iniziativa.
 - Il piano del repository si chiama `docs/plans/2026-09-27-chiedi-ai-feedback.md` e non `docs/plans/2026-09-27-chiedi.md` come scritto in `04-spec.md` (in scope, voce 14): il nome l'ha dato il dispatch di questa fase `[doc:user-2026-09-27-spec-dispatch]`. Nessun criterio dipende dal nome.
+- **Trovata in revisione, non una deviazione ma una distanza dalla spec:** la rimozione in un commit, come la chiede la spec ("Rimozione"), tocca anche `src/lib/data.ts`, `src/lib/plans.ts`, `src/lib/supabase/admin.ts`, `src/lib/analytics.ts`, `/billing` e la landing. Già scritto dal builder nello Scope check; resta possibile in un commit, con più file di quelli elencati.
 
 ## Log
 
@@ -438,3 +517,73 @@ Verifica a mano nel browser: non fatta. Host dell'anteprima T3 assente, Playwrig
 ### S9, chiusura (2026-09-27)
 
 Nota: `docs/notes/2026-09-27-chiedi-s9-chiusura.md`. Output in "Test output", scope in "Scope check". Non eseguiti qui: `build-reviewer` e gate 5 (li esegue il parent), E2E (porta 3000), evals (decisione di Mario), verifica a mano nel browser (host T3 assente, Playwright bloccato dall'hook).
+
+## Revisione (build-reviewer, 2026-09-27)
+
+Revisione indipendente su due assi, standard del codice e conformità alla spec, sul diff `e4efade..HEAD` (`98d7939`). Nessun file di produzione modificato; l'unica modifica è questo documento. Comandi rieseguiti dal revisore: output in "Test output".
+
+### Asse 1: standard (regole di sicurezza di `AGENTS.md`)
+
+| Regola | Esito | Dove |
+|--------|-------|------|
+| RLS nella stessa migrazione, prima dei dati | rispettata | `supabase/migrations/20260927120000_questions.sql`: `enable row level security` e `revoke all` subito dopo ciascun `create table`; pgTAP AC 2-4 |
+| Validazione lato server con schema esplicito | rispettata | `src/app/(app)/ask/actions.ts:21` `z.strictObject({ question })`; un campo in più (`workspaceId`) restituisce `invalid`, provato con una chiamata diretta alla action |
+| Testo dei feedback (e della domanda) separato nel prompt, trattato come dato | rispettata | `src/lib/questions.ts`: istruzioni costanti nel campo `instructions`, domanda e feedback in JSON con `<` codificato (AC 14) |
+| Mai reso come HTML | rispettata | `src/components/ask-answer.tsx` rende tutto come testo; nessun `dangerouslySetInnerHTML` (AC 21) |
+| Quota controllata prima della chiamata al modello | rispettata | `start_question` (lock sulla riga del workspace, `busy`, `limit`) prima di `runQuestion`; AC 6 con 0 chiamate |
+| Niente testo a PostHog | rispettata | proprietà solo `citation_count` e `outcome`, corpo intero confrontato con `toEqual` e marcatore assente (AC 27, 28) |
+| Segreti | rispettata | nessun segreto nel diff; nel repository solo `.env.example`; funzioni solo per `service_role`, chiamate da `src/lib/supabase/admin.ts` |
+| Log senza testo | rispettata | `console.error` con solo nome dell'errore e id (AC 26) |
+
+### Asse 2: conformità alla spec
+
+36 criteri su 40 hanno un test che passa nell'esecuzione della revisione. Non passano: 23 e 24 (evals mai costruite), 36 e 37 (un test E2E ciascuno fallisce), 40 (processo: evals ed E2E). Gli stati del design sono coperti dall'E2E, che in revisione è girato per la prima volta: 20 passati su 22.
+
+### Risultati, dal più grave
+
+**B1. Gate 5.5: nessun run delle evals su una funzione che manda testo non fidato a un modello.** La spec dichiara `Model output: yes`; `evals/questions.eval.ts` non esiste. Il modo lite non allenta 5.5. Il rischio concreto non è la soglia ma i must-pass q13-q16 (iniezione nella domanda e nei feedback) e q20 (citazione inventata), mai provati sul modello vero, prima di una demo proiettata davanti a circa 230 persone. Le difese del server (citazioni verificate carattere per carattere, testo mai reso come HTML) limitano il danno alle citazioni; il testo della risposta (`answer`) invece arriva a schermo così com'è e solo le evals lo misurano. Si chiude costruendo S2 ed eseguendola (serve la credenziale del Gateway, P1), oppure con una deroga firmata da Mario. Non spetta al revisore.
+
+**R1. AC 37, E4: con il piano cambiato dopo l'apertura della pagina, l'avviso di quota mostra il piano vecchio.** Test E2E "E4: Pro quota used up from another tab" (`e2e/ask.spec.ts:129`), fallito 5 volte su 5. Scenario: pagina aperta su Free, piano portato a Pro (`e2e/ask.spec.ts:131`), 100 domande nel mese, Invio: il server risponde `limit`, la pagina mostra "Hai usato le 10 domande di settembre" con "Passa a Pro". Causa: il motivo `limit` non porta né quota né piano (`src/app/(app)/ask/actions.ts:40` e `:90`), e l'avviso si calcola dal `plan` e dalla quota letti all'apertura (`src/components/ask-form.tsx:66-67`). Nel caso normale (piano invariato) E4 è giusto: "Pro at 100 questions: notice without button" passa. Gravità bassa sul prodotto (un Pro che ha appena pagato vede l'offerta di Pro), ma il test del criterio fallisce. Due strade: restituire con `limit` la quota e il piano letti dal server, come fa già `failed` con `usage` (coerente con il caso limite della spec "Il PM passa da Free a Pro a metà mese"); oppure dichiarare fuori perimetro il cambio di piano a pagina aperta e cambiare il test perché imposti Pro prima di aprire la pagina. Consiglio la prima.
+
+**R2. AC 36: il test "two quick submits make one ask call" fallisce per come è scritto, non per il codice.** `e2e/ask.spec.ts:294`, fallito 5 volte su 5 con `Received: 2`. Dalla traccia di Playwright: prima richiesta della action alle 23:27:12.902 UTC, risposta in 54 ms; seconda alle 23:27:13.014, dopo che la prima risposta era arrivata. I due Invio (`:301-302`) hanno prodotto una sola chiamata; la seconda viene dal clic sul pulsante (`:303`), arrivato quando il finto gateway aveva già risposto: è una domanda nuova e legittima. Il test non può passare con un gateway che risponde in meno di un clic. Correzione nel test: usare il marcatore lento del finto gateway (come in "waiting state and the 15-second message") oppure togliere il clic. Finché non passa, "due invii ravvicinati, una sola chiamata" non è provato.
+
+**R3. Deviazione del proxy: nessun aggiramento dell'autenticazione.** Provata su un dev server locale sulla 3001, senza sessione:
+- `GET /ask` → `307` verso `/login` (invariato).
+- `POST /ask` con la action `ask` vera → `{"ok":false,"reason":"session"}`; con un campo `workspaceId` in più → `invalid`. La action controlla la sessione prima di qualsiasi lettura, scrittura o chiamata al modello (AC 12).
+- `POST /ask` con un id di action inesistente → `404 Server action not found.`
+- Le action raggiungibili da `/ask` (manifest della build) sono `ask`, le 4 action di accesso e `updateTheme`: le prime sono pubbliche già da `/login`, `updateTheme` è raggiungibile senza sessione già dalla landing `/`, che non è in `APP_PATHS`, e si ferma su `getCurrentWorkspace` e RLS. L'esenzione non espone nulla di nuovo; il proxy era già dichiarato "not the security boundary" (`src/proxy.ts:8`).
+- Residuo: `GET /ask` senza sessione con un header `next-action` falsificato → `500` (errore `42501` su `workspaces` per `anon`) invece del redirect. Nessun dato esce; è una pagina d'errore invece di `/login` per chi falsifica l'header. Gravità bassa; si chiude restringendo l'esenzione a `request.method === "POST"` in `src/proxy.ts:35`.
+
+**R4. Accessibilità: l'avviso E3/E4 che arriva dal server non viene annunciato.** Con `limit` restituito dalla action (quota finita da un'altra scheda) la regione `role="status"` resta vuota: `FailureNote` non ha un caso per `limit` e restituisce `null` (`src/components/ask-form.tsx:206-207`). DESIGN.md, "Annuncio della risposta": la regione annuncia "il testo dell'errore". L'avviso compare sopra la casella, ma chi usa un lettore di schermo non lo sente e il focus resta nella casella. Gravità bassa, fuori dai test.
+
+**R5. Una lettura della quota fallita dopo la chiusura trasforma una risposta in "non è arrivata".** In `src/app/(app)/ask/actions.ts:104-105`, `trackEvent` parte e poi `questionUsage` legge la quota dentro lo stesso `try`: se quella lettura fallisce, il `catch` chiama `failQuestion` (che non cambia nulla, la domanda è già `done`) e la pagina mostra E6 per una domanda che ha una risposta salvata ed evento inviato. Scenario raro (errore del database tra due chiamate), gravità bassa. Si chiude leggendo la quota fuori dal `try`, o prima di `trackEvent`.
+
+**N1. Condizione di prova dell'E2E.** I due test che si registrano via email hanno seguito il link di conferma sulla 3000, servito dall'altro worktree (`site_url` in `supabase/config.toml:158`). Passano, ma non provano `/auth/confirm` di questo branch; il branch non la tocca.
+
+**N2. Tabella dei criteri.** Il builder aveva nomi di test descrittivi diversi da quelli nei file (per esempio AC 7, 22, 29, 30) e una quinta colonna che il gate non legge. Riscritta con i nomi veri e gli esiti della revisione.
+
+### Verifica della strumentazione
+
+`question_answered`: richiesta costruita dalla action vera e catturata al posto di PostHog UE, corpo intero verificato, rieseguita in revisione (11 test su 11). Evidenza di tipo `code`, più debole di un arrivo: la chiave di produzione è una domanda aperta della spec, e l'arrivo in PostHog va provato in fase 6.
+
+### Gate 5
+
+Eseguito dal revisore con `node …/bos.mjs gate 5 --root .` dopo le modifiche a questo documento, 2026-09-27. Tutte le condizioni sono decise dallo script; nessuna deroga scritta.
+
+| # | Result | Detail |
+|---|--------|--------|
+| E.1 | pass | every tag resolves |
+| 5.1 | pass | 40 criteria mapped |
+| 5.2 | fail | not passing: 23, 24, 36, 37, 40 |
+| 5.3 | pass | 1 events verified (richiesta catturata nei test, evidenza `code` più debole di un arrivo in PostHog) |
+| 5.4 | pass | 18 of 18 out-of-scope items checked |
+| 5.5 | fail | no pass rate in Eval results |
+
+## GATE 5 FAILED
+
+**Failed condition:** 5.2 "Those tests pass: pasted runner output, not a claim that they pass" e 5.5 "The eval set passes: pasted eval output at or above the threshold, every must-pass case passing".
+**Found:** 5.2: AC 23 e 24 senza test eseguito (evals rimandate), AC 36 e 37 con un test E2E fallito ciascuno ("two quick submits make one ask call", "E4: Pro quota used up from another tab"), AC 40 incompleto (evals non eseguite, E2E 20 su 22). 5.5: nessun run delle evals, `evals/questions.eval.ts` non esiste.
+**Satisfied by:** 5.2: i due test E2E verdi (R2 si corregge nel test; R1 nel codice o nel test, decisione del parent) e le evals eseguite per AC 23, 24, 40. 5.5: `pnpm evals` su `evals/questions.json` con almeno 17 casi su 20, i 7 must-pass e G1 a 0 violazioni, output incollato in "Eval results".
+**Cheapest path:** R1 e R2 sono piccoli: 2 file (`actions.ts` e `ask-form.tsx`, o solo `e2e/ask.spec.ts`), più una riesecuzione dell'E2E sulla 3001. S2 è piccola nel codice (1 file sul modello di `evals/analysis.eval.ts`) ma bloccata dalla credenziale del Vercel AI Gateway (P1), e il suo esito sul modello vero non è prevedibile. Senza S2 il gate passa solo con una deroga su 5.2 (AC 23, 24, 40) e 5.5 firmata da Mario.
+
+Remaining conditions: 4/6
