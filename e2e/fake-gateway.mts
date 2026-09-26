@@ -4,7 +4,8 @@ import { createServer } from "node:http"
 // It answers every analysis with one theme that groups all the feedback it received, quoting the
 // first two, so the output passes the checks in src/lib/analysis.ts. It answers every question
 // (a prompt with <question_data>) by linking and quoting the first feedback, so the output passes
-// the checks in src/lib/questions.ts. No real model is ever called.
+// the checks in src/lib/questions.ts. A question with FUORI_SCHEMA gets text that is not JSON, and one
+// with LENTA gets its answer after 20 seconds. No real model is ever called.
 
 const PORT = Number(process.env.FAKE_GATEWAY_PORT ?? 4010)
 
@@ -60,18 +61,26 @@ createServer((req, res) => {
       return
     }
     const text = userText(JSON.parse(body).prompt)
-    const output = text.includes("<question_data>") ? answerFor(text) : themesFor(text)
-    res.writeHead(200, { "content-type": "application/json" })
-    res.end(
-      JSON.stringify({
-        content: [{ type: "text", text: JSON.stringify(output) }],
-        finishReason: { unified: "stop", raw: "end_turn" },
-        usage: {
-          inputTokens: { total: 1200, noCache: 1200 },
-          outputTokens: { total: 300, text: 300 },
-        },
-        warnings: [],
-      })
-    )
+    const question = text.match(/<question_data>([\s\S]*)<\/question_data>/)?.[1] ?? ""
+    const output = question.includes("FUORI_SCHEMA")
+      ? "Ecco la risposta, senza JSON."
+      : question
+        ? answerFor(text)
+        : themesFor(text)
+    const delay = question.includes("LENTA") ? 20_000 : 0
+    setTimeout(() => {
+      res.writeHead(200, { "content-type": "application/json" })
+      res.end(
+        JSON.stringify({
+          content: [{ type: "text", text: typeof output === "string" ? output : JSON.stringify(output) }],
+          finishReason: { unified: "stop", raw: "end_turn" },
+          usage: {
+            inputTokens: { total: 1200, noCache: 1200 },
+            outputTokens: { total: 300, text: 300 },
+          },
+          warnings: [],
+        })
+      )
+    }, delay)
   })
 }).listen(PORT, "127.0.0.1", () => console.log(`Fake AI Gateway on http://127.0.0.1:${PORT}`))

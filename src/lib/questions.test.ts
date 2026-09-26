@@ -116,3 +116,69 @@ describe("checkAnswer", () => {
     expect(questionOutputSchema.shape.feedback.element.def.type).toBe("number")
   })
 })
+
+describe("checkAnswer drops what does not hold up", () => {
+  const only = (quotes: RawAnswer["quotes"], linked = [1, 2, 3]) => checkAnswer(answer({ feedback: linked, quotes }), feedback)
+
+  it("drops unknown_feedback", () => {
+    const { quotes, issues } = only([{ feedback: 9, text: "banca" }, { feedback: 0, text: "banca" }])
+    expect(quotes).toEqual([])
+    expect(issues).toEqual([
+      { part: "quote", problem: "unknown_feedback", detail: 9 },
+      { part: "quote", problem: "unknown_feedback", detail: 0 },
+    ])
+  })
+
+  it("drops quote_not_linked", () => {
+    const { quotes, issues } = only([{ feedback: 3, text: "Adoro" }], [1, 2])
+    expect(quotes).toEqual([])
+    expect(issues).toEqual([{ part: "quote", problem: "quote_not_linked", detail: 3 }])
+  })
+
+  it("drops quote_not_in_feedback (empty and inexact)", () => {
+    const { quotes, issues } = only([
+      { feedback: 1, text: "   " },
+      { feedback: 1, text: "si scollega ogni lunedi" },
+      { feedback: 2, text: "ricollegare la banca" },
+    ])
+    expect(quotes).toEqual([{ feedbackId: "id-2", text: "ricollegare la banca" }])
+    expect(issues).toEqual([
+      { part: "quote", problem: "quote_not_in_feedback", detail: 1 },
+      { part: "quote", problem: "quote_not_in_feedback", detail: 1 },
+    ])
+  })
+
+  it("drops second_quote_same_feedback", () => {
+    const { quotes, issues } = only([
+      { feedback: 1, text: "si scollega" },
+      { feedback: 1, text: "ogni lunedì" },
+    ])
+    expect(quotes).toEqual([{ feedbackId: "id-1", text: "si scollega" }])
+    expect(issues).toEqual([{ part: "quote", problem: "second_quote_same_feedback", detail: 1 }])
+  })
+
+  it("drops too_many_quotes after the fifth", () => {
+    const many: AnalysisFeedback[] = Array.from({ length: 8 }, (_, i) => ({
+      id: `m-${i + 1}`,
+      text: `Testo ${i + 1}`,
+      channel: "NPS",
+      receivedAt: "2026-09-01",
+    }))
+    const raw = answer({
+      feedback: [1, 2, 3, 4, 5, 6, 7, 8],
+      quotes: many.map((f, i) => ({ feedback: i + 1, text: f.text })),
+    })
+    const { quotes, issues, feedbackIds } = checkAnswer(raw, many)
+    expect(feedbackIds).toHaveLength(8)
+    expect(quotes.map((q) => q.feedbackId)).toEqual(["m-1", "m-2", "m-3", "m-4", "m-5"])
+    expect(issues).toEqual([6, 7, 8].map((n) => ({ part: "quote", problem: "too_many_quotes", detail: n })))
+  })
+})
+
+describe("the prompt is built from the question and the feedback only", () => {
+  it("has the same text for the same question, whatever was asked before", () => {
+    const first = questionPrompt("Cosa dicono della banca?", feedback)
+    questionPrompt("Una domanda precedente", feedback)
+    expect(questionPrompt("Cosa dicono della banca?", feedback)).toBe(first)
+  })
+})

@@ -31,7 +31,9 @@ export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname
   const inApp = APP_PATHS.some((p) => path === p || path.startsWith(`${p}/`))
 
-  if (inApp && !signedIn) return redirectKeepingSession(request, response, "/login")
+  // The question action answers "session" itself, so the page can say so and keep the question.
+  const askAction = path === "/ask" && request.headers.has("next-action")
+  if (inApp && !signedIn && !askAction) return redirectKeepingSession(request, response, "/login")
   if (AUTH_PATHS.includes(path) && signedIn) return redirectKeepingSession(request, response, "/themes")
   return response
 }

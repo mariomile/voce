@@ -1,8 +1,9 @@
+import { MockLanguageModelV4 } from "ai/test"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import type { RawAnswer } from "@/lib/questions"
 import { isoDateOf } from "@/lib/format"
 import { fakeModel } from "@/test/fake-model"
-import { admin, createTestUser, deleteTestUsers, type TestUser } from "@/test/supabase"
+import { admin, anon, createTestUser, deleteTestUsers, type TestUser } from "@/test/supabase"
 
 // The question runs for real against the local database, as a fresh test user.
 // The model is always fake: no call leaves the machine.
@@ -18,6 +19,7 @@ vi.mock("@/lib/analysis", async (importOriginal) => ({
 }))
 
 const { ask } = await import("./actions")
+const { getUsage } = await import("@/lib/data")
 
 let user: TestUser
 
@@ -71,6 +73,30 @@ function reply(output: RawAnswer | string) {
   ai.model = model
   return model
 }
+
+function failingModel(error: Error) {
+  const model = new MockLanguageModelV4({
+    doGenerate: async () => {
+      throw error
+    },
+  })
+  ai.model = model
+  return model
+}
+
+async function insertQuestions(count: number, status: "done" | "failed" | "running", createdAt = new Date()) {
+  const rows = Array.from({ length: count }, () => ({
+    workspace_id: user.workspaceId,
+    status,
+    outcome: status === "done" ? ("answered" as const) : null,
+    feedback_considered: 1,
+    created_at: createdAt.toISOString(),
+  }))
+  const { error } = await admin.from("questions").insert(rows)
+  if (error) throw error
+}
+
+const promptOf = (model: MockLanguageModelV4, call = 0) => JSON.stringify(model.doGenerateCalls[call].prompt)
 
 async function questions() {
   const { data } = await admin
@@ -183,5 +209,144 @@ describe("ask", () => {
       properties: { citation_count: 0, outcome: "no_evidence" },
     })
     expect(analytics.trackMilestone).not.toHaveBeenCalled()
+  })
+})
+
+describe("ask: guards before the model", () => {
+  it("returns limit without calling the model", async () => {
+    await addFeedback()
+    await insertQuestions(10, "done")
+    const model = reply(bank)
+    expect(await ask({ question: "La banca?" })).toEqual({ ok: false, reason: "limit" })
+    expect(model.doGenerateCalls).toHaveLength(0)
+  })
+
+  it("returns busy without calling the model", async () => {
+    await addFeedback()
+    await insertQuestions(1, "running", new Date(Date.now() - 60 * 1000))
+    const model = reply(bank)
+    expect(await ask({ question: "La banca?" })).toEqual({ ok: false, reason: "busy" })
+    expect(model.doGenerateCalls).toHaveLength(0)
+  })
+
+  it("empty, blank and 301-character questions are invalid, no row, no call", async () => {
+    await addFeedback()
+    const model = reply(bank)
+    for (const question of ["", "   \n  ", "a".repeat(301), ` ${"a".repeat(301)} `])
+      expect(await ask({ question })).toEqual({ ok: false, reason: "invalid" })
+    // Only the question: extra fields, such as a workspace id, are refused.
+    expect(await ask({ question: "La banca?", workspaceId: "x" } as never)).toEqual({ ok: false, reason: "invalid" })
+    expect(await ask(null as never)).toEqual({ ok: false, reason: "invalid" })
+    expect(model.doGenerateCalls).toHaveLength(0)
+    expect(await questions()).toEqual([])
+    // 300 characters after the trim are fine.
+    expect(await ask({ question: `  ${"a".repeat(300)}  ` })).toMatchObject({ ok: true })
+  })
+
+  it("needs feedback from the last 90 days, today included", async () => {
+    await addFeedback(["Vecchio feedback"], 90)
+    const model = reply(bank)
+    expect(await ask({ question: "La banca?" })).toEqual({ ok: false, reason: "no_feedback" })
+    expect(model.doGenerateCalls).toHaveLength(0)
+    expect(await questions()).toEqual([])
+  })
+
+  it("without a session returns session, no row, no call", async () => {
+    await addFeedback()
+    session.client = anon()
+    const model = reply(bank)
+    expect(await ask({ question: "La banca?" })).toEqual({ ok: false, reason: "session" })
+    expect(model.doGenerateCalls).toHaveLength(0)
+    expect(await questions()).toEqual([])
+  })
+})
+
+describe("ask: failures after the model is called", () => {
+  it("model error is failed and counted", async () => {
+    await addFeedback()
+    failingModel(new Error("Gateway down"))
+    const log = vi.spyOn(console, "error").mockImplementation(() => {})
+    expect(await ask({ question: "La banca?" })).toEqual({ ok: false, reason: "failed", usage: { used: 1, quota: 10 } })
+    log.mockRestore()
+    const [question] = await questions()
+    expect(question.status).toBe("failed")
+    const run = await runLog(question.id)
+    expect(run.error).toContain("Gateway down")
+    expect(run.finished_at).not.toBeNull()
+    expect((await getUsage(user.workspaceId)).questionsThisMonth).toBe(1)
+  })
+
+  it("a model slower than 60 s is failed and counted", async () => {
+    await addFeedback()
+    // What the SDK throws when the 60-second signal fires (the signal itself is checked in questions.test.ts).
+    failingModel(new DOMException("The operation timed out.", "TimeoutError"))
+    const log = vi.spyOn(console, "error").mockImplementation(() => {})
+    expect(await ask({ question: "La banca?" })).toMatchObject({ ok: false, reason: "failed" })
+    log.mockRestore()
+    const [question] = await questions()
+    expect(question.status).toBe("failed")
+    expect((await runLog(question.id)).error).toContain("TimeoutError")
+    expect((await getUsage(user.workspaceId)).questionsThisMonth).toBe(1)
+  })
+
+  it("output out of schema is failed and counted, raw text saved", async () => {
+    await addFeedback()
+    reply("Ecco la risposta: la banca si scollega")
+    const log = vi.spyOn(console, "error").mockImplementation(() => {})
+    expect(await ask({ question: "La banca?" })).toMatchObject({ ok: false, reason: "failed" })
+    log.mockRestore()
+    const [question] = await questions()
+    expect(question.status).toBe("failed")
+    const run = await runLog(question.id)
+    expect(run).toMatchObject({ output: "Ecco la risposta: la banca si scollega", input_tokens: 100_000, cost_usd: 0.21 })
+    expect(run.error).toContain("NoObjectGeneratedError")
+    expect((await getUsage(user.workspaceId)).questionsThisMonth).toBe(1)
+  })
+
+  it("logs only the error name and the question id", async () => {
+    await addFeedback(["Il marcatore ZZSEGRETOZZ è nel feedback."])
+    failingModel(new Error("Gateway down on ZZSEGRETOZZ"))
+    const log = vi.spyOn(console, "error").mockImplementation(() => {})
+    await ask({ question: "Cosa dice ZZSEGRETOZZ?" })
+    const [question] = await questions()
+    expect(log).toHaveBeenCalledWith(`Question ${question.id} failed:`, "Error")
+    expect(JSON.stringify(log.mock.calls)).not.toContain("ZZSEGRETOZZ")
+    log.mockRestore()
+  })
+})
+
+describe("ask: what reaches the model", () => {
+  it("sends at most the 500 most recent feedback of the last 90 days", async () => {
+    await admin.from("subscriptions").update({ plan: "pro" }).eq("workspace_id", user.workspaceId)
+    const rows = Array.from({ length: 501 }, (_, i) => ({
+      workspace_id: user.workspaceId,
+      text: `Feedback numero ${i}.`,
+      channel: "Supporto",
+      received_at: daysAgo(Math.floor(i / 10)),
+    }))
+    await admin.from("feedback").insert(rows)
+    await addFeedback(["Troppo vecchio"], 95)
+    const model = reply({ answer: "x", feedback: [1], quotes: [{ feedback: 1, text: "Feedback numero" }] })
+    expect(await ask({ question: "Cosa dicono?" })).toMatchObject({ ok: true, feedbackConsidered: 500, feedbackInWindow: 501 })
+    const [question] = await questions()
+    expect(question.feedback_considered).toBe(500)
+    const input = (await runLog(question.id)).input as { feedback_ids: string[]; prompt: string }
+    expect(input.feedback_ids).toHaveLength(500)
+    expect(input.prompt).toContain("Feedback numero 0.")
+    expect(input.prompt).not.toContain("Feedback numero 500.")
+    expect(input.prompt).not.toContain("Troppo vecchio")
+    expect(promptOf(model)).toContain('\\"n\\":500')
+  })
+
+  it("a second question's prompt carries nothing from the first", async () => {
+    await addFeedback()
+    reply(bank)
+    await ask({ question: "Cosa dicono della banca?" })
+    const model = reply({ answer: "Adorano le fatture dal telefono.", feedback: [3], quotes: [{ feedback: 3, text: "Adoro" }] })
+    await ask({ question: "E delle fatture?" })
+    const prompt = promptOf(model)
+    expect(prompt).toContain("E delle fatture?")
+    expect(prompt).not.toContain("Cosa dicono della banca?")
+    expect(prompt).not.toContain(bank.answer)
   })
 })

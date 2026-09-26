@@ -211,6 +211,31 @@ describe("getUsage", () => {
   })
 })
 
+describe("getUsage: questions", () => {
+  it("counts the questions of the month apart from the analyses", async () => {
+    const user = await createTestUser("usage")
+    try {
+      session.client = user.client
+      await admin.from("questions").insert(
+        Array.from({ length: 10 }, (_, i) => ({
+          workspace_id: user.workspaceId,
+          status: i % 2 ? ("failed" as const) : ("done" as const),
+          outcome: i % 2 ? null : ("answered" as const),
+          feedback_considered: 1,
+        }))
+      )
+      expect(await getUsage(user.workspaceId)).toMatchObject({
+        plan: "free",
+        analysesThisMonth: 0,
+        questionsThisMonth: 10,
+        questionsLimit: 10,
+      })
+    } finally {
+      await deleteTestUsers([user])
+    }
+  })
+})
+
 describe("getQuestionWindow", () => {
   it("counts all the feedback and those of the last 90 days, today included", async () => {
     const user = await createTestUser("window")

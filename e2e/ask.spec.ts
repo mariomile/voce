@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test"
-import { confirmationLink, signedInUser } from "./helpers"
+import { admin, confirmationLink, insertFeedback, signedInUser } from "./helpers"
 
 // "Chiedi ai tuoi feedback" in the browser. The fake gateway (e2e/fake-gateway.mts) answers every
 // question by citing the first feedback it received: no real model is ever called.
@@ -64,4 +64,135 @@ test("the Chiedi tab sits between Temi and Feedback and marks the page", async (
 test("/ask without a session goes to /login", async ({ page }) => {
   await page.goto("/ask")
   await expect(page).toHaveURL(/\/login$/)
+})
+
+// ===== One message per reason (AC 37): exact text, the question stays, the focus stays =====
+
+const month = new Intl.DateTimeFormat("it-IT", { month: "long", timeZone: "Europe/Rome" }).format(new Date())
+
+async function openAsk(page: import("@playwright/test").Page, label: string) {
+  const user = await signedInUser(page, label)
+  await insertFeedback(user.workspaceId, ["Vorrei esportare il report mensile in PDF."])
+  await page.goto("/ask")
+  const field = page.getByLabel("La tua domanda")
+  await expect(field).toBeFocused()
+  return { ...user, field }
+}
+
+async function addQuestions(workspaceId: string, count: number, status: "done" | "running" = "done") {
+  const { error } = await admin.from("questions").insert(
+    Array.from({ length: count }, () => ({
+      workspace_id: workspaceId,
+      status,
+      outcome: status === "done" ? "answered" : null,
+      feedback_considered: 1,
+    }))
+  )
+  if (error) throw error
+}
+
+const status = (page: import("@playwright/test").Page) => page.getByRole("status")
+
+test("E1: an empty question is not sent", async ({ page }) => {
+  const { field } = await openAsk(page, "e1")
+  await page.keyboard.type("   ")
+  await page.keyboard.press("Enter")
+  await expect(page.getByText("Scrivi una domanda prima di inviarla. Per esempio: cosa dicono i clienti dei prezzi?")).toBeVisible()
+  await expect(field).toHaveAttribute("aria-invalid", "true")
+  await expect(field).toHaveAttribute("aria-describedby", "ask-error")
+  await expect(field).toBeFocused()
+})
+
+test("E2: over 300 characters, while typing and on Enter", async ({ page }) => {
+  const { field } = await openAsk(page, "e2")
+  await field.fill("a".repeat(301))
+  const error = page.getByText("La domanda supera i 300 caratteri: accorciala a una sola richiesta.")
+  await expect(error).toBeVisible()
+  await expect(page.getByText("301 di 300")).toBeVisible()
+  await page.keyboard.press("Enter")
+  await expect(error).toBeVisible()
+  await expect(field).toHaveValue("a".repeat(301))
+  await expect(field).toBeFocused()
+})
+
+test("E3: Free quota used up from another tab", async ({ page }) => {
+  const { workspaceId, field } = await openAsk(page, "e3")
+  await addQuestions(workspaceId, 10)
+  await page.keyboard.type("Cosa chiedono del PDF?")
+  await page.keyboard.press("Enter")
+  await expect(page.getByRole("heading", { name: `Hai usato le 10 domande di ${month}` })).toBeVisible()
+  await expect(page.getByRole("link", { name: "Passa a Pro" })).toHaveAttribute("href", "/billing")
+  await expect(field).toHaveValue("Cosa chiedono del PDF?")
+  await expect(field).toBeFocused()
+})
+
+test("E4: Pro quota used up from another tab", async ({ page }) => {
+  const { workspaceId, field } = await openAsk(page, "e4")
+  await admin.from("subscriptions").update({ plan: "pro" }).eq("workspace_id", workspaceId)
+  await addQuestions(workspaceId, 100)
+  await page.keyboard.type("Cosa chiedono del PDF?")
+  await page.keyboard.press("Enter")
+  await expect(page.getByRole("heading", { name: `Hai usato le 100 domande di ${month}` })).toBeVisible()
+  await expect(page.getByRole("link", { name: "Passa a Pro" })).toHaveCount(0)
+  await expect(field).toHaveValue("Cosa chiedono del PDF?")
+  await expect(field).toBeFocused()
+})
+
+test("E5: another question is running", async ({ page }) => {
+  const { workspaceId, field } = await openAsk(page, "e5")
+  await addQuestions(workspaceId, 1, "running")
+  await page.keyboard.type("Cosa chiedono del PDF?")
+  await page.keyboard.press("Enter")
+  await expect(status(page)).toHaveText(
+    "C'è già una domanda in corso, forse da un'altra scheda. Aspetta qualche secondo e riprova."
+  )
+  await expect(field).toHaveValue("Cosa chiedono del PDF?")
+  await expect(field).toBeFocused()
+})
+
+test("E6: the answer did not arrive, and the question counts", async ({ page }) => {
+  const { field } = await openAsk(page, "e6")
+  await page.keyboard.type("FUORI_SCHEMA sul PDF?")
+  await page.keyboard.press("Enter")
+  await expect(status(page)).toHaveText(
+    `La risposta non è arrivata. La domanda conta lo stesso tra quelle del mese: ti restano 9 domande di ${month}. Riprova tra poco.`
+  )
+  await expect(field).toHaveValue("FUORI_SCHEMA sul PDF?")
+  await expect(field).toBeFocused()
+})
+
+test("E7: the request does not reach Voce", async ({ page }) => {
+  const { field } = await openAsk(page, "e7")
+  await page.route("**/ask", (route) =>
+    route.request().method() === "POST" ? route.abort("internetdisconnected") : route.continue()
+  )
+  await page.keyboard.type("Cosa chiedono del PDF?")
+  await page.keyboard.press("Enter")
+  await expect(status(page)).toHaveText(
+    "Non riesco a raggiungere Voce: controlla la connessione e riprova. Se la domanda era già partita, conta tra quelle del mese."
+  )
+  await expect(field).toHaveValue("Cosa chiedono del PDF?")
+  await expect(field).toBeFocused()
+})
+
+test("E8: the session expired", async ({ page, context }) => {
+  const { field } = await openAsk(page, "e8")
+  await context.clearCookies()
+  await page.keyboard.type("Cosa chiedono del PDF?")
+  await page.keyboard.press("Enter")
+  await expect(status(page)).toContainText("La sessione è scaduta. Accedi di nuovo per fare la domanda.")
+  await expect(status(page).getByRole("link", { name: "Accedi" })).toHaveAttribute("href", "/login")
+  await expect(field).toHaveValue("Cosa chiedono del PDF?")
+  await expect(field).toBeFocused()
+})
+
+test("E9: the feedback of the last 90 days are gone", async ({ page }) => {
+  const { workspaceId, field } = await openAsk(page, "e9")
+  await admin.from("feedback").delete().eq("workspace_id", workspaceId)
+  await page.keyboard.type("Cosa chiedono del PDF?")
+  await page.keyboard.press("Enter")
+  await expect(status(page)).toContainText("Negli ultimi 90 giorni non ci sono più feedback su cui rispondere.")
+  await expect(status(page).getByRole("link", { name: "Aggiungi feedback" })).toHaveAttribute("href", "/collect")
+  await expect(field).toHaveValue("Cosa chiedono del PDF?")
+  await expect(field).toBeFocused()
 })

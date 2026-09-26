@@ -104,7 +104,11 @@ export function checkAnswer(raw: RawAnswer, feedback: AnalysisFeedback[]) {
     const text = quote.text.trim()
     const detail = quote.feedback
     if (!f) issues.push({ part: "quote", problem: "unknown_feedback", detail })
+    else if (!feedbackIds.includes(f.id)) issues.push({ part: "quote", problem: "quote_not_linked", detail })
     else if (!text || !f.text.includes(text)) issues.push({ part: "quote", problem: "quote_not_in_feedback", detail })
+    else if (quotes.some((q) => q.feedbackId === f.id))
+      issues.push({ part: "quote", problem: "second_quote_same_feedback", detail })
+    else if (quotes.length >= MAX_ANSWER_QUOTES) issues.push({ part: "quote", problem: "too_many_quotes", detail })
     else quotes.push({ feedbackId: f.id, text })
   }
   return { answer: raw.answer.trim(), feedbackIds, quotes, issues }

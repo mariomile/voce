@@ -1,7 +1,9 @@
+import { nextMonthName } from "@/components/ask-copy"
 import { AskForm } from "@/components/ask-form"
 import { Page, PageHeader, PageLede, PageTitle } from "@/components/page"
 import { ANALYSIS_MAX_FEEDBACK } from "@/lib/analysis"
-import { getCurrentWorkspace, getQuestionWindow } from "@/lib/data"
+import { getCurrentWorkspace, getQuestionWindow, getUsage } from "@/lib/data"
+import { formatMonth } from "@/lib/format"
 
 export const metadata = { title: "Chiedi ai tuoi feedback" }
 
@@ -10,7 +12,8 @@ export const maxDuration = 90
 
 export default async function AskPage() {
   const workspace = await getCurrentWorkspace()
-  const feedbackWindow = await getQuestionWindow(workspace.id)
+  const [feedbackWindow, usage] = await Promise.all([getQuestionWindow(workspace.id), getUsage(workspace.id)])
+  const now = new Date()
 
   return (
     <Page>
@@ -23,7 +26,13 @@ export default async function AskPage() {
           </PageLede>
         </div>
       </PageHeader>
-      <AskForm feedbackConsidered={Math.min(feedbackWindow.recent, ANALYSIS_MAX_FEEDBACK)} />
+      <AskForm
+        feedbackConsidered={Math.min(feedbackWindow.recent, ANALYSIS_MAX_FEEDBACK)}
+        plan={usage.plan}
+        usage={{ used: usage.questionsThisMonth, quota: usage.questionsLimit }}
+        month={formatMonth(now)}
+        nextMonth={nextMonthName(now)}
+      />
     </Page>
   )
 }

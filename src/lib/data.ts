@@ -8,6 +8,7 @@ import type { Tables } from "./database.types";
 import { ANALYSIS_WINDOW_DAYS } from "./analysis";
 import { isoDateOf, monthOf } from "./format";
 import { FORM_SLUG_PATTERN, PLAN_LIMITS } from "./plans";
+import { questionUsage } from "./supabase/admin";
 import { createClient } from "./supabase/server";
 import type { Analysis, Feedback, Plan, Theme, ThemeKind, ThemeStatus, Workspace } from "./types";
 
@@ -43,6 +44,9 @@ export type Usage = {
   feedbackLimit: number | null;
   analysesThisMonth: number;
   analysesLimit: number;
+  // Every question of the month counts, answered or not. Read by the server: users cannot read questions.
+  questionsThisMonth: number;
+  questionsLimit: number;
 };
 
 // Written only by the Stripe webhook. isOwner: only the owner manages the subscription.
@@ -80,7 +84,7 @@ export const getUsage = cache(async (workspaceId: string, now = new Date()): Pro
   const supabase = await createClient();
   // Quotas follow the Italian calendar month: fetch a little more than a month and filter here.
   const since = new Date(now.getTime() - 32 * 24 * 60 * 60 * 1000).toISOString();
-  const [subscription, feedback, analyses] = await Promise.all([
+  const [subscription, feedback, analyses, questions] = await Promise.all([
     supabase.from("subscriptions").select("plan").eq("workspace_id", workspaceId).maybeSingle(),
     supabase.from("feedback").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId),
     // Failed analyses do not use the quota.
@@ -90,6 +94,7 @@ export const getUsage = cache(async (workspaceId: string, now = new Date()): Pro
       .eq("workspace_id", workspaceId)
       .neq("status", "failed")
       .gte("created_at", since),
+    questionUsage(workspaceId),
   ]);
   const plan = unwrap(subscription)?.plan ?? "free";
   const month = monthOf(now);
@@ -99,6 +104,8 @@ export const getUsage = cache(async (workspaceId: string, now = new Date()): Pro
     feedbackLimit: PLAN_LIMITS[plan].feedback,
     analysesThisMonth: unwrap(analyses).filter((a) => monthOf(new Date(a.created_at)) === month).length,
     analysesLimit: PLAN_LIMITS[plan].analysesPerMonth,
+    questionsThisMonth: questions.used,
+    questionsLimit: questions.quota,
   };
 });
 
