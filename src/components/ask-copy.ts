@@ -45,3 +45,26 @@ export function nextMonthName(now: Date) {
   const [year, month] = monthOf(now).split("-").map(Number)
   return formatMonth(new Date(Date.UTC(year, month, 15)))
 }
+
+export const SLOW_MESSAGE = "Ci vuole più del solito. La risposta arriva: resta su questa pagina."
+
+// The button says how many feedback the question reads: the 500 most recent at most.
+export function askButtonLabel(feedbackConsidered: number, feedbackInWindow: number) {
+  if (feedbackInWindow > feedbackConsidered) return `Chiedi ai ${feedbackConsidered} feedback più recenti`
+  return feedbackConsidered === 1 ? "Chiedi a 1 feedback" : `Chiedi ai ${feedbackConsidered} feedback`
+}
+
+export const countLabel = (count: number) => (count === 1 ? "feedback ne parla" : "feedback ne parlano")
+
+// Read by screen readers from the status region when the answer arrives. The quotes are not read:
+// they are under the answer heading.
+export function answerSummary(
+  result:
+    | { outcome: "answered"; feedbackCount: number; answer: string; quoteCount: number; feedbackConsidered: number }
+    | { outcome: "no_evidence"; feedbackConsidered: number }
+) {
+  if (result.outcome === "no_evidence")
+    return `Non trovo feedback che ne parlano. Letti ${result.feedbackConsidered} feedback degli ultimi 90 giorni.`
+  const quotes = result.quoteCount === 1 ? "Sotto c'è 1 citazione." : `Sotto ci sono ${result.quoteCount} citazioni.`
+  return `Risposta pronta. ${result.feedbackCount} ${countLabel(result.feedbackCount)}. ${result.answer} ${quotes}`
+}

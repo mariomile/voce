@@ -33,6 +33,7 @@ export default async function AskPage() {
       ) : (
         <AskForm
           feedbackConsidered={Math.min(feedbackWindow.recent, ANALYSIS_MAX_FEEDBACK)}
+          feedbackInWindow={feedbackWindow.recent}
           plan={usage.plan}
           usage={{ used: usage.questionsThisMonth, quota: usage.questionsLimit }}
           month={formatMonth(now)}

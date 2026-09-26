@@ -1,10 +1,10 @@
 "use client"
 
 import Link from "next/link"
-import { useRef, useState, useTransition } from "react"
+import { useEffect, useRef, useState, useTransition } from "react"
 import { ask, type AskResult, type AskUsage } from "@/app/(app)/ask/actions"
 import { AskAnswer } from "@/components/ask-answer"
-import { ASK_ERRORS, failedMessage, limitNotice, quotaNote } from "@/components/ask-copy"
+import { ASK_ERRORS, SLOW_MESSAGE, answerSummary, askButtonLabel, failedMessage, limitNotice, quotaNote } from "@/components/ask-copy"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardText, CardTitle } from "@/components/ui/card"
 import { Field, FieldCount, FieldError, FieldHint, FieldLabel } from "@/components/ui/field"
@@ -13,6 +13,7 @@ import type { Plan } from "@/lib/types"
 
 const MAX_LENGTH = 300
 const COUNT_FROM = 250
+const SLOW_AFTER_MS = 15_000
 
 type Failure = Extract<AskResult, { ok: false }>["reason"] | "network"
 
@@ -21,12 +22,14 @@ type Failure = Extract<AskResult, { ok: false }>["reason"] | "network"
 // errors keep the question in the field.
 export function AskForm({
   feedbackConsidered,
+  feedbackInWindow,
   plan,
   usage: initialUsage,
   month,
   nextMonth,
 }: {
   feedbackConsidered: number
+  feedbackInWindow: number
   plan: Plan
   usage: AskUsage
   month: string
@@ -38,6 +41,24 @@ export function AskForm({
   const [failure, setFailure] = useState<Failure | null>(null)
   const [usage, setUsage] = useState(initialUsage)
   const [pending, startTransition] = useTransition()
+  const [slow, setSlow] = useState(false)
+  // Set at once on submit: two Enters in a row make one call, before React re-renders.
+  const sending = useRef(false)
+
+  // At a high zoom the answer can land below the fold: bring its heading into view, without animation.
+  useEffect(() => {
+    const heading = answer && document.getElementById("ask-answer-heading")
+    if (heading && heading.getBoundingClientRect().top > window.innerHeight) heading.scrollIntoView({ block: "start" })
+  }, [answer])
+
+  useEffect(() => {
+    if (!pending) return
+    const timer = setTimeout(() => setSlow(true), SLOW_AFTER_MS)
+    return () => {
+      clearTimeout(timer)
+      setSlow(false)
+    }
+  }, [pending])
 
   const length = question.replace(/\s*[\r\n]+\s*/g, " ").trim().length
   const tooLong = length > MAX_LENGTH
@@ -46,12 +67,13 @@ export function AskForm({
   const notice = limitReached ? limitNotice(plan, usage.quota, month, nextMonth) : null
 
   function submit() {
-    if (pending || limitReached) return
+    if (sending.current || pending || limitReached) return
     if (length === 0 || tooLong) {
       setFailure("invalid")
       field.current?.focus()
       return
     }
+    sending.current = true
     setFailure(null)
     setAnswer(null)
     startTransition(async () => {
@@ -67,6 +89,7 @@ export function AskForm({
       } catch {
         setFailure("network")
       }
+      sending.current = false
       const el = field.current
       if (el) {
         el.focus()
@@ -102,6 +125,7 @@ export function AskForm({
           <Textarea
             ref={field}
             id="ask-question"
+            variant="ask"
             rows={2}
             autoFocus={!notice}
             value={question}
@@ -132,10 +156,22 @@ export function AskForm({
         </Field>
         <div className="mt-7 flex max-w-[36ch] flex-col gap-2">
           <Button type="submit" size="lg" aria-disabled={pending || limitReached || undefined}>
-            {pending ? "Risposta in arrivo…" : `Chiedi ai ${feedbackConsidered} feedback`}
+            {pending ? "Risposta in arrivo…" : askButtonLabel(feedbackConsidered, feedbackInWindow)}
           </Button>
           <p role="status" className="text-sm text-ink-muted empty:hidden">
-            {pending ? `Sto leggendo ${feedbackConsidered} feedback…` : <FailureNote failure={failure} usage={usage} month={month} />}
+            {pending ? (
+              slow ? SLOW_MESSAGE : `Sto leggendo ${feedbackConsidered} feedback…`
+            ) : answer ? (
+              <span className="sr-only">
+                {answerSummary(
+                  answer.outcome === "answered"
+                    ? { ...answer, quoteCount: answer.quotes.length }
+                    : answer
+                )}
+              </span>
+            ) : (
+              <FailureNote failure={failure} usage={usage} month={month} />
+            )}
           </p>
           {!pending && !limitReached && (!failure || failure === "invalid") && (
             <p className="text-sm text-ink-muted">{quotaNote(usage, month)}</p>

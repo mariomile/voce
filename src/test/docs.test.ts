@@ -45,3 +45,14 @@ describe("analytics.md", () => {
     expect(doc).toMatch(/`question_answered`[^\n]*non passa da `analytics_milestones`/)
   })
 })
+
+describe("the ask files", () => {
+  it("never use dangerouslySetInnerHTML", () => {
+    const files = [
+      ...readdirSync("src/app/(app)/ask").map((f) => `src/app/(app)/ask/${f}`),
+      ...readdirSync("src/components").filter((f) => f.startsWith("ask-")).map((f) => `src/components/${f}`),
+    ]
+    expect(files.length).toBeGreaterThanOrEqual(6)
+    for (const file of files) expect(readFileSync(file, "utf8"), file).not.toContain("dangerouslySetInnerHTML")
+  })
+})

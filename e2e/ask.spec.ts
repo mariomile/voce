@@ -271,3 +271,36 @@ test("only feedback older than 90 days: text B, no field", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Aggiungi feedback" })).toHaveAttribute("href", "/collect")
   await expect(page.getByLabel("La tua domanda")).toHaveCount(0)
 })
+
+// ===== Waiting (AC 36) =====
+
+test("waiting state and the 15-second message", async ({ page }) => {
+  await page.clock.install()
+  const { field } = await openAsk(page, "wait")
+  await page.keyboard.type("LENTA sul PDF?")
+  await page.keyboard.press("Enter")
+  const button = page.getByRole("button", { name: "Risposta in arrivo…" })
+  await expect(button).toHaveAttribute("aria-disabled", "true")
+  await expect(field).toHaveAttribute("readonly", "")
+  await expect(field).toBeFocused()
+  await expect(status(page)).toHaveText("Sto leggendo 1 feedback…")
+  await page.clock.runFor(15_000)
+  await expect(status(page)).toHaveText("Ci vuole più del solito. La risposta arriva: resta su questa pagina.")
+  await expect(field).toBeFocused()
+  // The fake gateway answers after 20 real seconds.
+  await expect(page.getByRole("region", { name: "Risposta a «LENTA sul PDF?»" })).toBeVisible({ timeout: 30_000 })
+})
+
+test("two quick submits make one ask call", async ({ page }) => {
+  const { field } = await openAsk(page, "double")
+  let calls = 0
+  page.on("request", (request) => {
+    if (request.method() === "POST" && request.headers()["next-action"]) calls++
+  })
+  await field.fill("Cosa chiedono del PDF?")
+  await page.keyboard.press("Enter")
+  await page.keyboard.press("Enter")
+  await page.getByRole("button", { name: /Risposta in arrivo|Chiedi a 1 feedback/ }).click()
+  await expect(page.getByRole("region", { name: "Risposta a «Cosa chiedono del PDF?»" })).toBeVisible()
+  expect(calls).toBe(1)
+})

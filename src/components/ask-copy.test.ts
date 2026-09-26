@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { PLAN_LIMITS } from "@/lib/plans"
-import { ASK_ERRORS, failedMessage, limitNotice, nextMonthName, quotaNote } from "./ask-copy"
+import { ASK_ERRORS, answerSummary, askButtonLabel, failedMessage, limitNotice, nextMonthName, quotaNote, SLOW_MESSAGE } from "./ask-copy"
 
 // The exact texts of DESIGN.md (initiative chiedi-ai-feedback, "Error copy").
 
@@ -72,6 +72,30 @@ describe("quota note", () => {
     expect(PLAN_LIMITS.pro.questionsPerMonth).toBe(100)
     expect(limitNotice("free", 10, "settembre", "ottobre").text).toContain(
       `Con Pro diventano ${PLAN_LIMITS.pro.questionsPerMonth} al mese.`
+    )
+  })
+})
+
+describe("button and waiting", () => {
+  it("the button names how many feedback it reads", () => {
+    expect(askButtonLabel(212, 212)).toBe("Chiedi ai 212 feedback")
+    expect(askButtonLabel(1, 1)).toBe("Chiedi a 1 feedback")
+    expect(askButtonLabel(500, 740)).toBe("Chiedi ai 500 feedback più recenti")
+  })
+
+  it("after 15 seconds the longer message", () => {
+    expect(SLOW_MESSAGE).toBe("Ci vuole più del solito. La risposta arriva: resta su questa pagina.")
+  })
+
+  it("the status region sums up the answer", () => {
+    expect(answerSummary({ outcome: "answered", feedbackCount: 23, answer: "Chiedono l'export.", quoteCount: 5, feedbackConsidered: 212 })).toBe(
+      "Risposta pronta. 23 feedback ne parlano. Chiedono l'export. Sotto ci sono 5 citazioni."
+    )
+    expect(answerSummary({ outcome: "answered", feedbackCount: 1, answer: "Uno solo.", quoteCount: 1, feedbackConsidered: 212 })).toBe(
+      "Risposta pronta. 1 feedback ne parla. Uno solo. Sotto c'è 1 citazione."
+    )
+    expect(answerSummary({ outcome: "no_evidence", feedbackConsidered: 212 })).toBe(
+      "Non trovo feedback che ne parlano. Letti 212 feedback degli ultimi 90 giorni."
     )
   })
 })
