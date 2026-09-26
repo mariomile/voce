@@ -251,3 +251,23 @@ test("billing and landing show the question quota", async ({ page }) => {
   await expect(page.getByText(/10 domande ai feedback al mese/)).toBeVisible()
   await expect(page.getByText(/100 domande ai feedback al mese/)).toBeVisible()
 })
+
+// ===== Nothing to ask (AC 33) =====
+
+test("no feedback: text A, no field", async ({ page }) => {
+  await signedInUser(page, "empty-a")
+  await page.goto("/ask")
+  await expect(page.getByText("Qui farai domande ai tuoi feedback e leggerai le risposte con le parole dei clienti.")).toBeVisible()
+  await expect(page.getByRole("link", { name: "Aggiungi feedback" })).toHaveAttribute("href", "/collect")
+  await expect(page.getByLabel("La tua domanda")).toHaveCount(0)
+})
+
+test("only feedback older than 90 days: text B, no field", async ({ page }) => {
+  const user = await signedInUser(page, "empty-b")
+  await insertFeedback(user.workspaceId, ["Vecchio uno.", "Vecchio due."], 95)
+  await page.goto("/ask")
+  await expect(page.getByText("Negli ultimi 90 giorni non è arrivato nessun feedback.")).toBeVisible()
+  await expect(page.getByText("e i tuoi 2 sono più vecchi")).toBeVisible()
+  await expect(page.getByRole("link", { name: "Aggiungi feedback" })).toHaveAttribute("href", "/collect")
+  await expect(page.getByLabel("La tua domanda")).toHaveCount(0)
+})

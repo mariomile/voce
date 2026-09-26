@@ -107,7 +107,7 @@ Ogni slice va da capo a piedi: pagina o action, logica, database, evento dove es
 | S4 | **Guardie e fallimenti, dal server alla pagina.** Motivi `invalid`, `session`, `no_feedback`, `limit`, `busy`, `failed` (errore, 60 s, output fuori schema) con 0 chiamate al modello dove previsto; controlli dell'output per ogni motivo di scarto; finestra 90 giorni e 500 feedback; niente testo nei log; `question_usage` e `getUsage` con `questionsThisMonth`; messaggi E1-E9 nella pagina con domanda e focus nella casella | 6, 7, 9, 10, 11, 12, 15, 16, 22, 26, 37 | S1 | media: test unitari su action e logica, 1 blocco E2E per i messaggi | done, E2E non eseguito |
 | S5 | **Evento ripetibile e riservatezza.** `trackEvent` con corpo costruito in un solo punto insieme a `trackMilestone`; nessun testo nel corpo; due risposte, due eventi, nessuna riga in `analytics_milestones`; nessun evento per `failed`, `limit`, `busy`, `invalid`, `session`, `no_feedback` o senza chiave; `docs/analytics.md` aggiornato | 28, 29, 30, 31 | S1 | piccola: 1 file toccato, test in `analytics.test.ts`, 1 documento | done |
 | S6 | **Quota a vista.** Nota "Userai 1 delle…" e "Ti restano…", avviso E3 o E4 all'apertura e dopo la decima (o centesima) risposta con la risposta ancora visibile, `questionsPerMonth` in `PLAN_LIMITS`, righe dei piani in `/billing` e landing, riga in `docs/prima-dei-clienti-reali.md` | 34, 35, 39 | S3, S4 | piccola: 3 pagine toccate, 1 blocco E2E | done, E2E non eseguito |
-| S7 | **Nessun feedback su cui rispondere.** Stato vuoto testo A (0 feedback) e testo B (solo feedback oltre 90 giorni) con "Aggiungi feedback" verso `/collect`, senza casella | 33 | S1 | piccola: 1 pagina, 1 blocco E2E | todo |
+| S7 | **Nessun feedback su cui rispondere.** Stato vuoto testo A (0 feedback) e testo B (solo feedback oltre 90 giorni) con "Aggiungi feedback" verso `/collect`, senza casella | 33 | S1 | piccola: 1 pagina, 1 blocco E2E | done, E2E non eseguito |
 | S8 | **Attesa, testo sicuro e kit.** "Risposta in arrivo…", casella `readOnly` col focus, messaggio dei 15 secondi, un solo invio per due pressioni; `no_evidence` senza numero né testo; singolare "feedback ne parla"; risposta come testo semplice; variante `ask` di `Textarea` e `<cite>` in `ink-muted` in tutta l'app, con `DESIGN.md` della radice e `design/kit.*` aggiornati | 19, 20, 21, 36 | S1 | media: 2 componenti del kit, 2 componenti di Chiedi, test di render, 1 blocco E2E | todo |
 | S9 | **Chiusura.** Tutti i comandi di AC 40 da zero con output incollato, controllo del diff contro i 18 fuori scope, strumentazione verificata, revisione indipendente (`build-reviewer`), nota finale, `TECH.md` e roadmap | 40 | S2, S3, S4, S5, S6, S7, S8 | piccola nel codice, verifica completa | todo |
 
@@ -175,7 +175,7 @@ Nessun test di componente esiste oggi; `ask-answer.test.tsx` è il primo e usa s
 | 30 | Nessuna richiesta per `failed`, `limit`, `busy`, `invalid`, `session`, `no_feedback`; nessuna senza chiave | `ask/actions.test.ts`: "no event for failed, limit, busy, invalid, session, no_feedback" (tabella di casi); `analytics.test.ts`: "trackEvent sends nothing without a key" | S5 | pass (mutazioni Mc, Md) |
 | 31 | `docs/analytics.md` elenca `question_answered` con proprietà, momento d'invio, e che non passa da `analytics_milestones` | `src/test/docs.test.ts`: "analytics.md documents question_answered" | S5 | pass (docs.test.ts) |
 | 32 | Scheda "Chiedi" tra "Temi" e "Feedback" verso `/ask` con `aria-current="page"`; `/ask` senza sessione porta a `/login` | E2E `ask.spec.ts`: "the Chiedi tab sits between Temi and Feedback and marks the page", "/ask without a session goes to /login" | S1 | E2E scritto, non eseguito (porta 3000 occupata) |
-| 33 | 0 feedback: testo A e "Aggiungi feedback" senza casella; solo feedback oltre 90 giorni: testo B, stessa azione, senza casella | E2E `ask.spec.ts`: "no feedback: text A, no field", "only feedback older than 90 days: text B, no field" | S7 | planned |
+| 33 | 0 feedback: testo A e "Aggiungi feedback" senza casella; solo feedback oltre 90 giorni: testo B, stessa azione, senza casella | E2E `ask.spec.ts`: "no feedback: text A, no field", "only feedback older than 90 days: text B, no field" | S7 | pass (page.test.tsx); E2E scritto, non eseguito |
 | 34 | Quota esaurita: pulsante `aria-disabled`, avviso "Hai usato le 10 domande di {mese}" con "Passa a Pro" su Free, "…100…" senza pulsante su Pro; lo stesso dopo la decima risposta con la risposta visibile | E2E `ask.spec.ts`: "Free at 10 questions: notice and Passa a Pro", "Pro at 100: notice without button", "the tenth answer stays visible under the notice" | S6 | E2E scritto, non eseguito (porta 3000 occupata); logica dell'avviso: pass (ask-copy.test.ts) |
 | 35 | Nota "Userai 1 delle {limite} domande di {mese}." prima, "Ti restano {n} domande di {mese}." dopo, numeri dal server | E2E `ask.spec.ts`: "the quota note before and after the first question" | S6 | testi: pass (ask-copy.test.ts); pagina: E2E scritto, non eseguito |
 | 36 | Attesa: "Risposta in arrivo…" `aria-disabled`, casella `readOnly` col focus, "Sto leggendo {n} feedback…", dopo 15 s il messaggio lungo; due invii ravvicinati, una sola chiamata ad `ask` | E2E `ask.spec.ts`: "waiting state and the 15-second message" (finto gateway lento su marcatore, `page.clock`), "two quick submits make one ask call" (richieste con header `next-action` contate) | S8 | planned |
@@ -343,4 +343,14 @@ Rosso (documento): × documents question_answered ... AssertionError: expected u
 Mutazioni: Ma (testo nelle proprietà) 1 rosso · Mb (via analytics_milestones) 2 rossi · Mc (evento sui falliti) 1 rosso · Md (senza chiave) 1 rosso
 CAPTURED {"url":"https://eu.i.posthog.com/i/v0/e/","body":{"api_key":"phc_test","event":"question_answered","distinct_id":"1bb6cd5d-cd98-43a6-8786-fe7895fe034d","timestamp":"2026-09-26T23:17:22.756Z","properties":{"citation_count":1,"outcome":"answered","$process_person_profile":false,"$geoip_disable":true}}}
 Verde: pnpm typecheck exit 0 · pnpm lint exit 0 · pnpm test  Test Files 19 passed (19)  Tests 251 passed (251)
+```
+
+### S7, nessun feedback (2026-09-27)
+
+Nota: `docs/notes/2026-09-27-chiedi-s7-nessun-feedback.md`.
+
+```
+Rosso:  × no feedback: text A ... × only feedback older than 90 days: text B ...   Tests  2 failed | 1 passed (3)
+Verde:  pnpm typecheck exit 0 · pnpm lint exit 0 · pnpm test  Test Files 20 passed (20)  Tests 254 passed (254)
+        pnpm build ✓ Compiled successfully · pnpm test:e2e non eseguito (porta 3000 occupata)
 ```
