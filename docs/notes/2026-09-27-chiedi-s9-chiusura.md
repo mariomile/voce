@@ -30,7 +30,7 @@ pnpm evals          non eseguito: rimandato per decisione di Mario
 
 ## Cosa resta prima di "finito"
 
-- `pnpm test:e2e` con la porta 3000 libera: `e2e/ask.spec.ts` ha 24 test scritti e mai eseguiti (AC 32-38 lato pagina), più `main-flow.spec.ts` che ora importa `confirmationLink` da `e2e/helpers.ts`.
+- `pnpm test:e2e` con la porta 3000 libera: `e2e/ask.spec.ts` ha 21 test scritti e mai eseguiti (AC 32-38 lato pagina), più `main-flow.spec.ts` che ora importa `confirmationLink` da `e2e/helpers.ts`.
 - Verifica a mano nel browser: `/ask` a 1280×720 con zoom 125% e 150%, e il nuovo colore di `<cite>` su `/themes`, `/themes/[id]` e sull'anteprima prima dell'analisi.
 - Revisione indipendente (`build-reviewer`) e gate 5.
 - Evals di S2, quando Mario le riapre.
