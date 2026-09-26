@@ -20,6 +20,8 @@ run() {
     # Vitest summary line when there is one, otherwise the last non-empty line.
     local summary
     summary="$(grep -E '^ +Tests +[0-9]' "$log" | tail -1)"
+    # pg_prove summary for the SQL database tests.
+    [ -z "$summary" ] && summary="$(grep -E '^Files=' "$log" | tail -1)"
     [ -z "$summary" ] && summary="$(grep -v '^\s*$' "$log" | tail -1)"
     result "$name" "OK" "$(echo "$summary" | sed 's/^ *//' | cut -c1-160)"
   else
@@ -27,7 +29,7 @@ run() {
   fi
 }
 
-# --- Database: migrations from zero on the local stack, then the RLS access tests.
+# --- Database: migrations from zero on the local stack, then the RLS access tests (API and SQL).
 db_ok=1
 if ! supabase status >/dev/null 2>&1; then
   db_ok=0
@@ -37,6 +39,7 @@ elif ! supabase db reset >"$LOG_DIR/db-reset.log" 2>&1; then
   result "test-database" "FALLITO" "supabase db reset fallito, vedi $LOG_DIR/db-reset.log"
 else
   run "test-database" pnpm exec vitest run src/test/rls.test.ts
+  run "test-database-sql" supabase test db
 fi
 
 run "typecheck" pnpm typecheck

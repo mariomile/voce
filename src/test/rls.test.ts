@@ -129,6 +129,9 @@ describe("a user cannot change another workspace", () => {
     expect(error?.code).toBe("42501")
   })
 
+  // Every API delete filters by column, so the select rule applies too and already hides B's rows:
+  // this passes even with a delete rule that is too wide. supabase/tests/feedback_delete_policy.test.sql
+  // checks the delete rule on its own.
   it("cannot delete B's feedback", async () => {
     const { data, error } = await a.client.from("feedback").delete().eq("id", bIds.feedback).select("id")
     expect(error).toBeNull()

@@ -222,6 +222,8 @@ export async function getTheme(workspaceId: string, themeId: string) {
   ]);
   const analysis = toAnalysis(unwrap(analysisRow));
   const linked = unwrap(links).map((l) => ({ ...l, feedback: toFeedback(l.feedback) }));
+  // A theme whose feedback were all deleted is hidden from the dashboard, and has no page either.
+  if (linked.length === 0) return null;
   const quotes = linked
     .filter((l) => l.quote_rank !== null)
     .sort((a, b) => a.quote_rank! - b.quote_rank!)

@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
-import { admin, createTestUser, deleteTestUsers, type TestUser } from "@/test/supabase"
+import { admin, anon, createTestUser, deleteTestUsers, type TestUser } from "@/test/supabase"
 
 // Two fresh accounts, each with an analysis: A deletes, B's data must not move.
 const session = vi.hoisted(() => ({ client: null as unknown }))
@@ -53,7 +53,7 @@ async function seed(user: TestUser) {
     { workspace_id: user.workspaceId, theme_id: bank, feedback_id: third },
     { workspace_id: user.workspaceId, theme_id: other, feedback_id: third, quote_rank: 1, highlight: "Risposta" },
   ])
-  return { first, second, third, bank }
+  return { first, second, third, bank, other }
 }
 
 let aIds: Awaited<ReturnType<typeof seed>>
@@ -72,7 +72,8 @@ const feedbackCount = async (workspaceId: string) =>
 describe("deleteFeedback", () => {
   it("cannot delete a feedback of another workspace, nor anything that is not an id", async () => {
     session.client = a.client
-    expect(await deleteFeedback(bIds.first)).toEqual({ ok: false })
+    // RLS hides B's feedback from A: for A it does not exist, like one already deleted. Nothing moves.
+    expect(await deleteFeedback(bIds.first)).toEqual({ ok: true })
     expect(await deleteFeedback("not-an-id")).toEqual({ ok: false })
     expect(await feedbackCount(b.workspaceId)).toBe(3)
   })
@@ -98,6 +99,25 @@ describe("deleteFeedback", () => {
     const { themes, analysisThemeCount } = await getDashboard(a.workspaceId, { status: "all" })
     expect(themes.map((t) => [t.title, t.feedbackCount])).toEqual([["Banca", 1]])
     expect(analysisThemeCount).toBe(1)
+    // Its page answers "not found" too: the page calls notFound() when getTheme returns null.
+    expect(await getTheme(a.workspaceId, aIds.other)).toBeNull()
+  })
+
+  it("a feedback already deleted, for example in another tab, is still a success", async () => {
+    session.client = a.client
+    expect(await deleteFeedback(aIds.third)).toEqual({ ok: true })
+    expect(await feedbackCount(a.workspaceId)).toBe(1)
+  })
+
+  it("a real database error fails and is logged, without feedback text", async () => {
+    // Reads the workspace as A, deletes as an anonymous visitor: the database refuses (no delete grant).
+    const visitor = anon()
+    session.client = { from: (table: string) => (table === "workspaces" ? a.client : visitor).from(table as "feedback") }
+    const log = vi.spyOn(console, "error").mockImplementation(() => {})
+    expect(await deleteFeedback(aIds.second)).toEqual({ ok: false })
+    expect(log).toHaveBeenCalledExactlyOnceWith("Feedback delete failed: 42501")
+    log.mockRestore()
+    expect(await feedbackCount(a.workspaceId)).toBe(1)
   })
 
   it("left the other workspace as it was", async () => {
