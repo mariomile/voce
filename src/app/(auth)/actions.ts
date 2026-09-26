@@ -47,6 +47,9 @@ export async function signUp(formData: FormData): Promise<AuthState> {
     password: parsed.data.password,
     options: { data: { workspace_name: parsed.data.workspace } },
   })
+  // Turned off in Supabase Auth: all sign-ups, or the email ones.
+  if (error?.code === "signup_disabled" || error?.code === "email_provider_disabled")
+    return { error: "Le registrazioni sono chiuse in questo momento." }
   if (error?.code === "weak_password") return { error: "Questa password è troppo debole, scegline un'altra." }
   if (error?.code === "over_email_send_rate_limit")
     return { error: "Troppi tentativi con questa email. Riprova tra qualche minuto." }
