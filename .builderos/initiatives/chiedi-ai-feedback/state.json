@@ -8,7 +8,7 @@
   "current_phase": 7,
   "cycle": 1,
   "created_at": "2026-09-26T16:41:02.367Z",
-  "updated_at": "2026-09-27T09:20:00.000Z",
+  "updated_at": "2026-09-27T09:48:07.000Z",
   "review_due": "2026-10-10",
   "phases": {
     "0": {
@@ -150,7 +150,7 @@
           "5.5"
         ],
         "overridden": true,
-        "override_reason": "Evals rimandate per decisione di Mario (27 set): senza carta sul team Vercel il modello non risponde. Si eseguono appena la carta è attiva, prima della sessione del 1 ottobre."
+        "override_reason": "Evals non eseguite per decisione di Mario (27 set): nessuna carta sul team Vercel, quindi nessun run sul modello vero. Prompt injection e citazioni inventate restano non provate sul modello."
       }
     },
     "6": {
@@ -271,6 +271,14 @@
       "event": "gate_passed",
       "phase": 6,
       "note": "Additive questions migration applied to production (09:08:06Z) after the baseline (09:07:51Z: 0 workspaces, no questions table). Rollback rehearsed in production: branch promoted 09:09:48Z, vercel rollback 09:10:06Z, domain back on main; rollback side effect autoAssignCustomDomains=false found and restored. 6.1 judged PASS by the model and an independent reviewer (Sonnet). Public release on stage 2026-10-01 15:00; production serves main. Reviews 2026-10-10 and 2026-10-31, owner Mario."
+    },
+    {
+      "at": "2026-09-27T09:48:07.000Z",
+      "event": "override_amended",
+      "phase": 5,
+      "from": "Evals rimandate per decisione di Mario (27 set): senza carta sul team Vercel il modello non risponde. Si eseguono appena la carta è attiva, prima della sessione del 1 ottobre.",
+      "reason": "Evals non eseguite per decisione di Mario (27 set): nessuna carta sul team Vercel, quindi nessun run sul modello vero. Prompt injection e citazioni inventate restano non provate sul modello.",
+      "by": "Mario Miletta (conversazione, 2026-09-27)"
     }
   ]
 }
