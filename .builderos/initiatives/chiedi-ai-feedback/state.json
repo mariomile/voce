@@ -5,11 +5,11 @@
   "mode": "lite",
   "track": "product",
   "status": "open",
-  "current_phase": 6,
+  "current_phase": 7,
   "cycle": 1,
   "created_at": "2026-09-26T16:41:02.367Z",
-  "updated_at": "2026-09-27T09:05:42.000Z",
-  "review_due": null,
+  "updated_at": "2026-09-27T09:20:00.000Z",
+  "review_due": "2026-10-10",
   "phases": {
     "0": {
       "status": "passed",
@@ -154,12 +154,29 @@
       }
     },
     "6": {
-      "status": "in_progress",
-      "artifact": null,
-      "gate": null
+      "status": "passed",
+      "artifact": "06-release.md",
+      "gate": {
+        "passed": true,
+        "checked_at": "2026-09-27T09:20:00.000Z",
+        "checked_by": {
+          "script": [
+            "E.1",
+            "6.2",
+            "6.3",
+            "6.4",
+            "6.5"
+          ],
+          "model": [
+            "6.1"
+          ]
+        },
+        "failed_conditions": [],
+        "overridden": false
+      }
     },
     "7": {
-      "status": "pending",
+      "status": "in_progress",
       "artifact": null,
       "gate": null
     }
@@ -248,6 +265,12 @@
       "reason": "Evals rimandate per decisione di Mario (27 set): senza carta sul team Vercel il modello non risponde. Si eseguono appena la carta è attiva, prima della sessione del 1 ottobre.",
       "by": "Mario Miletta (scelto in conversazione il 2026-09-27)",
       "note": "Build review defects fixed (d48ed27): 269 unit tests, 52 pgTAP, 23/23 E2E on port 3001. Only evals missing (AC 23, 24, 40)."
+    },
+    {
+      "at": "2026-09-27T09:20:00.000Z",
+      "event": "gate_passed",
+      "phase": 6,
+      "note": "Additive questions migration applied to production (09:08:06Z) after the baseline (09:07:51Z: 0 workspaces, no questions table). Rollback rehearsed in production: branch promoted 09:09:48Z, vercel rollback 09:10:06Z, domain back on main; rollback side effect autoAssignCustomDomains=false found and restored. 6.1 judged PASS by the model and an independent reviewer (Sonnet). Public release on stage 2026-10-01 15:00; production serves main. Reviews 2026-10-10 and 2026-10-31, owner Mario."
     }
   ]
 }
