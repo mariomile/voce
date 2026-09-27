@@ -72,7 +72,7 @@ Scelte di dettaglio prese il 2026-09-25. Dove precisano il resto del brief, valg
 
 1. **Ogni analisi riparte da zero.** Usa tutti i feedback degli ultimi 90 giorni (massimo 500) e produce un nuovo insieme di temi. Priorità e stato passano in automatico ai nuovi temi con lo stesso titolo: per questo l'AI riceve i titoli dei temi esistenti e li riusa quando il tema è lo stesso.
 2. **Un feedback può stare in più temi, massimo 3.** In questa versione il PM non modifica i temi a mano: imposta priorità e stato, e può scartarli.
-3. **Modello:** Claude tramite Vercel AI Gateway. Il modello si legge da una variabile d'ambiente, con default `anthropic/claude-sonnet-5`. L'elaborazione in UE non è garantita: è tra le cose da risolvere prima dei clienti reali (`docs/prima-dei-clienti-reali.md`).
+3. **Modello:** Claude direttamente sull'API Anthropic. Il modello si legge da una variabile d'ambiente, con default `claude-sonnet-5`. L'elaborazione in UE non è garantita: è tra le cose da risolvere prima dei clienti reali (`docs/prima-dei-clienti-reali.md`).
 4. **Evals** in `evals/`: un set sintetico di 60 feedback su un prodotto finto, con i temi attesi scritti a mano. Per ora bastano controlli automatici: ogni tema ha almeno 2 feedback esistenti collegati e le citazioni compaiono davvero nei feedback. La valutazione della qualità si approfondisce dopo.
 
 ### Piani e limiti
