@@ -2,9 +2,9 @@ import { defineConfig, devices } from "@playwright/test"
 
 // End-to-end test of the main flow against the local Supabase stack (`supabase start`).
 // The app runs on port 3000 because the confirmation email links to site_url in supabase/config.toml.
-// The analysis goes to a fake AI Gateway, never to a real model.
+// The analysis goes to a fake Anthropic API, never to a real model.
 
-const FAKE_GATEWAY_PORT = 4010
+const FAKE_ANTHROPIC_PORT = 4010
 
 export default defineConfig({
   testDir: "e2e",
@@ -18,9 +18,9 @@ export default defineConfig({
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: [
     {
-      command: "node e2e/fake-gateway.mts",
-      url: `http://127.0.0.1:${FAKE_GATEWAY_PORT}/health`,
-      env: { FAKE_GATEWAY_PORT: String(FAKE_GATEWAY_PORT) },
+      command: "node e2e/fake-anthropic.mts",
+      url: `http://127.0.0.1:${FAKE_ANTHROPIC_PORT}/health`,
+      env: { FAKE_ANTHROPIC_PORT: String(FAKE_ANTHROPIC_PORT) },
       reuseExistingServer: false,
     },
     {
@@ -28,11 +28,11 @@ export default defineConfig({
       command: process.env.CI ? "pnpm start" : "pnpm dev",
       url: "http://localhost:3000/login",
       timeout: 120_000,
-      // An already running app would call the real gateway: always start a fresh one.
+      // An already running app would call the real Anthropic API: always start a fresh one.
       reuseExistingServer: false,
       env: {
-        AI_GATEWAY_BASE_URL: `http://127.0.0.1:${FAKE_GATEWAY_PORT}`,
-        AI_GATEWAY_API_KEY: "fake-gateway-key",
+        ANTHROPIC_BASE_URL: `http://127.0.0.1:${FAKE_ANTHROPIC_PORT}/v1`,
+        ANTHROPIC_API_KEY: "fake-anthropic-key",
         POSTHOG_KEY: "",
       },
     },

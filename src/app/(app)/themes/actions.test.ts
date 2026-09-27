@@ -156,7 +156,7 @@ describe("analyze", () => {
     const log = await runLog(analysis.id)
     expect(log).toMatchObject({
       workspace_id: user.workspaceId,
-      model: "anthropic/claude-sonnet-5",
+      model: "claude-sonnet-5",
       input_tokens: 100_000,
       output_tokens: 10_000,
       cost_usd: 0.3,
@@ -238,14 +238,14 @@ describe("analyze", () => {
     await analyze()
     const [done] = await analyses()
 
-    for (const error of [new Error("Gateway down"), new DOMException("The operation timed out.", "TimeoutError")]) {
+    for (const error of [new Error("Anthropic API down"), new DOMException("The operation timed out.", "TimeoutError")]) {
       failingModel(error)
       expect(await analyze()).toEqual({ ok: false, reason: "failed" })
     }
 
     const all = await analyses()
     expect(all.map((a) => a.status)).toEqual(["done", "failed", "failed"])
-    expect((await runLog(all[1].id)).error).toContain("Gateway down")
+    expect((await runLog(all[1].id)).error).toContain("Anthropic API down")
     expect((await runLog(all[2].id)).error).toContain("TimeoutError")
     expect((await runLog(all[2].id)).finished_at).not.toBeNull()
     const dashboard = await getDashboard(user.workspaceId, { status: "all" })

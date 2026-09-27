@@ -1,4 +1,5 @@
-import { createGateway, generateText, Output, type LanguageModel } from "ai"
+import { createAnthropic } from "@ai-sdk/anthropic"
+import { generateText, Output, type LanguageModel } from "ai"
 import { z } from "zod"
 import type { Sentiment, ThemeKind } from "./types"
 
@@ -6,7 +7,7 @@ import type { Sentiment, ThemeKind } from "./types"
 // The feedback text is untrusted input: it only travels as data, and nothing the model returns is
 // saved without being checked against the feedback that was sent.
 
-export const DEFAULT_MODEL = "anthropic/claude-sonnet-5"
+export const DEFAULT_MODEL = "claude-sonnet-5"
 export const ANALYSIS_TIMEOUT_MS = 240_000
 export const ANALYSIS_WINDOW_DAYS = 90
 export const ANALYSIS_MAX_FEEDBACK = 500
@@ -16,19 +17,23 @@ export const MAX_QUOTES = 3
 
 // USD per million tokens, for the estimated cost. A model not listed gets no estimate.
 const PRICES: Record<string, { input: number; output: number }> = {
-  "anthropic/claude-sonnet-5": { input: 2, output: 10 },
+  "claude-sonnet-5": { input: 2, output: 10 },
 }
 
 export function analysisModel() {
   return process.env.AI_MODEL || DEFAULT_MODEL
 }
 
-// Claude through Vercel AI Gateway. Unit tests replace this with a fake model; the end-to-end
-// test points AI_GATEWAY_BASE_URL at a fake gateway (e2e/fake-gateway.mts).
-const gateway = createGateway({ baseURL: process.env.AI_GATEWAY_BASE_URL })
+// Claude on the Anthropic API, with the server-only key in ANTHROPIC_API_KEY. Unit tests replace
+// this with a fake model; the end-to-end test points ANTHROPIC_BASE_URL at a fake Messages API
+// (e2e/fake-anthropic.mts).
+const anthropic = createAnthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+  baseURL: process.env.ANTHROPIC_BASE_URL || undefined,
+})
 
 export function analysisLanguageModel(): LanguageModel {
-  return gateway(analysisModel())
+  return anthropic(analysisModel())
 }
 
 export type AnalysisFeedback = { id: string; text: string; channel: string; receivedAt: string }
