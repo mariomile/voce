@@ -1,7 +1,7 @@
 -- Research: the table, its access rules, create_research, and feedback that always belong to one.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(38);
+select plan(39);
 
 -- ===== AC 1 (part): RLS on in the migration that creates the table =====
 
@@ -18,11 +18,27 @@ select is(
   'after reset with the seed no feedback lacks a research'
 );
 
--- ===== AC 72 (part): the seed has a workspace with two Research =====
+-- ===== AC 72: the seed has a workspace with two Research, one with 2 hypotheses and their verdicts =====
 
 select ok(
-  exists (select 1 from public.research group by workspace_id having count(*) >= 2),
-  'the seed has a workspace with two Research'
+  exists (
+    select 1 from public.research r
+    where (select count(*) from public.research_hypotheses h where h.research_id = r.id) = 2
+      and (select count(*) from public.hypothesis_verdicts v where v.research_id = r.id) = 2
+      and exists (
+        select 1 from public.research o
+        where o.workspace_id = r.workspace_id and o.id <> r.id
+          and not exists (select 1 from public.research_hypotheses h where h.research_id = o.id)
+      )
+  ),
+  'the seed has a workspace with two Research, one with 2 hypotheses and their verdicts, one without'
+);
+
+select is(
+  (select count(*)::integer from public.verdict_feedback vf join public.feedback f on f.id = vf.feedback_id
+    where vf.highlight is not null and strpos(f.text, vf.highlight) = 0),
+  0,
+  'every quote of a seed verdict is an exact substring of its feedback'
 );
 
 -- ===== AC 5: the form left the workspace; a new user gets no Research =====

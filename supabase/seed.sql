@@ -1,15 +1,21 @@
 -- Development data. Loaded by `supabase db reset`. Never run it against production.
 --
 -- Five users, one workspace each, password "password-voce". Each workspace has a Research with the
--- public form and all its feedback; Fatturino has a second, empty one.
---   fatturino@voce.test  Pro, 55 feedback, 8 analyses, 8 themes, two Research
+-- public form and all its feedback; Fatturino, the demo workspace, has three.
+--   fatturino@voce.test  Pro, three Research:
+--                        "Cosa dicono i clienti di Fatturino?": 55 feedback, 8 themes analyses, 8 themes,
+--                          2 hypotheses with their verdicts (one confirmed, one refuted);
+--                        "Come usano l'export in Excel i clienti Pro?": 5 interview notes, no hypothesis,
+--                          ready for the first analysis;
+--                        "Perché chi prova Fatturino non passa a Pro?": 1 hypothesis, no feedback yet
 --   orto@voce.test       Free, feedback but no analysis yet, custom form question
 --   ordinalo@voce.test   Free, at the 100 feedback limit
 --   bottega@voce.test    Free, empty
 --   spento@voce.test     Free, public form disabled
 --
--- Dates are written for 2026-09-25 and shift to the day of the reset, so the 90-day window,
--- the 13-week trend and this month's analyses keep making sense.
+-- Dates are written for 2026-09-25 and shift to the day of the reset, so the 13-week trend, what changed
+-- since the previous analysis and this month's analyses keep making sense. A feedback enters Voce on the
+-- morning of the day it was received, so "arrived after" counts read the same way.
 
 create function pg_temp.d(iso text) returns date language sql
   as $$ select iso::date + (current_date - date '2026-09-25') $$;
@@ -246,6 +252,12 @@ insert into public.feedback (id, workspace_id, research_id, text, channel, custo
   ('1df0333b-665e-4c0d-8a92-fd72e1e56a9c', pg_temp.ws('00000000-0000-4000-8000-000000000003'), pg_temp.r('00000000-0000-4000-8000-000000000003'), 'Sarebbe utile vedere in anticipo i tempi di attesa stimati prima di confermare l''ordine.', 'Modulo pubblico', null, null, pg_temp.d('2026-09-13')),
   ('b3b25a8c-27bb-4b5d-931c-62f79bd91b51', pg_temp.ws('00000000-0000-4000-8000-000000000003'), pg_temp.r('00000000-0000-4000-8000-000000000003'), 'Il servizio clienti ha risposto in fretta quando ho segnalato un problema con la consegna.', 'Supporto', null, null, pg_temp.d('2026-09-14'));
 
+-- Each feedback entered Voce at 9:00 (Rome) on the day it was received, never in the future.
+update public.feedback set created_at = least((received_at + time '09:00') at time zone 'Europe/Rome', now());
+-- The first Research of Fatturino started before its feedback.
+update public.research set created_at = pg_temp.d('2026-06-20') + time '09:00'
+  where id = pg_temp.r('00000000-0000-4000-8000-000000000001');
+
 -- Analyses
 insert into public.analyses (id, workspace_id, research_id, created_at, period_start, feedback_count) values
   ('7c8e007c-8fa5-46d9-82ee-fe20d804bf09', pg_temp.ws('00000000-0000-4000-8000-000000000001'), pg_temp.r('00000000-0000-4000-8000-000000000001'), pg_temp.d('2026-08-05') + time '10:00', pg_temp.d('2026-05-08'), 17),
@@ -320,7 +332,91 @@ insert into public.theme_feedback (theme_id, feedback_id, workspace_id, quote_ra
   ('bf0e1e8e-3d73-442f-9afe-520f5d81c3ff', '2944103a-b3ee-4e74-a8e0-4da6a78e818a', pg_temp.ws('00000000-0000-4000-8000-000000000001'), 1, 'poterci mettere il logo e i miei colori'),
   ('bf0e1e8e-3d73-442f-9afe-520f5d81c3ff', 'f1c1f5a3-be53-430e-8ccf-846490e0ce64', pg_temp.ws('00000000-0000-4000-8000-000000000001'), null, null);
 
--- A second Research of Fatturino, created after the first and still without feedback.
-insert into public.research (workspace_id, question, form_slug, form_enabled, form_question, created_at)
-  values (pg_temp.ws('00000000-0000-4000-8000-000000000001'), 'Come usano l''export in Excel i clienti Pro?',
-    'fatturino-export-x7w2', true, null, now() + interval '1 second');
+-- Hypotheses of the first Research of Fatturino and their verdicts, made by the verdict half of the latest
+-- analysis (same click as the themes: same time, its own row of analyses). The trigger sets position and
+-- written_at; written_at then moves back to when the PM wrote them.
+insert into public.analyses (id, workspace_id, research_id, kind, created_at, period_start, feedback_count) values
+  ('c7a3e0d2-5b1f-4c8e-9a64-2f0d8b1e7c35', pg_temp.ws('00000000-0000-4000-8000-000000000001'), pg_temp.r('00000000-0000-4000-8000-000000000001'),
+    'verdict', pg_temp.d('2026-09-23') + time '10:00', pg_temp.d('2026-06-26'), 55);
+
+insert into public.research_hypotheses (id, workspace_id, research_id, text) values
+  ('4b2f6e1a-8c3d-4f7b-a2e5-9d1c0b6a3e71', pg_temp.ws('00000000-0000-4000-8000-000000000001'), pg_temp.r('00000000-0000-4000-8000-000000000001'),
+    'Il collegamento con la banca che salta è il problema che i clienti sentono di più.'),
+  ('9e5d2c7b-1a4f-4b8e-b3c6-0f2a7d9e1b54', pg_temp.ws('00000000-0000-4000-8000-000000000001'), pg_temp.r('00000000-0000-4000-8000-000000000001'),
+    'I clienti fanno quasi tutto da desktop: l''app mobile la usano poco.');
+update public.research_hypotheses set written_at = pg_temp.d('2026-09-10') + time '18:00' where id = '4b2f6e1a-8c3d-4f7b-a2e5-9d1c0b6a3e71';
+update public.research_hypotheses set written_at = pg_temp.d('2026-09-20') + time '18:00' where id = '9e5d2c7b-1a4f-4b8e-b3c6-0f2a7d9e1b54';
+
+-- feedback_read: what the analysis read; arrived_after: of those, the ones that entered Voce after the hypothesis.
+insert into public.hypothesis_verdicts (hypothesis_id, workspace_id, research_id, analysis_id, verdict, reasoning, feedback_read, arrived_after, created_at)
+select h.id, h.workspace_id, h.research_id, a.id, v.verdict::public.hypothesis_verdict, v.reasoning, a.feedback_count,
+  (select count(*) from public.feedback f where f.research_id = h.research_id and f.created_at > h.written_at and f.created_at <= a.created_at),
+  a.created_at
+from public.research_hypotheses h
+join (values
+  ('4b2f6e1a-8c3d-4f7b-a2e5-9d1c0b6a3e71'::uuid, 'confirmed',
+    'Il collegamento con la banca torna nei feedback di ogni canale, dal supporto alle call di vendita, e nessuno lo contraddice. I clienti non si limitano a notarlo: raccontano di averlo scoperto tardi, chiudendo il trimestre o quando i conti non tornavano.'),
+  ('9e5d2c7b-1a4f-4b8e-b3c6-0f2a7d9e1b54'::uuid, 'refuted',
+    'Molti clienti raccontano di usare l''app dal telefono, per inviare le fatture allo SdI e per fotografare gli scontrini. Anche chi si lamenta dell''app mobile la sta usando: il problema che segnalano è la lentezza, non lo scarso uso.')
+) as v (hypothesis_id, verdict, reasoning) on v.hypothesis_id = h.id
+join public.analyses a on a.id = 'c7a3e0d2-5b1f-4c8e-9a64-2f0d8b1e7c35';
+
+-- Verified links, with the quotes as exact substrings of the feedback: up to 3 for and 2 against.
+insert into public.verdict_feedback (hypothesis_id, feedback_id, workspace_id, stance, quote_rank, highlight)
+select v.hypothesis_id, v.feedback_id, pg_temp.ws('00000000-0000-4000-8000-000000000001'), v.stance::public.verdict_stance, v.quote_rank, v.highlight
+from (values
+  ('4b2f6e1a-8c3d-4f7b-a2e5-9d1c0b6a3e71'::uuid, '5f6fb91f-5b93-4625-8bbb-2b7bd77509ad'::uuid, 'for', 1, 'scade ogni 90 giorni e nessuno me lo dice'),
+  ('4b2f6e1a-8c3d-4f7b-a2e5-9d1c0b6a3e71', '639269cd-a040-4caf-a440-014c86a18f61', 'for', 2, 'me ne accorgo solo quando i conti non tornano più'),
+  ('4b2f6e1a-8c3d-4f7b-a2e5-9d1c0b6a3e71', '3baa70a8-dfaa-420e-b71e-d0ca40524f8a', 'for', 3, 'il collegamento bancario va rifatto spesso, è un rischio per noi'),
+  ('4b2f6e1a-8c3d-4f7b-a2e5-9d1c0b6a3e71', '131e27a9-9e8d-4235-8440-3517ac5636c4', 'for', null, null),
+  ('4b2f6e1a-8c3d-4f7b-a2e5-9d1c0b6a3e71', '856972c2-cf42-4899-87be-e1fd667d256f', 'for', null, null),
+  ('4b2f6e1a-8c3d-4f7b-a2e5-9d1c0b6a3e71', 'ac57aebd-5396-4de8-a232-1c54dea3c4df', 'for', null, null),
+  ('4b2f6e1a-8c3d-4f7b-a2e5-9d1c0b6a3e71', '22c85d4a-e462-49ba-a004-698ab1232346', 'for', null, null),
+  ('4b2f6e1a-8c3d-4f7b-a2e5-9d1c0b6a3e71', '076af1a3-72c4-4e99-9691-edfc73e40ec2', 'for', null, null),
+  ('4b2f6e1a-8c3d-4f7b-a2e5-9d1c0b6a3e71', 'd7eedf57-85df-4a04-81df-4d66726d479f', 'for', null, null),
+  ('4b2f6e1a-8c3d-4f7b-a2e5-9d1c0b6a3e71', '07021f82-7b83-4110-870f-ebd11c06836c', 'for', null, null),
+  ('4b2f6e1a-8c3d-4f7b-a2e5-9d1c0b6a3e71', '1d2ba6cb-b73d-424d-90e7-5dca6f0ece28', 'for', null, null),
+  ('9e5d2c7b-1a4f-4b8e-b3c6-0f2a7d9e1b54', 'b2090ae2-22de-4b71-8610-9f398683b3ce', 'against', 1, 'La fattura allo SdI la mando dal telefono in un minuto'),
+  ('9e5d2c7b-1a4f-4b8e-b3c6-0f2a7d9e1b54', '7eeec548-38df-4131-91ac-026083da5bca', 'against', 2, 'l''invio allo SdI da mobile funziona benissimo'),
+  ('9e5d2c7b-1a4f-4b8e-b3c6-0f2a7d9e1b54', '35e469db-2305-4716-b655-c9a382e4b853', 'against', null, null),
+  ('9e5d2c7b-1a4f-4b8e-b3c6-0f2a7d9e1b54', 'a9294417-cd02-4ff7-9dfe-56b200652165', 'against', null, null),
+  ('9e5d2c7b-1a4f-4b8e-b3c6-0f2a7d9e1b54', '76b14a05-7af9-44c1-bdf6-b79e5e6e6ec3', 'against', null, null),
+  ('9e5d2c7b-1a4f-4b8e-b3c6-0f2a7d9e1b54', '4c071537-e47b-4ff4-b2c9-7271efeae3d2', 'against', null, null),
+  ('9e5d2c7b-1a4f-4b8e-b3c6-0f2a7d9e1b54', 'cd0daef0-16ac-4fc6-aa05-f12d7803b829', 'against', null, null),
+  ('9e5d2c7b-1a4f-4b8e-b3c6-0f2a7d9e1b54', 'd9d2f4cb-3ed8-4267-b546-bb76cdc3783b', 'against', null, null)
+) as v (hypothesis_id, feedback_id, stance, quote_rank, highlight);
+
+-- A second Research of Fatturino: interview notes pasted after five calls, not analyzed yet, no hypothesis.
+insert into public.research (id, workspace_id, question, form_slug, form_enabled, form_question, created_at)
+  values ('5d8c1f3e-7a2b-4e96-8c05-b4e1a9f2d630', pg_temp.ws('00000000-0000-4000-8000-000000000001'), 'Come usano l''export in Excel i clienti Pro?',
+    'fatturino-export-x7w2', true, null, pg_temp.d('2026-09-15') + time '08:30');
+
+insert into public.feedback (workspace_id, research_id, text, channel, customer, received_at, created_at)
+select pg_temp.ws('00000000-0000-4000-8000-000000000001'), '5d8c1f3e-7a2b-4e96-8c05-b4e1a9f2d630', v.text, 'Intervista', v.customer,
+  pg_temp.d(v.day), least((pg_temp.d(v.day) + time '18:00') at time zone 'Europe/Rome', now())
+from (values
+  ('Titolare, studio di grafica', '2026-09-16', 'Esporta il registro IVA in Excel ogni mese e lo manda al commercialista.
+Prima di mandarlo lo ripulisce a mano: toglie le colonne che il commercialista non usa e rinomina le altre.
+"Ci metto venti minuti ogni volta, e se sbaglio una colonna mi richiama."
+Non sapeva che si potesse filtrare per periodo prima di esportare.'),
+  ('Amministrazione, agenzia di viaggi (4 persone)', '2026-09-18', 'Usano l''export per il controllo di gestione: incollano i dati in un file loro con le tabelle pivot.
+Vorrebbero le fatture passive e attive nello stesso file.
+Se l''export cambiasse formato "si rompe tutto": il file pivot legge le colonne per posizione.'),
+  ('Freelance, sviluppatore', '2026-09-19', 'Non usa l''export in Excel: gli basta il riepilogo annuale in PDF per il commercialista.
+L''ha aperto una volta e ha trovato le date in formato americano.
+Userebbe di più un export CSV da importare nel suo foglio Google.'),
+  ('Socia, studio di architettura', '2026-09-22', 'Esporta a fine trimestre per calcolare quanto accantonare per le tasse.
+Il file Excel non ha l''imponibile separato dall''IVA: lo ricalcola con una formula.
+"Se me lo desse già diviso non aprirei nemmeno Excel."'),
+  ('Responsabile amministrativo, e-commerce', '2026-09-25', 'Due export al mese: uno per il commercialista e uno per il gestionale del magazzino.
+Per il gestionale deve cambiare il separatore dei decimali e l''ordine delle colonne.
+Chiede se si può salvare un modello di export per non rifarlo ogni volta.')
+) as v (customer, day, text);
+
+-- A third Research of Fatturino, just started: a hypothesis written before any feedback.
+insert into public.research (id, workspace_id, question, form_slug, form_enabled, form_question, created_at)
+  values ('a6f0c2d9-3e4b-4d17-9b8a-71c5e2f0d4b8', pg_temp.ws('00000000-0000-4000-8000-000000000001'), 'Perché chi prova Fatturino non passa a Pro?',
+    'fatturino-pro-m4q8', true, 'Cosa ti manca per passare a Fatturino Pro?', pg_temp.d('2026-09-24') + time '11:00');
+insert into public.research_hypotheses (workspace_id, research_id, text) values
+  (pg_temp.ws('00000000-0000-4000-8000-000000000001'), 'a6f0c2d9-3e4b-4d17-9b8a-71c5e2f0d4b8',
+    'Il prezzo di Pro pesa meno delle funzioni che mancano.');

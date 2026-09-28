@@ -35,12 +35,12 @@ function as(name: keyof typeof users) {
   return workspaceIds[name]
 }
 
-// The first Research of a seed workspace, signed in as its owner: the one with the feedback and analyses.
+// The first Research of a seed workspace, signed in as its owner: the one with the most feedback and the analyses.
 async function initial(name: keyof typeof users) {
   const workspaceId = as(name)
   const list = await listResearch(workspaceId)
-  // Fatturino has a second, empty Research.
-  return { id: (list.length === 1 ? list[0] : list.find((r) => r.feedbackCount > 0)!).id, workspaceId }
+  // Fatturino has two more: one with interview notes only, one with no feedback.
+  return { id: list.reduce((a, b) => (b.feedbackCount > a.feedbackCount ? b : a)).id, workspaceId }
 }
 
 describe("getCurrentWorkspace", () => {
@@ -53,11 +53,11 @@ describe("getCurrentWorkspace", () => {
 describe("the Research of the seed", () => {
   it("listResearch gives every Research of the workspace, with the number of feedback", async () => {
     const list = await listResearch(as("fatturino"))
-    expect(list.map((r) => [r.question, r.formEnabled, r.feedbackCount > 0]).sort()).toEqual([
-      ["Come usano l'export in Excel i clienti Pro?", true, false],
-      ["Cosa dicono i clienti di Fatturino?", true, true],
+    expect(list.map((r) => [r.question, r.formEnabled, r.feedbackCount]).sort()).toEqual([
+      ["Come usano l'export in Excel i clienti Pro?", true, 5],
+      ["Cosa dicono i clienti di Fatturino?", true, 55],
+      ["Perché chi prova Fatturino non passa a Pro?", true, 0],
     ])
-    expect(list.find((r) => r.feedbackCount === 0)!.question).toBe("Come usano l'export in Excel i clienti Pro?")
   })
 
   it("getResearch reads the form of the Research", async () => {
@@ -296,6 +296,7 @@ describe("getDashboard", () => {
       .from("analyses")
       .select("id")
       .eq("workspace_id", workspaceIds.fatturino)
+      .eq("kind", "themes")
       .order("created_at", { ascending: false })
       .limit(1)
       .single()
@@ -308,10 +309,11 @@ describe("getDashboard", () => {
 
   it("has no analysis for a Research that never ran one, even when another Research of the workspace did", async () => {
     const fatturino = await initial("fatturino")
-    const [second] = await listResearch(fatturino.workspaceId)
-    const empty = await getDashboard({ id: second.id, workspaceId: fatturino.workspaceId })
+    // The interview notes of the seed: 5 feedback, never analyzed.
+    const notes = (await listResearch(fatturino.workspaceId)).find((r) => r.question.startsWith("Come usano"))!
+    const empty = await getDashboard({ id: notes.id, workspaceId: fatturino.workspaceId })
     expect(empty.analysis).toBeNull()
-    expect(empty.feedbackCount).toBe(0)
+    expect(empty.feedbackCount).toBe(5)
   })
 
   it("has no analysis for a workspace that never ran one", async () => {
@@ -355,7 +357,7 @@ describe("getTheme", () => {
   it("is null for a theme of another Research of the same workspace", async () => {
     const fatturino = await initial("fatturino")
     const { themes } = await getDashboard(fatturino, { status: "all" })
-    const [second] = await listResearch(fatturino.workspaceId)
+    const second = (await listResearch(fatturino.workspaceId)).find((r) => r.id !== fatturino.id)!
     expect(await getTheme({ id: second.id, workspaceId: fatturino.workspaceId }, themes[0].id)).toBeNull()
   })
 })
@@ -435,7 +437,7 @@ describe("listFeedback", () => {
 
   it("filters by channel, newest first", async () => {
     const id = as("fatturino")
-    const initial = (await listResearch(id)).find((r) => r.feedbackCount > 0)!
+    const initial = (await listResearch(id)).find((r) => r.feedbackCount === 55)!
     const { feedback, channels, total } = await listFeedback({ id: initial.id, workspaceId: id }, { channel: "Supporto" })
     expect(feedback.length).toBe(channels.find((c) => c.name === "Supporto")!.count)
     expect(feedback.every((f) => f.channel === "Supporto")).toBe(true)
@@ -533,7 +535,7 @@ describe("getPublicForm", () => {
 describe("getUsage", () => {
   it("reads limits from the plan", async () => {
     const pro = await getUsage(as("fatturino"))
-    expect(pro).toMatchObject({ plan: "pro", feedbackCount: 55, feedbackLimit: null, analysesLimit: 100 })
+    expect(pro).toMatchObject({ plan: "pro", feedbackCount: 60, feedbackLimit: null, analysesLimit: 100 })
     expect(pro.analysesThisMonth).toBeGreaterThan(0)
     const free = await getUsage(as("ordinalo"))
     expect(free).toMatchObject({ plan: "free", feedbackCount: 100, feedbackLimit: 100, analysesLimit: 3 })

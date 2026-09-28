@@ -76,7 +76,7 @@ select is(
 select results_eq(
   $$select hypothesis_id::text, workspace_id = (select id from ws), research_id::text, analysis_id::text, verdict::text,
       reasoning, feedback_read, arrived_after
-    from public.hypothesis_verdicts order by hypothesis_id$$,
+    from public.hypothesis_verdicts where workspace_id = (select id from ws) order by hypothesis_id$$,
   $$values
     ('92000000-0000-0000-0000-000000000001', true, '90000000-0000-0000-0000-000000000001', '93000000-0000-0000-0000-000000000001',
       'confirmed', 'I team piccoli lo dicono.', 4, 1),
