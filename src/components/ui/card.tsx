@@ -14,8 +14,8 @@ const cardVariants = cva("group/card flex rounded-lg p-6", {
     },
     layout: {
       stack: "flex-col",
-      row: "flex-row items-center justify-between gap-8",
-      media: "grid grid-cols-[1fr_auto] gap-5",
+      row: "flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-8",
+      media: "grid grid-cols-1 gap-5 sm:grid-cols-[1fr_auto]",
     },
   },
   defaultVariants: { variant: "default", layout: "stack" },

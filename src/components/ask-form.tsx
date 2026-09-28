@@ -127,7 +127,7 @@ export function AskForm({
         </Card>
       )}
       <form
-        className="flex items-start gap-6"
+        className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-start sm:gap-6"
         onSubmit={(event) => {
           event.preventDefault()
           submit()
@@ -163,7 +163,7 @@ export function AskForm({
             <FieldHint id="ask-hint">{t("form.hint")}</FieldHint>
           )}
         </Field>
-        <div className="mt-7 flex max-w-[36ch] flex-col gap-2">
+        <div className="flex flex-col gap-2 sm:mt-7 sm:max-w-[36ch]">
           <Button type="submit" size="lg" aria-disabled={pending || limitReached || undefined}>
             {pending ? t("form.sending") : askButtonLabel(t, feedbackConsidered, feedbackTotal)}
           </Button>

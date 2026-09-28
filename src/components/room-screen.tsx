@@ -208,7 +208,7 @@ function PileView({
     <>
       <RoomHeader workspaceName={workspaceName} exitHref={collectHref} />
 
-      <div className="l-wrap grid flex-1 grid-cols-[minmax(0,1fr)_auto] gap-x-[4vw] pt-[1svh] pb-[4svh]">
+      <div className="l-wrap grid flex-1 grid-cols-1 gap-x-[4vw] gap-y-[4svh] pt-[1svh] pb-[4svh] sm:grid-cols-[minmax(0,1fr)_auto]">
         <div className="flex min-w-0 flex-col gap-[2svh]">
           <h1 className={cn("room-question max-w-[14em] wrap-anywhere", question.length > LONG_QUESTION && "is-long")}>
             {question}
@@ -240,7 +240,7 @@ function PileView({
           </div>
         </div>
 
-        <aside className="flex max-w-[min(52svh,30vw)] flex-col justify-center gap-[2svh] self-center">
+        <aside className="flex max-w-[min(52svh,80vw)] flex-col justify-center gap-[2svh] self-center sm:max-w-[min(52svh,30vw)]">
           {status.form === "deleted" ? (
             <FormPanel title={t("deleted.title")} text={t("deleted.text")} href="/research" action={t("deleted.action")} />
           ) : status.form === "open" ? (

@@ -36,7 +36,7 @@ export default async function ThemePage({ params }: PageProps<"/research/[id]/th
         </Link>
       </p>
 
-      <article className="grid grid-cols-[148px_1fr_168px] gap-8 border-b border-line pb-8">
+      <article className="grid grid-cols-1 gap-4 border-b border-line pb-8 sm:grid-cols-[148px_1fr_168px] sm:gap-8">
         <div>
           <Stat value={theme.feedbackCount} label={t("row.feedbackLabel")} />
           <Trend weeks={theme.trend} />
@@ -68,7 +68,7 @@ export default async function ThemePage({ params }: PageProps<"/research/[id]/th
           <h2 className="mb-4 text-xl leading-snug font-bold">
             {t("detail.otherFeedback", { count: others.length })}
           </h2>
-          <div className="grid grid-cols-2 gap-x-12">
+          <div className="grid grid-cols-1 gap-x-12 sm:grid-cols-2">
             {others.map((f) => (
               <Quote
                 key={f.feedbackId}

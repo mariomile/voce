@@ -48,7 +48,7 @@ export function ResearchForm({ cancelHref }: { cancelHref?: string }) {
   }
 
   return (
-    <form noValidate onSubmit={submit} className="flex max-w-[860px] items-start gap-4">
+    <form noValidate onSubmit={submit} className="flex max-w-[860px] flex-col items-start gap-4 sm:flex-row">
       <Field className="flex-1">
         <FieldLabel htmlFor="research-question">{t("label")}</FieldLabel>
         <Input

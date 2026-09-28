@@ -26,7 +26,7 @@ export function AskAnswer({ result }: { result: Answer }) {
           </p>
         </>
       ) : (
-        <div className="grid grid-cols-[148px_1fr] gap-8">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-[148px_1fr] sm:gap-8">
           <div>
             <Stat value={result.feedbackCount} label={countLabel(t, result.feedbackCount)} />
           </div>
