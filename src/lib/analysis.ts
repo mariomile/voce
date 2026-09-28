@@ -1,5 +1,5 @@
-import { createAnthropic } from "@ai-sdk/anthropic"
-import { generateText, Output, type LanguageModel } from "ai"
+import { createAnthropic, type AnthropicLanguageModelOptions } from "@ai-sdk/anthropic"
+import { generateText, NoObjectGeneratedError, Output, type LanguageModel } from "ai"
 import { z } from "zod"
 import type { Sentiment, ThemeKind } from "./types"
 
@@ -34,6 +34,13 @@ const anthropic = createAnthropic({
 
 export function analysisLanguageModel(): LanguageModel {
   return anthropic(analysisModel())
+}
+
+// Claude Sonnet 5 thinks by default, and thinking tokens count against maxOutputTokens: on a
+// large set of feedback it spent the whole budget thinking and returned no output. Grouping and
+// quoting feedback does not need it, and without it the answer arrives much sooner.
+export const MODEL_OPTIONS = {
+  anthropic: { thinking: { type: "disabled" } } satisfies AnthropicLanguageModelOptions,
 }
 
 export type AnalysisFeedback = { id: string; text: string; channel: string; receivedAt: string }
@@ -124,9 +131,17 @@ export async function runAnalysis({
     output: Output.object({ schema: outputSchema }),
     maxOutputTokens: 16_000,
     timeout: ANALYSIS_TIMEOUT_MS,
+    providerOptions: MODEL_OPTIONS,
+  }).catch((error: unknown) => {
+    // A model cut off before finishing its JSON fails parsing: say why it stopped.
+    if (NoObjectGeneratedError.isInstance(error) && error.finishReason && error.finishReason !== "stop") {
+      throw stoppedEarly(error.finishReason, error.usage?.outputTokens)
+    }
+    throw error
   })
   const durationMs = Math.round(performance.now() - started)
   const { inputTokens, outputTokens } = result.usage
+  if (result.finishReason !== "stop") throw stoppedEarly(result.finishReason, outputTokens)
   const raw = result.output
   return {
     raw,
@@ -136,6 +151,10 @@ export async function runAnalysis({
     durationMs,
     costUsd: estimateCost(modelId, inputTokens, outputTokens),
   }
+}
+
+function stoppedEarly(finishReason: string, outputTokens: number | undefined) {
+  return new Error(`Model stopped with finish reason ${finishReason} after ${outputTokens ?? "unknown"} output tokens`)
 }
 
 // Keeps only what holds up against the feedback that was sent: existing feedback numbers,
