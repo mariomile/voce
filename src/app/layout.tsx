@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Hanken_Grotesk, Literata } from "next/font/google";
 import "./globals.css";
 
@@ -13,15 +15,18 @@ const literata = Literata({
   style: ["normal", "italic"],
 });
 
-export const metadata: Metadata = {
-  title: "Voce",
-  description: "I feedback dei clienti, raggruppati per tema, con le loro parole.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("common.metadata");
+  return { title: "Voce", description: t("description") };
+}
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const locale = await getLocale();
   return (
-    <html lang="it" className={`${hanken.variable} ${literata.variable} h-full`}>
-      <body className="flex min-h-full flex-col">{children}</body>
+    <html lang={locale} className={`${hanken.variable} ${literata.variable} h-full`}>
+      <body className="flex min-h-full flex-col">
+        <NextIntlClientProvider>{children}</NextIntlClientProvider>
+      </body>
     </html>
   );
 }

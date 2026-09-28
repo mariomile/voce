@@ -1,0 +1,10 @@
+{
+  "metadata": {
+    "description": "Customer feedback, grouped by theme, in their own words."
+  },
+  "localeSwitch": {
+    "label": "Language",
+    "it": "Italiano",
+    "en": "English"
+  }
+}
