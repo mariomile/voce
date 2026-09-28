@@ -5,10 +5,10 @@
   "mode": "lite",
   "track": "product",
   "status": "open",
-  "current_phase": 3,
+  "current_phase": 4,
   "cycle": 1,
   "created_at": "2026-09-28T16:45:27.844Z",
-  "updated_at": "2026-09-28T18:40:00.000Z",
+  "updated_at": "2026-09-28T19:10:00.000Z",
   "review_due": null,
   "phases": {
     "0": {
@@ -82,11 +82,11 @@
       }
     },
     "3": {
-      "status": "in_progress",
+      "status": "passed",
       "artifact": "03-solution-bet.md",
       "gate": {
-        "passed": false,
-        "checked_at": "2026-09-28T18:40:00.000Z",
+        "passed": true,
+        "checked_at": "2026-09-28T19:10:00.000Z",
         "checked_by": {
           "script": [
             "E.1",
@@ -101,11 +101,12 @@
         "failed_conditions": [
           "3.4"
         ],
-        "overridden": false
+        "overridden": true,
+        "override_reason": "Costruisco la Research subito dopo la specifica, come ho deciso: il questionario (0,5 giorni contro 7,5 di costruzione) parte il 2 ottobre in parallelo e non prima. Le risposte arrivano entro il 12 ottobre e, se lo falsificano, il criterio di stop 1 si applica subito senza aspettare il 20 ottobre."
       }
     },
     "4": {
-      "status": "pending",
+      "status": "in_progress",
       "artifact": null,
       "gate": null
     },
@@ -174,6 +175,26 @@
       "event": "gate_failed",
       "phase": 3,
       "note": "4 options (A hypothesis-led Research, B open question / continuous discovery, C one-off synthesis, D manual synthesis by Mario). Bet: B, against Mario's stated vision A, decided by delegation of Mario (2026-09-28) and flagged; hypotheses return as optional if interviews give VALIDATED on 2026-10-20. 3.1 judged PASS by the model and an independent reviewer (Sonnet). 3.2, 3.3 pass. 3.4 fails: async questionnaire 0.5 days vs 5 days build (10%), build ordered first. Override proposed, not signed: reserved to Mario."
+    },
+    {
+      "at": "2026-09-28T19:00:00.000Z",
+      "event": "gate_overridden",
+      "phase": 3,
+      "failed_conditions": [
+        "3.4"
+      ],
+      "reason": "Costruisco la Research subito dopo la specifica, come ho deciso: il questionario (0,5 giorni contro 5 di costruzione) parte il 2 ottobre in parallelo e non prima. Le risposte arrivano entro il 12 ottobre e, se lo falsificano, il criterio di stop 1 si applica subito senza aspettare il 20 ottobre.",
+      "by": "Mario Miletta (scelto in conversazione il 2026-09-28, evidence/user-2026-09-28-research-modello-e-deroga-3.md)",
+      "note": "Mario chose the hybrid Research ('Ibrida (Recommended)'): open question with themes over time plus optional hypotheses with a verdict each. Bet rewritten as option 5; build 7.5 days, questionnaire 0.5 days (7%). 3.1 judged PASS by the model and an independent reviewer (Sonnet)."
+    },
+    {
+      "at": "2026-09-28T19:10:00.000Z",
+      "event": "override_amended",
+      "phase": 3,
+      "from": "Costruisco la Research subito dopo la specifica, come ho deciso: il questionario (0,5 giorni contro 5 di costruzione) parte il 2 ottobre in parallelo e non prima. Le risposte arrivano entro il 12 ottobre e, se lo falsificano, il criterio di stop 1 si applica subito senza aspettare il 20 ottobre.",
+      "reason": "Costruisco la Research subito dopo la specifica, come ho deciso: il questionario (0,5 giorni contro 7,5 di costruzione) parte il 2 ottobre in parallelo e non prima. Le risposte arrivano entro il 12 ottobre e, se lo falsificano, il criterio di stop 1 si applica subito senza aspettare il 20 ottobre.",
+      "by": "Mario Miletta (conversazione, 2026-09-28, evidence/user-2026-09-28-research-costo-verdetto-e-deroga-aggiornata.md)",
+      "note": "Signed with 5 days of build (pure B estimate), updated to 7,5 after the hybrid choice. Mario also confirmed the verdict cost: second model call counted against the analysis quota (Free 3, Pro 100 per month)."
     }
   ]
 }
