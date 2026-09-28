@@ -5,19 +5,35 @@
   "mode": "lite",
   "track": "product",
   "status": "open",
-  "current_phase": 0,
+  "current_phase": 1,
   "cycle": 1,
   "created_at": "2026-09-28T16:45:27.844Z",
-  "updated_at": "2026-09-28T16:45:32.666Z",
+  "updated_at": "2026-09-28T17:05:00.000Z",
   "review_due": null,
   "phases": {
     "0": {
-      "status": "in_progress",
-      "artifact": null,
-      "gate": null
+      "status": "passed",
+      "artifact": "00-frame.md",
+      "gate": {
+        "passed": true,
+        "checked_at": "2026-09-28T17:05:00.000Z",
+        "checked_by": {
+          "script": [
+            "E.1",
+            "0.1",
+            "0.2"
+          ],
+          "model": [
+            "0.3",
+            "0.4"
+          ]
+        },
+        "failed_conditions": [],
+        "overridden": false
+      }
     },
     "1": {
-      "status": "pending",
+      "status": "in_progress",
       "artifact": null,
       "gate": null
     },
@@ -65,6 +81,12 @@
       "from": "feature",
       "to": "product",
       "reason": "coverage check failed: C.3"
+    },
+    {
+      "at": "2026-09-28T17:05:00.000Z",
+      "event": "gate_passed",
+      "phase": 0,
+      "note": "0.3 and 0.4 judged PASS by the framer and re-judged PASS by the orchestrating model: falsifier countable in 6-8 interviews; why now dated (Maze AI moderator 2025-09-24, User Interviews report 2025-10-22, Listen Labs 2026-01-14, Anthropic Citations 2025-01-23), with the caveat that surveys are researcher-heavy. Primary ICP chosen by delegation of Mario (2026-09-28), to be confirmed."
     }
   ]
 }
