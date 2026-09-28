@@ -10,7 +10,7 @@ test("sign up, add feedback and get the first themes", async ({ page }) => {
   await page.goto("/signup")
   await page.getByLabel("Nome del prodotto").fill("Prova E2E")
   await page.getByLabel("Email").fill(email)
-  await page.getByLabel("Password").fill("password-e2e-voce")
+  await page.getByLabel("Password", { exact: true }).fill("password-e2e-voce")
   await page.getByRole("button", { name: "Crea il workspace" }).click()
   await expect(page.getByText("Controlla la tua email")).toBeVisible()
 

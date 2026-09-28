@@ -6,7 +6,9 @@ import { z } from "zod"
 import { getOrigin } from "@/lib/origin"
 import { createClient } from "@/lib/supabase/server"
 
-export type AuthState = { error?: string; sentTo?: string }
+export type AuthField = "workspace" | "email" | "password"
+// `field` says which field the error is about, so the form shows it there.
+export type AuthState = { error?: string; field?: AuthField; sentTo?: string }
 
 const GENERIC_ERROR = "Qualcosa non ha funzionato. Riprova tra poco."
 
@@ -37,9 +39,9 @@ export async function signUp(formData: FormData): Promise<AuthState> {
   const parsed = signUpSchema.safeParse(Object.fromEntries(formData))
   if (!parsed.success) {
     const field = parsed.error.issues[0]?.path[0]
-    if (field === "password") return { error: "La password deve avere almeno 8 caratteri." }
-    if (field === "email") return { error: "Controlla l'indirizzo email." }
-    return { error: "Scrivi il nome del prodotto, al massimo 60 caratteri." }
+    if (field === "password") return { error: "La password deve avere almeno 8 caratteri.", field }
+    if (field === "email") return { error: "Controlla l'indirizzo email.", field }
+    return { error: "Scrivi il nome del prodotto, al massimo 60 caratteri.", field: "workspace" }
   }
   const supabase = await createClient()
   // The workspace is created by a database trigger, with this name. Supabase's default email template
@@ -56,7 +58,8 @@ export async function signUp(formData: FormData): Promise<AuthState> {
   // Turned off in Supabase Auth: all sign-ups, or the email ones.
   if (error?.code === "signup_disabled" || error?.code === "email_provider_disabled")
     return { error: "Le registrazioni sono chiuse in questo momento." }
-  if (error?.code === "weak_password") return { error: "Questa password è troppo debole, scegline un'altra." }
+  if (error?.code === "weak_password")
+    return { error: "Questa password è troppo debole, scegline un'altra.", field: "password" }
   if (error?.code === "over_email_send_rate_limit")
     return { error: "Troppi tentativi con questa email. Riprova tra qualche minuto." }
   if (error) return { error: GENERIC_ERROR }

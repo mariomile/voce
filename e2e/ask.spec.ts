@@ -13,7 +13,7 @@ test("ask a question from the keyboard and read the answer", async ({ page }) =>
   await page.goto("/signup")
   await page.getByLabel("Nome del prodotto").fill("Prova Chiedi")
   await page.getByLabel("Email").fill(email)
-  await page.getByLabel("Password").fill("password-e2e-voce")
+  await page.getByLabel("Password", { exact: true }).fill("password-e2e-voce")
   await page.getByRole("button", { name: "Crea il workspace" }).click()
   await expect(page.getByText("Controlla la tua email")).toBeVisible()
   await page.goto(await confirmationLink(email))

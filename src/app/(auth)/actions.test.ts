@@ -25,6 +25,21 @@ function form() {
 }
 
 describe("signUp", () => {
+  it.each([
+    ["workspace", "", "Scrivi il nome del prodotto, al massimo 60 caratteri."],
+    ["email", "non-una-email", "Controlla l'indirizzo email."],
+    ["password", "corta", "La password deve avere almeno 8 caratteri."],
+  ])("says which field is wrong: %s", async (field, value, error) => {
+    const data = form()
+    data.set(field, value)
+    expect(await signUp(data)).toEqual({ error, field })
+  })
+
+  it("puts a weak password on the password field", async () => {
+    auth.error = { code: "weak_password" }
+    expect(await signUp(form())).toEqual({ error: "Questa password è troppo debole, scegline un'altra.", field: "password" })
+  })
+
   it.each(["signup_disabled", "email_provider_disabled"])("says sign-ups are closed on %s", async (code) => {
     auth.error = { code }
     expect(await signUp(form())).toEqual({ error: "Le registrazioni sono chiuse in questo momento." })

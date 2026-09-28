@@ -1,12 +1,10 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { signIn } from "@/app/(auth)/actions"
-import { AuthForm } from "@/components/auth-form"
 import { GoogleSignIn } from "@/components/google-sign-in"
+import { LoginForm } from "@/components/login-form"
 import { PageTitle } from "@/components/page"
 import { buttonVariants } from "@/components/ui/button"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { FieldError } from "@/components/ui/field"
 
 export const metadata: Metadata = { title: "Accedi a Voce" }
 
@@ -32,16 +30,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
         </FieldError>
       )}
       <GoogleSignIn />
-      <AuthForm action={signIn} submitLabel="Accedi">
-        <Field>
-          <FieldLabel htmlFor="email">Email</FieldLabel>
-          <Input id="email" name="email" type="email" autoComplete="email" required />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="password">Password</FieldLabel>
-          <Input id="password" name="password" type="password" autoComplete="current-password" required />
-        </Field>
-      </AuthForm>
+      <LoginForm />
       <p className="mt-8 text-base text-ink-muted">
         Non hai un account?{" "}
         <Link href="/signup" className={buttonVariants({ variant: "link" })}>
