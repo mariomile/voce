@@ -34,6 +34,7 @@ Cose da risolvere prima di aprire Voce a clienti reali. Finché siamo in modalit
 ## Database in produzione
 
 - Il progetto Supabase di produzione non esiste ancora. Va creato in regione UE, con la conferma dell'email attiva, un SMTP vero per le email di Auth, il template di conferma di `supabase/templates/confirmation.html` e gli URL di redirect del dominio vero.
+- **Oggi le registrazioni con email in produzione non arrivano a chi non è del team Supabase.** Il progetto di test usa l'SMTP integrato: manda solo agli indirizzi dei membri dell'organizzazione, al massimo 2 email all'ora per tutto il progetto, e rifiuta gli indirizzi senza server di posta. Con un SMTP vero si applica anche il template personalizzato, che funziona pure aprendo il link da un altro dispositivo (il link del template di default fa entrare solo nel browser dove ci si è registrati; altrove conferma l'email e chiede di accedere).
 
 ## Legale
 

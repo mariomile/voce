@@ -3,7 +3,9 @@
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { z } from "zod"
+import { trackMilestone } from "@/lib/analytics"
 import { getOrigin } from "@/lib/origin"
+import { workspaceOfUser } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
 
 export type AuthField = "workspace" | "email" | "password"
@@ -21,11 +23,15 @@ export async function signIn(formData: FormData): Promise<AuthState> {
   const parsed = signInSchema.safeParse(Object.fromEntries(formData))
   if (!parsed.success) return { error: "Inserisci email e password." }
   const supabase = await createClient()
-  const { error } = await supabase.auth.signInWithPassword(parsed.data)
+  const { data, error } = await supabase.auth.signInWithPassword(parsed.data)
   if (error?.code === "invalid_credentials") return { error: "Email o password non corretti." }
   if (error?.code === "email_not_confirmed")
     return { error: "Conferma prima l'email: apri il link che ti abbiamo mandato." }
   if (error) return { error: GENERIC_ERROR }
+  // A confirmation link opened in another browser confirms the email but gives no session: the account
+  // starts at this first sign-in. The event leaves only once per workspace.
+  const userId = data.user.id
+  trackMilestone(() => workspaceOfUser(userId), { event: "signed_up", properties: { method: "email" } })
   redirect("/themes")
 }
 
@@ -58,6 +64,8 @@ export async function signUp(formData: FormData): Promise<AuthState> {
   // Turned off in Supabase Auth: all sign-ups, or the email ones.
   if (error?.code === "signup_disabled" || error?.code === "email_provider_disabled")
     return { error: "Le registrazioni sono chiuse in questo momento." }
+  // Supabase refuses to send to an address with no mail server behind it.
+  if (error?.code === "email_address_invalid") return { error: "Controlla l'indirizzo email.", field: "email" }
   if (error?.code === "weak_password")
     return { error: "Questa password è troppo debole, scegline un'altra.", field: "password" }
   if (error?.code === "over_email_send_rate_limit")

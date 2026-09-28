@@ -9,12 +9,47 @@ vi.mock("@/lib/supabase/server", () => ({
         auth.signUpArgs.push(args)
         return { error: auth.error }
       },
+      signInWithPassword: async () =>
+        auth.error ? { data: { user: null }, error: auth.error } : { data: { user: { id: "u-1" } }, error: null },
     },
   }),
 }))
 vi.mock("@/lib/origin", () => ({ getOrigin: async () => "https://voce.test" }))
+const tracked = vi.hoisted(() => [] as unknown[])
+vi.mock("@/lib/analytics", () => ({ trackMilestone: (_: unknown, milestone: unknown) => tracked.push(milestone) }))
+vi.mock("@/lib/supabase/admin", () => ({ workspaceOfUser: async () => "ws-1" }))
+vi.mock("next/navigation", () => ({
+  redirect: (path: string) => {
+    throw new Error(`redirect ${path}`)
+  },
+}))
 
-const { signUp } = await import("./actions")
+const { signIn, signUp } = await import("./actions")
+
+describe("signIn", () => {
+  const credentials = () => {
+    const data = new FormData()
+    data.set("email", "nuovo@test.voce")
+    data.set("password", "password-lunga")
+    return data
+  }
+
+  // A confirmation link opened in another browser confirms the email without a session: the first
+  // sign-in is where that account starts. The event leaves once per workspace (analytics_milestones).
+  it("counts an email sign-up at sign-in, and lands in the app", async () => {
+    auth.error = null
+    tracked.length = 0
+    await expect(signIn(credentials())).rejects.toThrow("redirect /themes")
+    expect(tracked).toEqual([{ event: "signed_up", properties: { method: "email" } }])
+  })
+
+  it("counts nothing when the credentials are wrong", async () => {
+    auth.error = { code: "invalid_credentials" }
+    tracked.length = 0
+    expect(await signIn(credentials())).toEqual({ error: "Email o password non corretti." })
+    expect(tracked).toEqual([])
+  })
+})
 
 function form() {
   const data = new FormData()
@@ -33,6 +68,11 @@ describe("signUp", () => {
     const data = form()
     data.set(field, value)
     expect(await signUp(data)).toEqual({ error, field })
+  })
+
+  it("puts an address Supabase cannot send to on the email field", async () => {
+    auth.error = { code: "email_address_invalid" }
+    expect(await signUp(form())).toEqual({ error: "Controlla l'indirizzo email.", field: "email" })
   })
 
   it("puts a weak password on the password field", async () => {
