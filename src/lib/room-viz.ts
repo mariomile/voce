@@ -12,9 +12,17 @@ export type Rect = { x: number; y: number; width: number; height: number }
 // The pile is laid out for a number of places, not for the exact count: within a step a new
 // response takes the next place and nothing else moves. Past the last step, steps of 1000.
 const PILE_STEPS = [60, 120, 250, 500, 1000, 2000]
-// Height lost per pixel away from the middle: how steep the heap is (about 25 degrees).
+// Height lost per pixel away from the top of the heap: how steep it is (about 25 degrees).
 const PILE_SLOPE = 0.45
+// The area has room for more than a step, so a full step is still a heap and not a block.
+const PILE_ROOM = 1.7
+// The heap is poured over the count, which sits on the left.
+const PILE_ORIGIN = 0.3
 const ROW = Math.sqrt(3) / 2
+// Dot radius and the most a dot moves off its grid place, as shares of the grid's pitch: two
+// nudged neighbours stay at least 0.86 pitch apart, more than two radii.
+const PILE_DOT = 0.38
+const NUDGE = 0.1
 
 function pileCapacity(width: number, height: number, pitch: number) {
   if (height < pitch || width < pitch) return 0
@@ -30,9 +38,11 @@ function jitter(row: number, col: number) {
   return n - Math.floor(n)
 }
 
-// Places on a hexagonal grid inside the area, filled from the floor up and from the middle out.
+// Places on a hexagonal grid inside the area, filled from the floor up and from the top of the
+// heap out, each nudged a little so the heap looks poured, not printed.
 export function pileLayout(area: Rect, count: number): { radius: number; points: Point[] } {
-  const places = PILE_STEPS.find((step) => step >= count) ?? Math.ceil(count / 1000) * 1000
+  const step = PILE_STEPS.find((s) => s >= count) ?? Math.ceil(count / 1000) * 1000
+  const places = Math.ceil(step * PILE_ROOM)
   if (area.width <= 0 || area.height <= 0 || count === 0) return { radius: 0, points: [] }
 
   let pitch = Math.sqrt((area.width * area.height) / (ROW * places))
@@ -40,7 +50,7 @@ export function pileLayout(area: Rect, count: number): { radius: number; points:
   if (pileCapacity(area.width, area.height, pitch) === 0) return { radius: 0, points: [] }
 
   const floor = area.y + area.height
-  const middle = area.x + area.width / 2
+  const middle = area.x + area.width * PILE_ORIGIN
   const rows = Math.floor((area.height - pitch) / (pitch * ROW)) + 1
   const slots: (Point & { score: number })[] = []
   for (let row = 0; row < rows; row++) {
@@ -50,11 +60,15 @@ export function pileLayout(area: Rect, count: number): { radius: number; points:
       const x = area.x + pitch / 2 + offset + col * pitch
       if (x + pitch / 2 > area.x + area.width + 0.001) break
       const height = floor - y
-      slots.push({ x, y, score: height + PILE_SLOPE * Math.abs(x - middle) + jitter(row, col) * pitch * 0.35 })
+      slots.push({
+        x: x + (jitter(col, row) - 0.5) * pitch * NUDGE,
+        y: y + (jitter(row + 7, col) - 0.5) * pitch * NUDGE,
+        score: height + PILE_SLOPE * Math.abs(x - middle) + jitter(row, col) * pitch * 0.35,
+      })
     }
   }
   slots.sort((a, b) => a.score - b.score)
-  return { radius: pitch * 0.4, points: slots.slice(0, count).map(({ x, y }) => ({ x, y })) }
+  return { radius: pitch * PILE_DOT, points: slots.slice(0, count).map(({ x, y }) => ({ x, y })) }
 }
 
 // ---------- Act 2: the bubbles ----------

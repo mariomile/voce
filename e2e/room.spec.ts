@@ -2,8 +2,9 @@ import { expect, test } from "@playwright/test"
 import { admin, insertFeedback, signedInUser } from "./helpers"
 
 // The room screen: projected during a live session, the audience answers the public form from
-// their phones. It shows counts and theme titles, never the text of a feedback. The analysis goes
-// to the fake Anthropic API (e2e/fake-anthropic.mts), which groups every feedback into one theme.
+// their phones. It shows counts and theme titles, never the text of a feedback: each response is a
+// dot on a canvas, and the analysis sorts the dots into one bubble per theme. The analysis goes to
+// the fake Anthropic API (e2e/fake-anthropic.mts), which groups every feedback into one theme.
 
 async function formSlug(workspaceId: string) {
   const { data, error } = await admin.from("workspaces").select("form_slug").eq("id", workspaceId).single()
@@ -33,13 +34,29 @@ test("the counter goes up with a public form response, then the analysis shows t
   await expect(phone.getByText("Ricevuto. Grazie.")).toBeVisible()
 
   await expect(page.getByText("1 risposta", { exact: true })).toBeVisible({ timeout: 10_000 })
+  // One dot per public form response.
+  const dots = page.getByTestId("room-dots")
+  await expect(dots).toHaveAttribute("data-dots", "1")
 
   await page.getByRole("button", { name: "Analizza le risposte" }).click()
-  await expect(page.getByText("I clienti chiedono l'esportazione in PDF")).toBeVisible()
+  const title = "I clienti chiedono l'esportazione in PDF"
+  await expect(page.getByText(title)).toBeVisible()
   await expect(page.getByText("Opportunità", { exact: true })).toBeVisible()
+  // The theme groups both feedback, the manual one too: its bubble has 2 dots, one more than the pile.
+  await expect(page.getByText("1 risposta, 1 tema: 1 opportunità.")).toBeVisible()
+  await expect(page.getByRole("listitem").filter({ hasText: title })).toContainText("2")
+  await expect(dots).toHaveAttribute("data-dots", "2")
   // Never the words of a feedback on the projector.
   await expect(page.getByText(response)).toHaveCount(0)
   await expect(page.getByText(support)).toHaveCount(0)
+
+  // The same themes as a list, then back to the count.
+  await page.getByRole("button", { name: "Elenco" }).click()
+  await expect(page.getByRole("button", { name: "Elenco" })).toHaveAttribute("aria-pressed", "true")
+  await expect(page.getByText(title)).toBeVisible()
+  await page.getByRole("button", { name: "Torna al QR code" }).click()
+  await expect(page.getByText("1 risposta", { exact: true })).toBeVisible()
+  await expect(dots).toHaveAttribute("data-dots", "1")
 })
 
 test("the room screen says when the public form link is off, and how to turn it on", async ({ page }) => {

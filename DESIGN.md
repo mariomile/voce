@@ -191,9 +191,11 @@ Composti dai componenti sopra, servono alle schermate della B.
 - **Schermo della sala** (`/sala`): si proietta durante una sessione dal vivo, quindi usa le regole della landing (classi `l-*` e `room-*` in `src/app/landing.css`), non quelle dell'app. Niente barra dell'app.
   - Fondo tutto giallo: la domanda del modulo in Hanken 900, il conteggio "N risposte" a scala da manifesto, a destra il QR code grande su bianco con l'indirizzo breve sotto. Un solo pulsante inchiostro, "Analizza le risposte".
   - Modulo spento o pieno: al posto del QR code un riquadro inchiostro con il titolo in giallo e il link per rimediare.
-  - Temi: fascia gialla in alto, poi su bianco al massimo 5 righe con numero, tipo e titolo. Mai sintesi, citazioni o testo dei feedback.
+  - Pallini: ogni risposta è un pallino inchiostro che cade dall'alto e si ammucchia sopra il numero, versato da sinistra come sabbia. Disegnati su un solo canvas dietro al testo (`src/components/room-dots.tsx`), mai con un elemento per pallino. Nessun testo dei feedback: solo pallini.
+  - Durante l'analisi un'onda lenta attraversa il mucchio.
+  - Temi, "le risposte diventano temi": il fondo passa al bianco e i pallini volano in una bolla per tema, del colore del tipo, con un alone dello stesso colore al 10%. Ogni pallino ha la stessa taglia ovunque, quindi l'area di una bolla è il numero dei feedback. Bolle in fila dalla più grande, appoggiate sullo stesso pavimento; sotto ognuna numero, tipo e titolo. L'ultima bolla, grigia e senza numero, è "Altro". Una riga sotto il titolo dice il conto: "230 risposte, 5 temi: 2 problemi, 2 opportunità, 1 apprezzamento." L'interruttore "Bolle / Elenco" mostra gli stessi temi come righe con numero, tipo e titolo. Mai sintesi, citazioni o testo dei feedback.
   - Ogni taglia segue sia la larghezza sia l'altezza (`vw` e `svh`): tutto sta in uno schermo da 853x480 (1280x720 al 150%) a 1920x1080.
-  - Movimento: il numero fa un piccolo balzo quando sale; con `prefers-reduced-motion` resta fermo.
+  - Movimento: il numero fa un piccolo balzo quando sale; i pallini cadono uno alla volta (all'apertura una cascata breve), l'ultimo arrivato lascia un anello; nel passaggio ai temi volano su un arco e le etichette entrano quando sono atterrati. Con `prefers-reduced-motion` niente cade, vola o respira: si vedono subito le disposizioni finali.
 - **Accesso e registrazione**: colonna stretta, marchio in alto, campi `.input` con fondo velo, un solo pulsante primario a tutta larghezza.
 
 ## Nell'app

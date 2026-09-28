@@ -54,13 +54,20 @@ describe("pileLayout", () => {
     expect(pileLayout(area, 300).radius).toBeLessThan(pileLayout(area, 12).radius)
   })
 
-  it("heaps up in the middle first and rests on the floor", () => {
+  it("heaps up over the count, on the left, resting on the floor", () => {
     const { points, radius } = pileLayout(area, 12)
     const floor = area.y + area.height
-    const centerX = area.x + area.width / 2
     const lowest = Math.max(...points.map((p) => p.y))
-    expect(lowest + radius).toBeGreaterThan(floor - radius)
-    for (const p of points) expect(Math.abs(p.x - centerX)).toBeLessThan(area.width / 3)
+    expect(lowest + radius).toBeGreaterThan(floor - 2 * radius)
+    for (const p of points) expect(p.x).toBeLessThan(area.x + area.width * 0.6)
+  })
+
+  it("stays a heap, not a block, even when a step is almost full", () => {
+    const { points } = pileLayout(area, 250)
+    const top = Math.min(...points.map((p) => p.y))
+    const topRow = points.filter((p) => p.y < top + 1)
+    const bottomRow = points.filter((p) => p.y > Math.max(...points.map((q) => q.y)) - 1)
+    expect(topRow.length).toBeLessThan(bottomRow.length / 2)
   })
 
   it("is empty for an area with no room", () => {
