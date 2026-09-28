@@ -41,6 +41,7 @@
   "notFound": {
     "title": "This page doesn't exist.",
     "text": "The link may be wrong, or the page has been removed.",
-    "action": "Back to the home page"
+    "action": "Back to the home page",
+    "actionSignedIn": "All Research"
   }
 }

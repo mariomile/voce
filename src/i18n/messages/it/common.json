@@ -41,6 +41,7 @@
   "notFound": {
     "title": "Questa pagina non esiste.",
     "text": "Il link potrebbe essere sbagliato, o la pagina è stata tolta.",
-    "action": "Torna alla home"
+    "action": "Torna alla home",
+    "actionSignedIn": "Tutte le Research"
   }
 }
