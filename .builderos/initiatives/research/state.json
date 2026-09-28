@@ -5,10 +5,10 @@
   "mode": "lite",
   "track": "product",
   "status": "open",
-  "current_phase": 4,
+  "current_phase": 5,
   "cycle": 1,
   "created_at": "2026-09-28T16:45:27.844Z",
-  "updated_at": "2026-09-28T19:10:00.000Z",
+  "updated_at": "2026-09-28T20:10:00.000Z",
   "review_due": null,
   "phases": {
     "0": {
@@ -106,12 +106,30 @@
       }
     },
     "4": {
-      "status": "in_progress",
-      "artifact": null,
-      "gate": null
+      "status": "passed",
+      "artifact": "04-spec.md",
+      "gate": {
+        "passed": true,
+        "checked_at": "2026-09-28T20:10:00.000Z",
+        "checked_by": {
+          "script": [
+            "E.1",
+            "4.2",
+            "4.3",
+            "4.5",
+            "4.6"
+          ],
+          "model": [
+            "4.1",
+            "4.4"
+          ]
+        },
+        "failed_conditions": [],
+        "overridden": false
+      }
     },
     "5": {
-      "status": "pending",
+      "status": "in_progress",
       "artifact": null,
       "gate": null
     },
@@ -195,6 +213,12 @@
       "reason": "Costruisco la Research subito dopo la specifica, come ho deciso: il questionario (0,5 giorni contro 7,5 di costruzione) parte il 2 ottobre in parallelo e non prima. Le risposte arrivano entro il 12 ottobre e, se lo falsificano, il criterio di stop 1 si applica subito senza aspettare il 20 ottobre.",
       "by": "Mario Miletta (conversazione, 2026-09-28, evidence/user-2026-09-28-research-costo-verdetto-e-deroga-aggiornata.md)",
       "note": "Signed with 5 days of build (pure B estimate), updated to 7,5 after the hybrid choice. Mario also confirmed the verdict cost: second model call counted against the analysis quota (Free 3, Pro 100 per month)."
+    },
+    {
+      "at": "2026-09-28T20:10:00.000Z",
+      "event": "gate_passed",
+      "phase": 4,
+      "note": "DESIGN.md (flows F1-F12, Research nav with Sintesi/Chiedi/Feedback/Raccolta tabs, legacy pages removed) and 04-spec.md: 73 acceptance criteria, 22 out-of-scope items, 16 flows with empty and error states, eval set evals/verdicts.json (20 cases, threshold 85%, 8 must-pass). 4.1 and 4.4 judged PASS by the spec writer and an independent reviewer (Sonnet) after fixing AC 39 and AC 61. Data model: research, research_hypotheses, hypothesis_verdicts, verdict_feedback, feedback.research_id not null; migration creates an initial Research per workspace. Verdict counted against the analysis quota as confirmed by Mario. Spec decisions by delegation of Mario (2026-09-28); open questions listed in the spec."
     }
   ]
 }
