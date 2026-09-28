@@ -39,6 +39,7 @@
   "tabs": {
     "label": "Research sections",
     "synthesis": "Summary",
+    "ask": "Ask",
     "feedback": "Feedback",
     "collect": "Collect"
   },

@@ -35,7 +35,7 @@
 - Il tetto di costo AI arriva al doppio della quota, perché le analisi fallite non consumano quota. `docs/review.md` B5
 - Più account Free moltiplicano le analisi gratuite. `docs/review.md` B6
 - Le scritture sullo stesso workspace passano una alla volta. `docs/review.md` M3
-- Le server action di `/ask`, `/research`, `/research/new` e `/research/[id]` (Sintesi: ipotesi e analisi) senza sessione passano il proxy apposta (POST con intestazione `next-action`), perché la action risponda `session` e la pagina mostri E8, RC4 o E-SESS. Le altre server action senza sessione vengono ancora mandate a `/login`. `src/proxy.ts`
+- Le server action di `/research`, `/research/new`, `/research/[id]` (Sintesi: ipotesi e analisi) e `/research/[id]/ask` (Chiedi) senza sessione passano il proxy apposta (POST con intestazione `next-action`), perché la action risponda `session` e la pagina mostri E8, RC4 o E-SESS. Le altre server action senza sessione vengono ancora mandate a `/login`. `src/proxy.ts`
 - Lo stack Supabase locale è condiviso tra i worktree: un `supabase db reset` da un altro worktree toglie le migrazioni che lì non ci sono (per esempio `questions`) e i test di questo falliscono finché non si rilancia il reset qui. `05-build-plan.md` di chiedi-ai-feedback, P3
 - `supabase config push` spingerebbe `site_url = localhost` in produzione: per l'Auth remota si usa la Management API. Runbook di produzione PHC26.
 - `vercel rollback` mette `autoAssignCustomDomains` a false sul progetto: il deployment di produzione successivo (anche da un merge) non prende il dominio finché non si riattiva (PATCH `/v9/projects/voce-feedback`). Provato il 2026-09-27. `06-release.md` di chiedi-ai-feedback

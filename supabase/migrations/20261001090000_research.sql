@@ -636,3 +636,66 @@ $$;
 create trigger before_hypothesis_text_update
   before update of text on public.research_hypotheses
   for each row execute function private.before_hypothesis_text_update();
+
+-- ===== Questions of a Research (Chiedi) =====
+
+-- Set at the reservation, like analyses.research_id: deleting the Research empties it and keeps the row,
+-- so the month's quota still counts it. The quota stays per workspace.
+alter table public.questions add column research_id uuid;
+update public.questions q set research_id = r.id from public.research r where r.workspace_id = q.workspace_id;
+alter table public.questions add constraint questions_research_fkey
+  foreign key (workspace_id, research_id) references public.research (workspace_id, id) on delete set null (research_id);
+create index questions_research_idx on public.questions (research_id);
+
+-- As before, for a question about one Research: 'ok' with the new question id, 'busy' or 'limit'.
+drop function public.start_question(uuid, text, integer, jsonb);
+create function public.start_question(ws uuid, research uuid, model text, feedback_considered integer, input jsonb)
+returns table (outcome text, question_id uuid)
+language plpgsql volatile security definer set search_path = ''
+as $$
+declare
+  new_id uuid;
+begin
+  -- One question decision at a time on this workspace.
+  perform 1 from public.workspaces w where w.id = ws for no key update;
+  if not found then
+    raise exception 'unknown_workspace' using errcode = '22023';
+  end if;
+  if not exists (select 1 from public.research r where r.id = start_question.research and r.workspace_id = ws) then
+    raise exception 'unknown_research' using errcode = '22023';
+  end if;
+
+  -- A question the server never finished (killed function) must not block the workspace forever.
+  -- It still counts in the quota.
+  with stale as (
+    update public.questions q set status = 'failed'
+    where q.workspace_id = ws and q.status = 'running' and q.created_at < now() - interval '5 minutes'
+    returning q.id
+  )
+  update public.question_runs r set error = 'stale', finished_at = now()
+  from stale where r.question_id = stale.id;
+
+  if exists (select 1 from public.questions q where q.workspace_id = ws and q.status = 'running') then
+    return query select 'busy', null::uuid;
+    return;
+  end if;
+
+  if (select count(*) from public.questions q
+      where q.workspace_id = ws
+        and date_trunc('month', q.created_at at time zone 'Europe/Rome')
+          = date_trunc('month', now() at time zone 'Europe/Rome')) >= private.questions_limit(ws) then
+    return query select 'limit', null::uuid;
+    return;
+  end if;
+
+  insert into public.questions (workspace_id, research_id, feedback_considered)
+  values (ws, start_question.research, start_question.feedback_considered)
+  returning id into new_id;
+  insert into public.question_runs (question_id, workspace_id, model, input)
+  values (new_id, ws, start_question.model, start_question.input);
+  return query select 'ok', new_id;
+end
+$$;
+
+revoke all on function public.start_question(uuid, uuid, text, integer, jsonb) from public, anon, authenticated;
+grant execute on function public.start_question(uuid, uuid, text, integer, jsonb) to service_role;

@@ -351,6 +351,7 @@ export type Database = {
           feedback_count: number | null
           id: string
           outcome: Database["public"]["Enums"]["question_outcome"] | null
+          research_id: string | null
           status: Database["public"]["Enums"]["question_status"]
           workspace_id: string
         }
@@ -361,6 +362,7 @@ export type Database = {
           feedback_count?: number | null
           id?: string
           outcome?: Database["public"]["Enums"]["question_outcome"] | null
+          research_id?: string | null
           status?: Database["public"]["Enums"]["question_status"]
           workspace_id: string
         }
@@ -371,10 +373,18 @@ export type Database = {
           feedback_count?: number | null
           id?: string
           outcome?: Database["public"]["Enums"]["question_outcome"] | null
+          research_id?: string | null
           status?: Database["public"]["Enums"]["question_status"]
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "questions_research_fkey"
+            columns: ["workspace_id", "research_id"]
+            isOneToOne: false
+            referencedRelation: "research"
+            referencedColumns: ["workspace_id", "id"]
+          },
           {
             foreignKeyName: "questions_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -826,6 +836,7 @@ export type Database = {
           feedback_considered: number
           input: Json
           model: string
+          research: string
           ws: string
         }
         Returns: {

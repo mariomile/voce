@@ -18,7 +18,7 @@ const t = translator("ask")
 
 describe("error copy", () => {
   it("E1, E2, E5, E7, E8, E9 are the texts of the design", () => {
-    const errors = askErrors(t)
+    const errors = askErrors(t, "11111111-1111-4111-8111-111111111111")
     expect(errors.empty).toBe("Scrivi una domanda prima di inviarla. Per esempio: cosa dicono i clienti dei prezzi?")
     expect(errors.tooLong).toBe("La domanda supera i 300 caratteri: accorciala a una sola richiesta.")
     expect(errors.busy).toBe(
@@ -33,8 +33,14 @@ describe("error copy", () => {
       href: "/login",
     })
     expect(errors.noFeedback).toEqual({
-      text: "Negli ultimi 90 giorni non ci sono più feedback su cui rispondere.",
+      text: "In questa Research non ci sono più feedback su cui rispondere.",
       link: "Aggiungi feedback",
+      href: "/research/11111111-1111-4111-8111-111111111111/collect",
+    })
+    // A Research deleted while its Chiedi tab is open.
+    expect(errors.notFound).toEqual({
+      text: "Non trovo questa Research: forse è stata eliminata.",
+      link: "Tutte le Research",
       href: "/research",
     })
   })
@@ -108,7 +114,7 @@ describe("button and waiting", () => {
       answerSummary(t, { outcome: "answered", feedbackCount: 1, answer: "Uno solo.", quoteCount: 1, feedbackConsidered: 212 })
     ).toBe("Risposta pronta. 1 feedback ne parla. Uno solo. Sotto c'è 1 citazione.")
     expect(answerSummary(t, { outcome: "no_evidence", feedbackConsidered: 212 })).toBe(
-      "Non trovo feedback che ne parlano. Letti 212 feedback degli ultimi 90 giorni."
+      "Non trovo feedback che ne parlano. Letti 212 feedback di questa Research."
     )
   })
 })

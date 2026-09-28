@@ -71,7 +71,7 @@ test("the list shows each Research with its count and form state", async ({ page
   )
 })
 
-test("the app bar has Research and Piano, and Sintesi is current on the Research and on a theme but not on Feedback and Raccolta", async ({ page }) => {
+test("the app bar has Research and Piano, and Sintesi is current on the Research and on a theme but not on Chiedi, Feedback, Raccolta", async ({ page }) => {
   const user = await signedInUser(page, "schede")
   const bar = page.getByRole("navigation", { name: "Sezioni dell'app" })
   await expect(bar.getByRole("link")).toHaveText(["Research", "Piano"])
@@ -79,7 +79,7 @@ test("the app bar has Research and Piano, and Sintesi is current on the Research
 
   await page.goto(`/research/${user.researchId}`)
   const tabs = page.getByRole("navigation", { name: "Sezioni della Research" })
-  await expect(tabs.getByRole("link")).toHaveText(["Sintesi", "Feedback", "Raccolta"])
+  await expect(tabs.getByRole("link")).toHaveText(["Sintesi", "Chiedi", "Feedback", "Raccolta"])
   await expect(tabs.getByRole("link", { name: "Sintesi" })).toHaveAttribute("aria-current", "page")
   await expect(tabs.getByRole("link", { name: "Raccolta" })).not.toHaveAttribute("aria-current", "page")
   await expect(bar.getByRole("link", { name: "Research" })).toHaveAttribute("aria-current", "page")
@@ -87,6 +87,11 @@ test("the app bar has Research and Piano, and Sintesi is current on the Research
   await tabs.getByRole("link", { name: "Raccolta" }).click()
   await expect(page).toHaveURL(`/research/${user.researchId}/collect`)
   await expect(tabs.getByRole("link", { name: "Raccolta" })).toHaveAttribute("aria-current", "page")
+  await expect(tabs.getByRole("link", { name: "Sintesi" })).not.toHaveAttribute("aria-current", "page")
+
+  await tabs.getByRole("link", { name: "Chiedi" }).click()
+  await expect(page).toHaveURL(`/research/${user.researchId}/ask`)
+  await expect(tabs.getByRole("link", { name: "Chiedi" })).toHaveAttribute("aria-current", "page")
   await expect(tabs.getByRole("link", { name: "Sintesi" })).not.toHaveAttribute("aria-current", "page")
 
   await tabs.getByRole("link", { name: "Feedback" }).click()
@@ -113,6 +118,7 @@ test("every path under /research without a session goes to /login", async ({ pag
     "/research/new",
     `/research/${id}`,
     `/research/${id}/feedback`,
+    `/research/${id}/ask`,
     `/research/${id}/themes/${crypto.randomUUID()}`,
     `/research/${id}/collect`,
     `/research/${id}/sala`,
@@ -122,9 +128,9 @@ test("every path under /research without a session goes to /login", async ({ pag
   }
 })
 
-test("the themes, feedback, collection and room routes of today answer 404", async ({ page, request }) => {
+test("the themes, ask, feedback, collection and room routes of today answer 404", async ({ page, request }) => {
   await signedInUser(page, "vecchie")
-  for (const path of ["/themes", `/themes/${crypto.randomUUID()}`, "/feedback", "/collect", "/collect/qr", "/sala", "/sala/status"]) {
+  for (const path of ["/themes", `/themes/${crypto.randomUUID()}`, "/ask", "/feedback", "/collect", "/collect/qr", "/sala", "/sala/status"]) {
     const response = await page.goto(path)
     expect(response?.status(), path).toBe(404)
   }

@@ -1,17 +1,11 @@
 {
-  "meta": {
-    "title": "Ask your feedback"
-  },
   "page": {
-    "title": "Ask your feedback",
     "lede": "Write a question about a topic. Voce answers with how many feedback mention it and the customers' exact words.",
     "addFeedback": "Add feedback"
   },
   "nothingToAsk": {
     "titleEmpty": "This is where you'll ask your feedback questions and read the answers in customers' own words.",
-    "titleOld": "No feedback has come in over the last 90 days.",
-    "bodyEmpty": "You need feedback to get an answer. Add some from the public form, a CSV, or by pasting it in.",
-    "bodyOld": "Ask only reads feedback from the last 90 days, and your {count} are older than that. Add some recent feedback to ask a question."
+    "bodyEmpty": "You need feedback to get an answer. Add some from the public form, a CSV, or by pasting it in."
   },
   "form": {
     "label": "Your question",
@@ -33,8 +27,10 @@
     "network": "Can't reach Voce: check your connection and try again. If the question had already been sent, it counts toward this month's questions.",
     "sessionText": "Your session has expired. Log in again to ask the question.",
     "sessionLink": "Log in",
-    "noFeedbackText": "There's no more feedback from the last 90 days to answer from.",
-    "noFeedbackLink": "Add feedback"
+    "noFeedbackText": "There's no more feedback in this Research to answer from.",
+    "noFeedbackLink": "Add feedback",
+    "notFoundText": "I can't find this Research: it may have been deleted.",
+    "notFoundLink": "All Research"
   },
   "failed": {
     "zero": "The answer didn't come through. The question still counts: you've used all your questions for {month}.",
@@ -52,7 +48,7 @@
   "slow": "This is taking longer than usual. The answer is coming: stay on this page.",
   "count": "{count, plural, one {feedback mentions it} other {feedback mention it}}",
   "summary": {
-    "noEvidence": "No feedback mentions it. Read {count} feedback from the last 90 days.",
+    "noEvidence": "No feedback mentions it. Read {count} feedback of this Research.",
     "quotesOne": "There's 1 quote below.",
     "quotesOther": "There are {count} quotes below.",
     "answered": "Answer ready. {count} {countLabel}. {answer} {quotes}"
@@ -60,11 +56,11 @@
   "answer": {
     "heading": "Answer to “{question}”",
     "noEvidenceTitle": "No feedback mentions it.",
-    "noEvidenceBody": "Read {count} feedback from the last 90 days. Try different words, for example the feature name the way customers write it.",
+    "noEvidenceBody": "Read {count} feedback of this Research. Try different words, for example the feature name the way customers write it.",
     "writtenAll": "What they wrote",
     "writtenPartial": "What they wrote: {quotes} of {total} feedback",
     "keep": "The answer doesn't stay on this page: copy it if you need it.",
-    "perimeterFull": "Read {count} feedback from the last 90 days. {keep}",
-    "perimeterPartial": "Read the {considered} most recent feedback from the last 90 days, out of {total}: older ones aren't part of the answer. {keep}"
+    "perimeterFull": "Read {count} feedback of this Research. {keep}",
+    "perimeterPartial": "Read the {considered} most recent feedback of this Research, out of {total}: older ones aren't part of the answer. {keep}"
   }
 }

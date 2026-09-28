@@ -103,12 +103,14 @@ export async function failAnalysis(analysisId: string, message: string, run: Run
 // signed-in user's session, and only the server reserves, closes or fails a question.
 export async function startQuestion(input: {
   workspaceId: string
+  researchId: string
   model: string
   feedbackConsidered: number
   input: Json
 }): Promise<{ outcome: "ok"; questionId: string } | { outcome: "busy" | "limit" }> {
   const { data, error } = await adminClient().rpc("start_question", {
     ws: input.workspaceId,
+    research: input.researchId,
     model: input.model,
     feedback_considered: input.feedbackConsidered,
     input: input.input,

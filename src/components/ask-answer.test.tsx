@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
-import type { AskResult } from "@/app/(app)/ask/actions"
+import type { AskResult } from "@/app/(app)/research/[id]/ask/actions"
 import { AskAnswer } from "./ask-answer"
 
 type Answered = Extract<AskResult, { outcome: "answered" }>
@@ -12,7 +12,7 @@ const answered = (overrides: Partial<Answered> = {}): Answered => ({
   answer: "La banca si scollega spesso e va ricollegata a mano.",
   feedbackCount: 2,
   feedbackConsidered: 212,
-  feedbackInWindow: 212,
+  feedbackTotal: 212,
   quotes: [
     { text: "La banca si scollega ogni lunedì.", highlight: "si scollega ogni lunedì", channel: "Supporto", receivedAt: "2026-09-12" },
     { text: "Devo ricollegare la banca ogni settimana.", highlight: "ricollegare la banca", channel: "Call di vendita", receivedAt: "2026-09-03" },
@@ -37,7 +37,7 @@ describe("AskAnswer", () => {
     expect(markup).toContain("Call di vendita, 3 settembre</cite>")
     expect(text(markup)).toContain("Cosa hanno scritto")
     expect(text(markup)).toContain(
-      "Letti 212 feedback degli ultimi 90 giorni. La risposta non resta su questa pagina: se ti serve, copiala."
+      "Letti 212 feedback di questa Research. La risposta non resta su questa pagina: se ti serve, copiala."
     )
   })
 
@@ -51,9 +51,9 @@ describe("AskAnswer", () => {
     expect(text(html(answered({ feedbackCount: 23 })))).toContain("Cosa hanno scritto: 2 dei 23 feedback")
   })
 
-  it("over 500 feedback in the window: the partial perimeter", () => {
-    expect(text(html(answered({ feedbackConsidered: 500, feedbackInWindow: 740 })))).toContain(
-      "Letti i 500 feedback più recenti degli ultimi 90 giorni, su 740: i più vecchi non entrano nella risposta. La risposta non resta su questa pagina: se ti serve, copiala."
+  it("over 500 feedback in the Research: the partial perimeter", () => {
+    expect(text(html(answered({ feedbackConsidered: 500, feedbackTotal: 740 })))).toContain(
+      "Letti i 500 feedback più recenti di questa Research, su 740: i più vecchi non entrano nella risposta. La risposta non resta su questa pagina: se ti serve, copiala."
     )
   })
 
@@ -72,13 +72,13 @@ describe("AskAnswer", () => {
       outcome: "no_evidence",
       question: "Cosa dicono della privacy?",
       feedbackConsidered: 212,
-      feedbackInWindow: 212,
+      feedbackTotal: 212,
       usage: { used: 3, quota: 10 },
     })
     expect(markup).toContain("Risposta a «Cosa dicono della privacy?»")
     expect(text(markup)).toContain("Non trovo feedback che ne parlano.")
     expect(text(markup)).toContain(
-      "Letti 212 feedback degli ultimi 90 giorni. Prova con altre parole, per esempio il nome della funzione come lo scrivono i clienti."
+      "Letti 212 feedback di questa Research. Prova con altre parole, per esempio il nome della funzione come lo scrivono i clienti."
     )
     expect(markup).not.toContain("<blockquote")
     expect(markup).not.toContain("ne parlano</")

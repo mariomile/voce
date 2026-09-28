@@ -28,9 +28,9 @@ test("ask a question from the keyboard and read the answer", async ({ page }) =>
   await page.getByRole("button", { name: "Aggiungi le note" }).click()
   await expect(page.getByText("Aggiunte a questa Research. Le trovi in Feedback.")).toBeVisible()
 
-  // From here on, keyboard only: the field has the focus, type and press Enter. (Chiedi reads the
-  // whole workspace until it moves inside the Research, with its own tab.)
-  await page.goto("/ask")
+  // From here on, keyboard only: the Chiedi tab of the Research, the field has the focus, type and press Enter.
+  await page.getByRole("link", { name: "Chiedi", exact: true }).click()
+  await expect(page).toHaveURL(/\/research\/[0-9a-f-]{36}\/ask$/)
 
   const field = page.getByLabel("La tua domanda")
   await expect(field).toBeFocused()
@@ -55,17 +55,20 @@ test("ask a question from the keyboard and read the answer", async ({ page }) =>
   await expect(field).toBeFocused()
 })
 
-test("/ask without a session goes to /login", async ({ page }) => {
-  await page.goto("/ask")
+test("the Chiedi tab without a session goes to /login", async ({ page }) => {
+  await page.goto("/research/00000000-0000-4000-8000-000000000000/ask")
   await expect(page).toHaveURL(/\/login$/)
 })
 
-test("GET /ask with a forged next-action header still redirects to /login", async ({ request }) => {
-  // The proxy skips its own redirect on /ask when a server action is calling in without a session,
-  // so the action can answer "session" itself (E8) instead of a bare redirect. That exception must
-  // only apply to the POST a server action actually uses: a GET carrying the same header is a page
+test("GET of the Chiedi tab with a forged next-action header still redirects to /login", async ({ request }) => {
+  // The proxy skips its own redirect on the Chiedi tab when a server action is calling in without a
+  // session, so the action can answer "session" itself (E8) instead of a bare redirect. That exception
+  // must only apply to the POST a server action actually uses: a GET carrying the same header is a page
   // load, and must still be sent to /login rather than rendering the page and failing on RLS.
-  const response = await request.get("/ask", { headers: { "next-action": "forged" }, maxRedirects: 0 })
+  const response = await request.get("/research/00000000-0000-4000-8000-000000000000/ask", {
+    headers: { "next-action": "forged" },
+    maxRedirects: 0,
+  })
   expect(response.status()).toBe(307)
   expect(response.headers()["location"]).toMatch(/\/login$/)
 })
@@ -82,7 +85,7 @@ const nextMonth = () =>
 async function openAsk(page: import("@playwright/test").Page, label: string) {
   const user = await signedInUser(page, label)
   await insertFeedback(user, ["Vorrei esportare il report mensile in PDF."])
-  await page.goto("/ask")
+  await page.goto(`/research/${user.researchId}/ask`)
   const field = page.getByLabel("La tua domanda")
   await expect(field).toBeFocused()
   return { ...user, field }
@@ -201,13 +204,16 @@ test("E8: the session expired", async ({ page, context }) => {
   await expect(field).toBeFocused()
 })
 
-test("E9: the feedback of the last 90 days are gone", async ({ page }) => {
-  const { workspaceId, field } = await openAsk(page, "e9")
+test("E9: the feedback of the Research are gone", async ({ page }) => {
+  const { workspaceId, researchId, field } = await openAsk(page, "e9")
   await admin.from("feedback").delete().eq("workspace_id", workspaceId)
   await page.keyboard.type("Cosa chiedono del PDF?")
   await page.keyboard.press("Enter")
-  await expect(status(page)).toContainText("Negli ultimi 90 giorni non ci sono più feedback su cui rispondere.")
-  await expect(status(page).getByRole("link", { name: "Aggiungi feedback" })).toHaveAttribute("href", "/research")
+  await expect(status(page)).toContainText("In questa Research non ci sono più feedback su cui rispondere.")
+  await expect(status(page).getByRole("link", { name: "Aggiungi feedback" })).toHaveAttribute(
+    "href",
+    `/research/${researchId}/collect`
+  )
   await expect(field).toHaveValue("Cosa chiedono del PDF?")
   await expect(field).toBeFocused()
 })
@@ -227,7 +233,7 @@ test("Free at 10 questions: notice and Passa a Pro, button off", async ({ page }
   const user = await signedInUser(page, "free-full")
   await insertFeedback(user, ["Vorrei esportare il report mensile in PDF."])
   await addQuestions(user.workspaceId, 10)
-  await page.goto("/ask")
+  await page.goto(`/research/${user.researchId}/ask`)
   await expect(page.getByRole("heading", { name: `Hai usato le 10 domande di ${month}` })).toBeVisible()
   await expect(page.getByRole("link", { name: "Passa a Pro" })).toHaveAttribute("href", "/billing")
   await expect(page.getByRole("button", { name: "Chiedi a 1 feedback" })).toHaveAttribute("aria-disabled", "true")
@@ -239,7 +245,7 @@ test("Pro at 100 questions: notice without button", async ({ page }) => {
   await admin.from("subscriptions").update({ plan: "pro" }).eq("workspace_id", user.workspaceId)
   await insertFeedback(user, ["Vorrei esportare il report mensile in PDF."])
   await addQuestions(user.workspaceId, 100)
-  await page.goto("/ask")
+  await page.goto(`/research/${user.researchId}/ask`)
   await expect(page.getByRole("heading", { name: `Hai usato le 100 domande di ${month}` })).toBeVisible()
   await expect(page.getByRole("link", { name: "Passa a Pro" })).toHaveCount(0)
   await expect(page.getByRole("button", { name: "Chiedi a 1 feedback" })).toHaveAttribute("aria-disabled", "true")
@@ -269,22 +275,23 @@ test("billing and landing show the question quota", async ({ page }) => {
 
 // ===== Nothing to ask (AC 33) =====
 
-test("no feedback: text A, no field", async ({ page }) => {
-  await signedInUser(page, "empty-a")
-  await page.goto("/ask")
+test("no feedback in the Research: text A and the way to its Raccolta, no field", async ({ page }) => {
+  const user = await signedInUser(page, "empty-a")
+  await page.goto(`/research/${user.researchId}/ask`)
   await expect(page.getByText("Qui farai domande ai tuoi feedback e leggerai le risposte con le parole dei clienti.")).toBeVisible()
-  await expect(page.getByRole("link", { name: "Aggiungi feedback" })).toHaveAttribute("href", "/research")
+  await expect(page.getByRole("link", { name: "Aggiungi feedback" })).toHaveAttribute(
+    "href",
+    `/research/${user.researchId}/collect`
+  )
   await expect(page.getByLabel("La tua domanda")).toHaveCount(0)
 })
 
-test("only feedback older than 90 days: text B, no field", async ({ page }) => {
-  const user = await signedInUser(page, "empty-b")
-  await insertFeedback(user, ["Vecchio uno.", "Vecchio due."], 95)
-  await page.goto("/ask")
-  await expect(page.getByText("Negli ultimi 90 giorni non è arrivato nessun feedback.")).toBeVisible()
-  await expect(page.getByText("e i tuoi 2 sono più vecchi")).toBeVisible()
-  await expect(page.getByRole("link", { name: "Aggiungi feedback" })).toHaveAttribute("href", "/research")
-  await expect(page.getByLabel("La tua domanda")).toHaveCount(0)
+test("feedback of any age can be asked: no 90-day window", async ({ page }) => {
+  const user = await signedInUser(page, "old-feedback")
+  await insertFeedback(user, ["Vecchio uno.", "Vecchio due."], 400)
+  await page.goto(`/research/${user.researchId}/ask`)
+  await expect(page.getByLabel("La tua domanda")).toBeFocused()
+  await expect(page.getByRole("button", { name: "Chiedi ai 2 feedback" })).toBeVisible()
 })
 
 // ===== Waiting (AC 36) =====

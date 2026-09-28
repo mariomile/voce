@@ -63,7 +63,7 @@ const sent = () => posthog.mock.calls.map(([, init]) => JSON.parse((init as Requ
 
 describe("question_answered", () => {
   it("the PostHog body carries no question, answer or feedback text", async () => {
-    expect(await ask({ question: `Cosa dice ${MARKER}?` })).toMatchObject({ ok: true, outcome: "answered" })
+    expect(await ask(user.researchId, { question: `Cosa dice ${MARKER}?` })).toMatchObject({ ok: true, outcome: "answered" })
     await settle()
     expect(posthog).toHaveBeenCalledTimes(1)
     const [body] = sent()
@@ -78,9 +78,9 @@ describe("question_answered", () => {
   })
 
   it("is sent every time and never claims a milestone", async () => {
-    await ask({ question: "Prima domanda?" })
+    await ask(user.researchId, { question: "Prima domanda?" })
     ai.model = fakeModel({ answer: "Nessuno ne parla.", feedback: [], quotes: [] })
-    await ask({ question: "Seconda domanda?" })
+    await ask(user.researchId, { question: "Seconda domanda?" })
     await settle()
     expect(sent().map((b) => [b.event, b.properties.outcome, b.properties.citation_count])).toEqual([
       ["question_answered", "answered", 1],
@@ -107,26 +107,26 @@ describe("question_answered", () => {
         throw new Error("Anthropic API down")
       },
     })
-    expect(await ask({ question: "Fallisce?" })).toMatchObject({ reason: "failed" })
+    expect(await ask(user.researchId, { question: "Fallisce?" })).toMatchObject({ reason: "failed" })
     log.mockRestore()
 
-    expect(await ask({ question: "" })).toMatchObject({ reason: "invalid" })
+    expect(await ask(user.researchId, { question: "" })).toMatchObject({ reason: "invalid" })
 
     await admin.from("questions").insert({ workspace_id: user.workspaceId, status: "running", feedback_considered: 1 })
-    expect(await ask({ question: "Occupato?" })).toMatchObject({ reason: "busy" })
+    expect(await ask(user.researchId, { question: "Occupato?" })).toMatchObject({ reason: "busy" })
 
     await admin.from("questions").delete().eq("workspace_id", user.workspaceId)
     await admin.from("questions").insert(
       Array.from({ length: 10 }, () => ({ workspace_id: user.workspaceId, status: "failed" as const, feedback_considered: 1 }))
     )
-    expect(await ask({ question: "Limite?" })).toMatchObject({ reason: "limit" })
+    expect(await ask(user.researchId, { question: "Limite?" })).toMatchObject({ reason: "limit" })
 
     session.client = anon()
-    expect(await ask({ question: "Sessione?" })).toMatchObject({ reason: "session" })
+    expect(await ask(user.researchId, { question: "Sessione?" })).toMatchObject({ reason: "session" })
     session.client = user.client
 
     await admin.from("feedback").delete().eq("workspace_id", user.workspaceId)
-    expect(await ask({ question: "Nessun feedback?" })).toMatchObject({ reason: "no_feedback" })
+    expect(await ask(user.researchId, { question: "Nessun feedback?" })).toMatchObject({ reason: "no_feedback" })
 
     await settle()
     expect(posthog).not.toHaveBeenCalled()
@@ -134,7 +134,7 @@ describe("question_answered", () => {
 
   it("without POSTHOG_KEY no question sends anything", async () => {
     vi.stubEnv("POSTHOG_KEY", "")
-    expect(await ask({ question: "Senza chiave?" })).toMatchObject({ ok: true })
+    expect(await ask(user.researchId, { question: "Senza chiave?" })).toMatchObject({ ok: true })
     await settle()
     expect(pending.tasks).toHaveLength(0)
     expect(posthog).not.toHaveBeenCalled()

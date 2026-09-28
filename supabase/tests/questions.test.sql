@@ -1,7 +1,7 @@
 -- Questions to the feedback: tables only the server reads and writes, and the quota functions.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(50);
+select plan(52);
 
 select ok(
   (select relrowsecurity from pg_class where oid = 'public.questions'::regclass),
@@ -31,6 +31,13 @@ from public.workspace_members m
 where m.user_id in ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b1',
                     '00000000-0000-0000-0000-0000000000c1', '00000000-0000-0000-0000-0000000000d1');
 grant select on ws to authenticated, anon;
+
+-- One Research per workspace (rs), and one of B that A must not be able to ask about.
+create temporary table rs on commit drop as
+select w.name, gen_random_uuid() as id, w.id as workspace_id from ws w;
+insert into public.research (id, workspace_id, question, form_slug)
+select id, workspace_id, 'Domanda ' || name || '?', 'questions-' || name from rs;
+grant select on rs to authenticated, anon, service_role;
 
 -- One question with its log in A and in B.
 insert into public.questions (id, workspace_id, status, outcome, feedback_considered, feedback_count, citation_count)
@@ -64,7 +71,7 @@ select throws_ok('delete from public.question_runs', '42501', null, 'authenticat
 
 -- ===== AC 4: the functions are only for the server =====
 
-select throws_ok($$select public.start_question((select id from ws where name = 'a'), 'm', 1, '{}')$$, '42501', null,
+select throws_ok($$select public.start_question((select id from ws where name = 'a'), (select id from rs where name = 'a'), 'm', 1, '{}')$$, '42501', null,
   'authenticated cannot call start_question');
 select throws_ok($$select public.finish_question('10000000-0000-0000-0000-0000000000a1', 1, '[]', '{}')$$, '42501', null,
   'authenticated cannot call finish_question');
@@ -91,7 +98,7 @@ select throws_ok($$insert into public.question_runs (question_id, workspace_id, 
   '42501', null, 'anon cannot insert question_runs');
 select throws_ok($$update public.question_runs set error = 'x'$$, '42501', null, 'anon cannot update question_runs');
 select throws_ok('delete from public.question_runs', '42501', null, 'anon cannot delete question_runs');
-select throws_ok($$select public.start_question((select id from ws where name = 'a'), 'm', 1, '{}')$$, '42501', null,
+select throws_ok($$select public.start_question((select id from ws where name = 'a'), (select id from rs where name = 'a'), 'm', 1, '{}')$$, '42501', null,
   'anon cannot call start_question');
 select throws_ok($$select public.finish_question('10000000-0000-0000-0000-0000000000a1', 1, '[]', '{}')$$, '42501', null,
   'anon cannot call finish_question');
@@ -117,11 +124,11 @@ insert into public.questions (workspace_id, status, outcome, feedback_considered
 select w.id, 'done', 'answered', 1, date_trunc('month', now() at time zone 'Europe/Rome') at time zone 'Europe/Rome' - interval '1 day'
 from ws w, generate_series(1, 5) where w.name = 'a';
 
-select is((select outcome from public.start_question((select id from ws where name = 'a'), 'm', 1, '{}')), 'ok',
+select is((select outcome from public.start_question((select id from ws where name = 'a'), (select id from rs where name = 'a'), 'm', 1, '{}')), 'ok',
   'Free: with 9 questions this month in mixed states, the tenth is reserved');
 update public.questions set status = 'done', outcome = 'answered'
 where workspace_id = (select id from ws where name = 'a') and status = 'running';
-select is((select outcome from public.start_question((select id from ws where name = 'a'), 'm', 1, '{}')), 'limit',
+select is((select outcome from public.start_question((select id from ws where name = 'a'), (select id from rs where name = 'a'), 'm', 1, '{}')), 'limit',
   'Free: with 10 questions this month, the next one is refused');
 select results_eq($$select used, quota from public.question_usage((select id from ws where name = 'a'))$$,
   $$values (10, 10)$$, 'question_usage counts every state of this month only');
@@ -132,10 +139,10 @@ insert into public.questions (workspace_id, status, outcome, feedback_considered
 select w.id, case when g % 2 = 0 then 'done' else 'failed' end::public.question_status,
   case when g % 2 = 0 then 'answered' end::public.question_outcome, 1
 from ws w, generate_series(1, 98) g where w.name = 'b';
-select is((select outcome from public.start_question((select id from ws where name = 'b'), 'm', 1, '{}')), 'ok',
+select is((select outcome from public.start_question((select id from ws where name = 'b'), (select id from rs where name = 'b'), 'm', 1, '{}')), 'ok',
   'Pro: with 99 questions this month, the hundredth is reserved');
 update public.questions set status = 'failed' where workspace_id = (select id from ws where name = 'b') and status = 'running';
-select is((select outcome from public.start_question((select id from ws where name = 'b'), 'm', 1, '{}')), 'limit',
+select is((select outcome from public.start_question((select id from ws where name = 'b'), (select id from rs where name = 'b'), 'm', 1, '{}')), 'limit',
   'Pro: with 100 questions this month, the next one is refused');
 select results_eq($$select used, quota from public.question_usage((select id from ws where name = 'b'))$$,
   $$values (100, 100)$$, 'question_usage reads the Pro quota');
@@ -144,7 +151,7 @@ select results_eq($$select used, quota from public.question_usage((select id fro
 
 insert into public.analyses (workspace_id, period_start, feedback_count, status)
 select w.id, current_date, 1, 'done' from ws w, generate_series(1, 3) where w.name = 'c';
-select is((select outcome from public.start_question((select id from ws where name = 'c'), 'm', 1, '{}')), 'ok',
+select is((select outcome from public.start_question((select id from ws where name = 'c'), (select id from rs where name = 'c'), 'm', 1, '{}')), 'ok',
   'Free with 3 done analyses this month can still ask');
 select results_eq($$select used, quota from public.question_usage((select id from ws where name = 'c'))$$,
   $$values (1, 10)$$, 'analyses do not count as questions');
@@ -155,13 +162,13 @@ insert into public.questions (id, workspace_id, feedback_considered, created_at)
 select '20000000-0000-0000-0000-0000000000d1', w.id, 1, now() - interval '2 minutes' from ws w where w.name = 'd';
 insert into public.question_runs (question_id, workspace_id, model, input)
 select '20000000-0000-0000-0000-0000000000d1', w.id, 'm', '{}' from ws w where w.name = 'd';
-select is((select outcome from public.start_question((select id from ws where name = 'd'), 'm', 1, '{}')), 'busy',
+select is((select outcome from public.start_question((select id from ws where name = 'd'), (select id from rs where name = 'd'), 'm', 1, '{}')), 'busy',
   'a running question under 5 minutes old makes the next one busy');
 select results_eq($$select used from public.question_usage((select id from ws where name = 'd'))$$,
   $$values (1)$$, 'busy reserves nothing');
 
 update public.questions set created_at = now() - interval '6 minutes' where id = '20000000-0000-0000-0000-0000000000d1';
-select is((select outcome from public.start_question((select id from ws where name = 'd'), 'm', 1, '{}')), 'ok',
+select is((select outcome from public.start_question((select id from ws where name = 'd'), (select id from rs where name = 'd'), 'm', 1, '{}')), 'ok',
   'over 5 minutes the stuck question no longer blocks: the new one is reserved');
 select results_eq(
   $$select q.status::text, r.error, r.finished_at is not null from public.questions q
@@ -172,8 +179,6 @@ select results_eq($$select used from public.question_usage((select id from ws wh
 
 -- ===== AC 17: finish_question checks the quotes again on the saved feedback =====
 
-insert into public.research (workspace_id, question, form_slug)
-select w.id, 'Domanda?', 'questions-c' from ws w where w.name = 'c';
 insert into public.feedback (id, workspace_id, research_id, text, channel)
 select v.id::uuid, w.id, r.id, v.text, 'Supporto' from ws w join public.research r on r.workspace_id = w.id, (values
   ('30000000-0000-0000-0000-000000000001', 'La banca si scollega ogni lunedì.'),
@@ -204,7 +209,7 @@ select results_eq(
   $$values ('done', 'answered', 2, 2, 10, true)$$, 'the question is answered, with the count and the log');
 
 -- A quote of a feedback deleted meanwhile is dropped; with none left the outcome is no_evidence.
-select is((select outcome from public.start_question((select id from ws where name = 'c'), 'm', 1, '{}')), 'ok',
+select is((select outcome from public.start_question((select id from ws where name = 'c'), (select id from rs where name = 'c'), 'm', 1, '{}')), 'ok',
   'C reserves another question');
 create temporary table c_second on commit drop as
 select q.id from public.questions q where q.workspace_id = (select id from ws where name = 'c') and q.status = 'running';
@@ -216,6 +221,18 @@ select is(
 select results_eq(
   $$select outcome::text, citation_count::integer from public.questions where id = (select id from c_second)$$,
   $$values ('no_evidence', 0)$$, 'with no quote left the outcome is no_evidence');
+
+-- ===== AC 50 (database part): the question belongs to its Research =====
+
+select is(
+  (select research_id from public.questions where id = (select id from c_second)),
+  (select id from rs where name = 'c'),
+  'start_question saves questions.research_id'
+);
+select throws_ok(
+  $$select public.start_question((select id from ws where name = 'a'), (select id from rs where name = 'b'), 'm', 1, '{}')$$,
+  '22023', 'unknown_research', 'a Research of another workspace is refused'
+);
 
 select * from finish();
 rollback;

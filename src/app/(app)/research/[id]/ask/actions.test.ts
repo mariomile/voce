@@ -35,12 +35,13 @@ const { getUsage } = await import("@/lib/data")
 const { questionUsage } = await import("@/lib/supabase/admin")
 
 let user: TestUser
+let other: TestUser
 
 beforeAll(async () => {
-  user = await createTestUser("ask")
+  ;[user, other] = await Promise.all([createTestUser("ask"), createTestUser("ask-other")])
 })
 
-afterAll(() => deleteTestUsers([user]))
+afterAll(() => deleteTestUsers([user, other]))
 
 beforeEach(async () => {
   session.client = user.client
@@ -132,7 +133,7 @@ describe("ask", () => {
     await addFeedback()
     reply(bank)
 
-    const result = await ask({ question: "Cosa dicono\ndella banca?" })
+    const result = await ask(user.researchId, { question: "Cosa dicono\ndella banca?" })
 
     expect(result).toEqual({
       ok: true,
@@ -141,7 +142,7 @@ describe("ask", () => {
       answer: bank.answer,
       feedbackCount: 2,
       feedbackConsidered: 3,
-      feedbackInWindow: 3,
+      feedbackTotal: 3,
       quotes: [
         { text: TEXTS[0], highlight: "si scollega ogni lunedì", channel: "Supporto", receivedAt: daysAgo(0) },
         { text: TEXTS[1], highlight: "ricollegare la banca ogni settimana", channel: "Supporto", receivedAt: daysAgo(1) },
@@ -154,7 +155,7 @@ describe("ask", () => {
   it("saves feedback_count from the server count", async () => {
     await addFeedback()
     reply(bank)
-    await ask({ question: "Cosa dicono della banca?" })
+    await ask(user.researchId, { question: "Cosa dicono della banca?" })
     expect(await questions()).toEqual([
       {
         id: expect.any(String),
@@ -167,10 +168,23 @@ describe("ask", () => {
     ])
   })
 
+  it("saves questions.research_id and counts in the workspace quota", async () => {
+    await addFeedback()
+    reply(bank)
+    await ask(user.researchId, { question: "Cosa dicono della banca?" })
+    const { data } = await admin.from("questions").select("research_id").eq("workspace_id", user.workspaceId)
+    expect(data).toEqual([{ research_id: user.researchId }])
+    // Questions about any Research of the workspace share its quota.
+    await admin.from("questions").insert(
+      Array.from({ length: 9 }, () => ({ workspace_id: user.workspaceId, status: "done" as const, outcome: "answered" as const, feedback_considered: 1 }))
+    )
+    expect(await ask(user.researchId, { question: "E adesso?" })).toMatchObject({ ok: false, reason: "limit", usage: { used: 10, quota: 10 } })
+  })
+
   it("logs the run: input, output, issues, tokens, duration, cost", async () => {
     const ids = await addFeedback()
     reply(bank)
-    await ask({ question: "Cosa dicono della banca?" })
+    await ask(user.researchId, { question: "Cosa dicono della banca?" })
     const [question] = await questions()
     const log = await runLog(question.id)
     expect(log).toMatchObject({
@@ -196,7 +210,7 @@ describe("ask", () => {
     await addFeedback()
     ui.locale = "en"
     const model = reply(bank)
-    await ask({ question: "What do they say about the bank?" })
+    await ask(user.researchId, { question: "What do they say about the bank?" })
     const system = model.doGenerateCalls[0].prompt.filter((m) => m.role === "system")
     expect(system.map((m) => m.content)).toEqual([questionInstructions("en")])
     const [question] = await questions()
@@ -206,13 +220,13 @@ describe("ask", () => {
   it("no verified quote is no_evidence and returns no model text", async () => {
     await addFeedback()
     reply({ answer: "Nessuno ne parla, ma la privacy è importante.", feedback: [3], quotes: [{ feedback: 3, text: "non c'è" }] })
-    const result = await ask({ question: "Cosa dicono della privacy?" })
+    const result = await ask(user.researchId, { question: "Cosa dicono della privacy?" })
     expect(result).toEqual({
       ok: true,
       outcome: "no_evidence",
       question: "Cosa dicono della privacy?",
       feedbackConsidered: 3,
-      feedbackInWindow: 3,
+      feedbackTotal: 3,
       usage: { used: 1, quota: 10 },
     })
     const [question] = await questions()
@@ -223,7 +237,7 @@ describe("ask", () => {
     await addFeedback()
     reply(bank)
     vi.mocked(questionUsage).mockRejectedValueOnce(new Error("db blip"))
-    const result = await ask({ question: "Cosa dicono della banca?" })
+    const result = await ask(user.researchId, { question: "Cosa dicono della banca?" })
     expect(result).toEqual({
       ok: true,
       outcome: "answered",
@@ -231,7 +245,7 @@ describe("ask", () => {
       answer: bank.answer,
       feedbackCount: 2,
       feedbackConsidered: 3,
-      feedbackInWindow: 3,
+      feedbackTotal: 3,
       quotes: [
         { text: TEXTS[0], highlight: "si scollega ogni lunedì", channel: "Supporto", receivedAt: daysAgo(0) },
         { text: TEXTS[1], highlight: "ricollegare la banca ogni settimana", channel: "Supporto", receivedAt: daysAgo(1) },
@@ -246,14 +260,14 @@ describe("ask", () => {
   it("asks for question_answered once, for answered and for no_evidence, with counts only", async () => {
     await addFeedback()
     reply(bank)
-    await ask({ question: "Cosa dicono della banca?" })
+    await ask(user.researchId, { question: "Cosa dicono della banca?" })
     expect(analytics.trackEvent).toHaveBeenCalledExactlyOnceWith(user.workspaceId, {
       event: "question_answered",
       properties: { citation_count: 2, outcome: "answered" },
     })
     analytics.trackEvent.mockClear()
     reply({ answer: "Nessuno.", feedback: [], quotes: [] })
-    await ask({ question: "E della privacy?" })
+    await ask(user.researchId, { question: "E della privacy?" })
     expect(analytics.trackEvent).toHaveBeenCalledExactlyOnceWith(user.workspaceId, {
       event: "question_answered",
       properties: { citation_count: 0, outcome: "no_evidence" },
@@ -267,7 +281,7 @@ describe("ask: guards before the model", () => {
     await addFeedback()
     await insertQuestions(10, "done")
     const model = reply(bank)
-    expect(await ask({ question: "La banca?" })).toEqual({
+    expect(await ask(user.researchId, { question: "La banca?" })).toEqual({
       ok: false,
       reason: "limit",
       usage: { used: 10, quota: 10 },
@@ -283,7 +297,7 @@ describe("ask: guards before the model", () => {
     await admin.from("subscriptions").update({ plan: "pro" }).eq("workspace_id", user.workspaceId)
     await insertQuestions(100, "done")
     const model = reply(bank)
-    expect(await ask({ question: "La banca?" })).toEqual({
+    expect(await ask(user.researchId, { question: "La banca?" })).toEqual({
       ok: false,
       reason: "limit",
       usage: { used: 100, quota: 100 },
@@ -296,7 +310,7 @@ describe("ask: guards before the model", () => {
     await addFeedback()
     await insertQuestions(1, "running", new Date(Date.now() - 60 * 1000))
     const model = reply(bank)
-    expect(await ask({ question: "La banca?" })).toEqual({ ok: false, reason: "busy" })
+    expect(await ask(user.researchId, { question: "La banca?" })).toEqual({ ok: false, reason: "busy" })
     expect(model.doGenerateCalls).toHaveLength(0)
   })
 
@@ -304,20 +318,36 @@ describe("ask: guards before the model", () => {
     await addFeedback()
     const model = reply(bank)
     for (const question of ["", "   \n  ", "a".repeat(301), ` ${"a".repeat(301)} `])
-      expect(await ask({ question })).toEqual({ ok: false, reason: "invalid" })
+      expect(await ask(user.researchId, { question })).toEqual({ ok: false, reason: "invalid" })
     // Only the question: extra fields, such as a workspace id, are refused.
-    expect(await ask({ question: "La banca?", workspaceId: "x" } as never)).toEqual({ ok: false, reason: "invalid" })
-    expect(await ask(null as never)).toEqual({ ok: false, reason: "invalid" })
+    expect(await ask(user.researchId, { question: "La banca?", workspaceId: "x" } as never)).toEqual({ ok: false, reason: "invalid" })
+    expect(await ask(user.researchId, null as never)).toEqual({ ok: false, reason: "invalid" })
     expect(model.doGenerateCalls).toHaveLength(0)
     expect(await questions()).toEqual([])
     // 300 characters after the trim are fine.
-    expect(await ask({ question: `  ${"a".repeat(300)}  ` })).toMatchObject({ ok: true })
+    expect(await ask(user.researchId, { question: `  ${"a".repeat(300)}  ` })).toMatchObject({ ok: true })
   })
 
-  it("needs feedback from the last 90 days, today included", async () => {
-    await addFeedback(["Vecchio feedback"], 90)
+  it("no feedback in the Research returns no_feedback, no row, no call, even with feedback in another Research", async () => {
+    const second = await user.client.rpc("create_research", { ws: user.workspaceId, question: "Un'altra?" })
+    await admin.from("feedback").insert({
+      workspace_id: user.workspaceId,
+      research_id: second.data!,
+      text: "La banca si scollega.",
+      channel: "Supporto",
+    })
     const model = reply(bank)
-    expect(await ask({ question: "La banca?" })).toEqual({ ok: false, reason: "no_feedback" })
+    expect(await ask(user.researchId, { question: "La banca?" })).toEqual({ ok: false, reason: "no_feedback" })
+    expect(model.doGenerateCalls).toHaveLength(0)
+    expect(await questions()).toEqual([])
+    await admin.from("research").delete().eq("id", second.data!)
+  })
+
+  it("a Research of another workspace, or a wrong id, is not_found: no row, no call", async () => {
+    await addFeedback()
+    const model = reply(bank)
+    expect(await ask(other.researchId, { question: "La banca?" })).toEqual({ ok: false, reason: "not_found" })
+    expect(await ask("not-a-uuid", { question: "La banca?" })).toEqual({ ok: false, reason: "not_found" })
     expect(model.doGenerateCalls).toHaveLength(0)
     expect(await questions()).toEqual([])
   })
@@ -326,7 +356,7 @@ describe("ask: guards before the model", () => {
     await addFeedback()
     session.client = anon()
     const model = reply(bank)
-    expect(await ask({ question: "La banca?" })).toEqual({ ok: false, reason: "session" })
+    expect(await ask(user.researchId, { question: "La banca?" })).toEqual({ ok: false, reason: "session" })
     expect(model.doGenerateCalls).toHaveLength(0)
     expect(await questions()).toEqual([])
   })
@@ -337,7 +367,7 @@ describe("ask: failures after the model is called", () => {
     await addFeedback()
     failingModel(new Error("Anthropic API down"))
     const log = vi.spyOn(console, "error").mockImplementation(() => {})
-    expect(await ask({ question: "La banca?" })).toEqual({ ok: false, reason: "failed", usage: { used: 1, quota: 10 } })
+    expect(await ask(user.researchId, { question: "La banca?" })).toEqual({ ok: false, reason: "failed", usage: { used: 1, quota: 10 } })
     log.mockRestore()
     const [question] = await questions()
     expect(question.status).toBe("failed")
@@ -352,7 +382,7 @@ describe("ask: failures after the model is called", () => {
     // What the SDK throws when the 60-second signal fires (the signal itself is checked in questions.test.ts).
     failingModel(new DOMException("The operation timed out.", "TimeoutError"))
     const log = vi.spyOn(console, "error").mockImplementation(() => {})
-    expect(await ask({ question: "La banca?" })).toMatchObject({ ok: false, reason: "failed" })
+    expect(await ask(user.researchId, { question: "La banca?" })).toMatchObject({ ok: false, reason: "failed" })
     log.mockRestore()
     const [question] = await questions()
     expect(question.status).toBe("failed")
@@ -364,7 +394,7 @@ describe("ask: failures after the model is called", () => {
     await addFeedback()
     reply("Ecco la risposta: la banca si scollega")
     const log = vi.spyOn(console, "error").mockImplementation(() => {})
-    expect(await ask({ question: "La banca?" })).toMatchObject({ ok: false, reason: "failed" })
+    expect(await ask(user.researchId, { question: "La banca?" })).toMatchObject({ ok: false, reason: "failed" })
     log.mockRestore()
     const [question] = await questions()
     expect(question.status).toBe("failed")
@@ -378,7 +408,7 @@ describe("ask: failures after the model is called", () => {
     await addFeedback(["Il marcatore ZZSEGRETOZZ è nel feedback."])
     failingModel(new Error("Anthropic API down on ZZSEGRETOZZ"))
     const log = vi.spyOn(console, "error").mockImplementation(() => {})
-    await ask({ question: "Cosa dice ZZSEGRETOZZ?" })
+    await ask(user.researchId, { question: "Cosa dice ZZSEGRETOZZ?" })
     const [question] = await questions()
     expect(log).toHaveBeenCalledWith(`Question ${question.id} failed:`, "Error")
     expect(JSON.stringify(log.mock.calls)).not.toContain("ZZSEGRETOZZ")
@@ -387,35 +417,63 @@ describe("ask: failures after the model is called", () => {
 })
 
 describe("ask: what reaches the model", () => {
-  it("sends at most the 500 most recent feedback of the last 90 days", async () => {
+  it("sends only this Research's feedback with the analysis perimeter: the 500 most recent, of any age", async () => {
     await admin.from("subscriptions").update({ plan: "pro" }).eq("workspace_id", user.workspaceId)
     const rows = Array.from({ length: 501 }, (_, i) => ({
       workspace_id: user.workspaceId,
       research_id: user.researchId,
       text: `Feedback numero ${i}.`,
       channel: "Supporto",
-      received_at: daysAgo(Math.floor(i / 10)),
+      // Two years of feedback: no 90-day window.
+      received_at: daysAgo(Math.floor(i * 1.5)),
     }))
     await admin.from("feedback").insert(rows)
-    await addFeedback(["Troppo vecchio"], 95)
+    const second = await user.client.rpc("create_research", { ws: user.workspaceId, question: "Un'altra?" })
+    await admin
+      .from("feedback")
+      .insert({ workspace_id: user.workspaceId, research_id: second.data!, text: "Di un'altra Research", channel: "Supporto" })
     const model = reply({ answer: "x", feedback: [1], quotes: [{ feedback: 1, text: "Feedback numero" }] })
-    expect(await ask({ question: "Cosa dicono?" })).toMatchObject({ ok: true, feedbackConsidered: 500, feedbackInWindow: 501 })
+    expect(await ask(user.researchId, { question: "Cosa dicono?" })).toMatchObject({
+      ok: true,
+      feedbackConsidered: 500,
+      feedbackTotal: 501,
+    })
     const [question] = await questions()
     expect(question.feedback_considered).toBe(500)
     const input = (await runLog(question.id)).input as { feedback_ids: string[]; prompt: string }
     expect(input.feedback_ids).toHaveLength(500)
     expect(input.prompt).toContain("Feedback numero 0.")
+    expect(input.prompt).toContain("Feedback numero 499.")
     expect(input.prompt).not.toContain("Feedback numero 500.")
-    expect(input.prompt).not.toContain("Troppo vecchio")
+    expect(input.prompt).not.toContain("Di un'altra Research")
     expect(promptOf(model)).toContain('\\"n\\":500')
+    await admin.from("research").delete().eq("id", second.data!)
+  })
+
+  it("stops at 1,000,000 characters: 250 of 300 feedback of 4,000", async () => {
+    await admin.from("subscriptions").update({ plan: "pro" }).eq("workspace_id", user.workspaceId)
+    const rows = Array.from({ length: 300 }, (_, i) => ({
+      workspace_id: user.workspaceId,
+      research_id: user.researchId,
+      text: `${String(i).padStart(3, "0")} ${"a".repeat(3996)}`,
+      channel: "Intervista",
+      received_at: daysAgo(i),
+    }))
+    await admin.from("feedback").insert(rows)
+    reply({ answer: "x", feedback: [1], quotes: [{ feedback: 1, text: "000" }] })
+    expect(await ask(user.researchId, { question: "Cosa dicono?" })).toMatchObject({
+      ok: true,
+      feedbackConsidered: 250,
+      feedbackTotal: 300,
+    })
   })
 
   it("a second question's prompt carries nothing from the first", async () => {
     await addFeedback()
     reply(bank)
-    await ask({ question: "Cosa dicono della banca?" })
+    await ask(user.researchId, { question: "Cosa dicono della banca?" })
     const model = reply({ answer: "Adorano le fatture dal telefono.", feedback: [3], quotes: [{ feedback: 3, text: "Adoro" }] })
-    await ask({ question: "E delle fatture?" })
+    await ask(user.researchId, { question: "E delle fatture?" })
     const prompt = promptOf(model)
     expect(prompt).toContain("E delle fatture?")
     expect(prompt).not.toContain("Cosa dicono della banca?")

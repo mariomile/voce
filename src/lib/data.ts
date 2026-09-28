@@ -5,8 +5,8 @@ import { cache } from "react";
 import { z } from "zod";
 
 import type { Tables } from "./database.types";
-import { ANALYSIS_MAX_FEEDBACK, ANALYSIS_WINDOW_DAYS, selectFeedback } from "./analysis";
-import { isoDateOf, monthOf } from "./format";
+import { ANALYSIS_MAX_FEEDBACK, selectFeedback } from "./analysis";
+import { monthOf } from "./format";
 import { FORM_SLUG_PATTERN, PLAN_LIMITS } from "./plans";
 import { formState, PUBLIC_FORM_CHANNEL, type RoomStatus } from "./room";
 import { questionUsage } from "./supabase/admin";
@@ -237,23 +237,6 @@ export async function getRoomStatus(research: Pick<Research, "id" | "workspaceId
       feedbackLimit: PLAN_LIMITS[plan].feedback,
     }),
   };
-}
-
-// For "Chiedi": all the feedback, and those a question reads (the last 90 days, today included).
-export async function getQuestionWindow(workspaceId: string) {
-  const supabase = await createClient();
-  const since = new Date(Date.parse(isoDateOf(new Date())) - (ANALYSIS_WINDOW_DAYS - 1) * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
-  const [total, recent] = await Promise.all([
-    supabase.from("feedback").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId),
-    supabase
-      .from("feedback")
-      .select("id", { count: "exact", head: true })
-      .eq("workspace_id", workspaceId)
-      .gte("received_at", since),
-  ]);
-  return { total: countOf(total), recent: countOf(recent) };
 }
 
 export async function getBilling(workspaceId: string): Promise<Billing> {

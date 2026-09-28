@@ -10,9 +10,7 @@ import type { Sentiment, ThemeKind } from "./types"
 
 export const DEFAULT_MODEL = "claude-sonnet-5"
 export const ANALYSIS_TIMEOUT_MS = 240_000
-// Chiedi still reads the last 90 days of the workspace until it moves inside the Research.
-export const ANALYSIS_WINDOW_DAYS = 90
-// What one call reads of a Research: its most recent feedback, at most 500 and at most 1,000,000
+// What one call (themes, Chiedi) reads of a Research: its most recent feedback, at most 500 and at most 1,000,000
 // characters of text (the most a themes prompt could reach before notes of 10,000 characters existed).
 export const ANALYSIS_MAX_FEEDBACK = 500
 export const ANALYSIS_MAX_CHARS = 1_000_000

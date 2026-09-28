@@ -2,7 +2,7 @@
 -- workspace, carrying the form and the feedback, so /f/phc26 keeps working.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(11);
+select plan(12);
 
 create temporary table ws on commit drop as
 select case m.user_id
@@ -49,6 +49,12 @@ select results_eq(
     where a.workspace_id = (select id from ws where name = 'phc')$$,
   $$values ('themes', true, 2)$$,
   'the analysis and its 2 themes carry its research_id, and the analysis is a themes one'
+);
+select results_eq(
+  $$select q.research_id = r.id from public.questions q join public.research r on r.workspace_id = q.workspace_id
+    where q.workspace_id = (select id from ws where name = 'phc')$$,
+  $$values (true)$$,
+  'the question carries its research_id'
 );
 
 -- ===== AC 4 =====

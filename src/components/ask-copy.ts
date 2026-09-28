@@ -9,14 +9,19 @@ import type { Plan } from "@/lib/types"
 // catalog: it carries the Italian source and the English translation.
 export type AskT = ReturnType<typeof useTranslations<"ask">>
 
-export function askErrors(t: AskT) {
+export function askErrors(t: AskT, researchId: string) {
   return {
     empty: t("errors.empty"),
     tooLong: t("errors.tooLong"),
     busy: t("errors.busy"),
     network: t("errors.network"),
     session: { text: t("errors.sessionText"), link: t("errors.sessionLink"), href: "/login" },
-    noFeedback: { text: t("errors.noFeedbackText"), link: t("errors.noFeedbackLink"), href: "/research" },
+    noFeedback: {
+      text: t("errors.noFeedbackText"),
+      link: t("errors.noFeedbackLink"),
+      href: `/research/${researchId}/collect`,
+    },
+    notFound: { text: t("errors.notFoundText"), link: t("errors.notFoundLink"), href: "/research" },
   }
 }
 
@@ -50,9 +55,9 @@ export function slowMessage(t: AskT) {
   return t("slow")
 }
 
-// The button says how many feedback the question reads: the 500 most recent at most.
-export function askButtonLabel(t: AskT, feedbackConsidered: number, feedbackInWindow: number) {
-  if (feedbackInWindow > feedbackConsidered) return t("button.partial", { count: feedbackConsidered })
+// The button says how many feedback of the Research the question reads: the analysis perimeter.
+export function askButtonLabel(t: AskT, feedbackConsidered: number, feedbackTotal: number) {
+  if (feedbackTotal > feedbackConsidered) return t("button.partial", { count: feedbackConsidered })
   return feedbackConsidered === 1 ? t("button.one") : t("button.some", { count: feedbackConsidered })
 }
 

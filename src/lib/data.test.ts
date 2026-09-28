@@ -10,7 +10,6 @@ const {
   getCurrentWorkspace,
   getDashboard,
   getPublicForm,
-  getQuestionWindow,
   getResearch,
   getResearchStats,
   getTheme,
@@ -431,18 +430,3 @@ describe("getUsage: questions", () => {
   })
 })
 
-describe("getQuestionWindow", () => {
-  it("counts all the feedback and those of the last 90 days, today included", async () => {
-    const user = await createTestUser("window")
-    try {
-      session.client = user.client
-      const day = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000).toLocaleDateString("en-CA", { timeZone: "Europe/Rome" })
-      await admin.from("feedback").insert(
-        [0, 89, 90].map((n) => ({ workspace_id: user.workspaceId, research_id: user.researchId, text: `Feedback ${n}`, channel: "Supporto", received_at: day(n) }))
-      )
-      expect(await getQuestionWindow(user.workspaceId)).toEqual({ total: 3, recent: 2 })
-    } finally {
-      await deleteTestUsers([user])
-    }
-  })
-})

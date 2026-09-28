@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { useEffect, useRef, useState, useTransition } from "react"
-import { ask, type AskResult, type AskUsage } from "@/app/(app)/ask/actions"
+import { ask, type AskResult, type AskUsage } from "@/app/(app)/research/[id]/ask/actions"
 import { AskAnswer } from "@/components/ask-answer"
 import { askErrors, answerSummary, askButtonLabel, failedMessage, limitNotice, quotaNote, slowMessage, type AskT } from "@/components/ask-copy"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -22,15 +22,17 @@ type Failure = Extract<AskResult, { ok: false }>["reason"] | "network"
 // this page: a new question replaces it. The focus stays in the field from start to answer, and
 // errors keep the question in the field.
 export function AskForm({
+  researchId,
   feedbackConsidered,
-  feedbackInWindow,
+  feedbackTotal,
   plan,
   usage: initialUsage,
   month,
   nextMonth,
 }: {
+  researchId: string
   feedbackConsidered: number
-  feedbackInWindow: number
+  feedbackTotal: number
   plan: Plan
   usage: AskUsage
   month: string
@@ -83,7 +85,7 @@ export function AskForm({
     setAnswer(null)
     startTransition(async () => {
       try {
-        const result = await ask({ question })
+        const result = await ask(researchId, { question })
         if (result.ok) {
           setAnswer(result)
           setUsage(result.usage)
@@ -156,14 +158,14 @@ export function AskForm({
           />
           {length >= COUNT_FROM && <FieldCount>{t("form.count", { length, max: MAX_LENGTH })}</FieldCount>}
           {invalid ? (
-            <FieldError id="ask-error">{askErrors(t)[invalid === "tooLong" ? "tooLong" : "empty"]}</FieldError>
+            <FieldError id="ask-error">{askErrors(t, researchId)[invalid === "tooLong" ? "tooLong" : "empty"]}</FieldError>
           ) : (
             <FieldHint id="ask-hint">{t("form.hint")}</FieldHint>
           )}
         </Field>
         <div className="mt-7 flex max-w-[36ch] flex-col gap-2">
           <Button type="submit" size="lg" aria-disabled={pending || limitReached || undefined}>
-            {pending ? t("form.sending") : askButtonLabel(t, feedbackConsidered, feedbackInWindow)}
+            {pending ? t("form.sending") : askButtonLabel(t, feedbackConsidered, feedbackTotal)}
           </Button>
           <p role="status" className="text-sm text-ink-muted empty:hidden">
             {pending ? (
@@ -178,7 +180,7 @@ export function AskForm({
                 )}
               </span>
             ) : (
-              <FailureNote t={t} failure={failure} usage={usage} month={month} notice={notice} />
+              <FailureNote t={t} researchId={researchId} failure={failure} usage={usage} month={month} notice={notice} />
             )}
           </p>
           {!pending && !limitReached && (!failure || failure === "invalid") && usage && (
@@ -193,18 +195,20 @@ export function AskForm({
 
 function FailureNote({
   t,
+  researchId,
   failure,
   usage,
   month,
   notice,
 }: {
   t: AskT
+  researchId: string
   failure: Failure | null
   usage: AskUsage | null
   month: string
   notice: { title: string; text: string } | null
 }) {
-  const errors = askErrors(t)
+  const errors = askErrors(t, researchId)
   switch (failure) {
     case "limit":
       // The E3/E4 notice already shows above the field: read it here too, so a screen reader
@@ -221,8 +225,9 @@ function FailureNote({
     case "network":
       return <span className="text-problem">{errors.network}</span>
     case "session":
-    case "no_feedback": {
-      const copy = failure === "session" ? errors.session : errors.noFeedback
+    case "no_feedback":
+    case "not_found": {
+      const copy = failure === "session" ? errors.session : failure === "no_feedback" ? errors.noFeedback : errors.notFound
       return (
         <span className="text-problem">
           {copy.text}{" "}

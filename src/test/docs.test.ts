@@ -78,10 +78,21 @@ describe("analytics.md", () => {
 describe("the ask files", () => {
   it("never use dangerouslySetInnerHTML", () => {
     const files = [
-      ...readdirSync("src/app/(app)/ask").map((f) => `src/app/(app)/ask/${f}`),
+      ...readdirSync("src/app/(app)/research/[id]/ask").map((f) => `src/app/(app)/research/[id]/ask/${f}`),
       ...readdirSync("src/components").filter((f) => f.startsWith("ask-")).map((f) => `src/components/${f}`),
     ]
     expect(files.length).toBeGreaterThanOrEqual(6)
     for (const file of files) expect(readFileSync(file, "utf8"), file).not.toContain("dangerouslySetInnerHTML")
+  })
+})
+
+describe("Chiedi in a Research", () => {
+  it("no catalog has ask.nothingToAsk.titleOld or bodyOld, and no ask string names the 90 days", () => {
+    for (const locale of ["it", "en"]) {
+      const catalog = JSON.parse(readFileSync(`src/i18n/messages/${locale}/ask.json`, "utf8"))
+      expect(catalog.nothingToAsk, locale).not.toHaveProperty("titleOld")
+      expect(catalog.nothingToAsk, locale).not.toHaveProperty("bodyOld")
+      expect(JSON.stringify(catalog), locale).not.toMatch(/90/)
+    }
   })
 })
