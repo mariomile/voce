@@ -2,18 +2,20 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useTranslations } from "next-intl"
 
 const TABS = [
-  { href: "/themes", label: "Temi" },
-  { href: "/ask", label: "Chiedi" },
-  { href: "/feedback", label: "Feedback" },
-  { href: "/collect", label: "Raccolta" },
-  { href: "/billing", label: "Piano" },
-]
+  { href: "/themes", key: "themes" },
+  { href: "/ask", key: "ask" },
+  { href: "/feedback", key: "feedback" },
+  { href: "/collect", key: "collect" },
+  { href: "/billing", key: "billing" },
+] as const
 
 // Kit: .tabs, .tab with aria-current="page"
 export function AppTabs() {
   const pathname = usePathname()
+  const t = useTranslations("app.tabs")
   return (
     <nav className="flex gap-6 self-stretch">
       {TABS.map((tab) => (
@@ -23,7 +25,7 @@ export function AppTabs() {
           aria-current={pathname.startsWith(tab.href) ? "page" : undefined}
           className="flex items-center border-y-2 border-transparent text-base text-ink-muted aria-[current=page]:border-b-ink aria-[current=page]:font-semibold aria-[current=page]:text-ink"
         >
-          {tab.label}
+          {t(tab.key)}
         </Link>
       ))}
     </nav>

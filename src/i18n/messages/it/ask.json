@@ -1,0 +1,70 @@
+{
+  "meta": {
+    "title": "Chiedi ai tuoi feedback"
+  },
+  "page": {
+    "title": "Chiedi ai tuoi feedback",
+    "lede": "Scrivi una domanda su un argomento. Voce risponde con quanti feedback ne parlano e con le frasi esatte dei clienti.",
+    "addFeedback": "Aggiungi feedback"
+  },
+  "nothingToAsk": {
+    "titleEmpty": "Qui farai domande ai tuoi feedback e leggerai le risposte con le parole dei clienti.",
+    "titleOld": "Negli ultimi 90 giorni non è arrivato nessun feedback.",
+    "bodyEmpty": "Per rispondere servono feedback. Aggiungili dal modulo pubblico, da un CSV o incollandoli a mano.",
+    "bodyOld": "Chiedi legge solo i feedback degli ultimi 90 giorni, e i tuoi {count} sono più vecchi. Aggiungine di recenti per fare una domanda."
+  },
+  "form": {
+    "label": "La tua domanda",
+    "hint": "Per esempio: cosa chiedono i clienti sull'export in Excel?",
+    "count": "{length} di {max}",
+    "sending": "Risposta in arrivo…",
+    "reading": "Sto leggendo {count} feedback…",
+    "upgrade": "Passa a Pro"
+  },
+  "button": {
+    "one": "Chiedi a 1 feedback",
+    "some": "Chiedi ai {count} feedback",
+    "partial": "Chiedi ai {count} feedback più recenti"
+  },
+  "errors": {
+    "empty": "Scrivi una domanda prima di inviarla. Per esempio: cosa dicono i clienti dei prezzi?",
+    "tooLong": "La domanda supera i 300 caratteri: accorciala a una sola richiesta.",
+    "busy": "C'è già una domanda in corso, forse da un'altra scheda. Aspetta qualche secondo e riprova.",
+    "network": "Non riesco a raggiungere Voce: controlla la connessione e riprova. Se la domanda era già partita, conta tra quelle del mese.",
+    "sessionText": "La sessione è scaduta. Accedi di nuovo per fare la domanda.",
+    "sessionLink": "Accedi",
+    "noFeedbackText": "Negli ultimi 90 giorni non ci sono più feedback su cui rispondere.",
+    "noFeedbackLink": "Aggiungi feedback"
+  },
+  "failed": {
+    "zero": "La risposta non è arrivata. La domanda conta lo stesso: hai usato tutte le domande di {month}.",
+    "rest": "La risposta non è arrivata. La domanda conta lo stesso tra quelle del mese: {left, plural, one {ti resta 1 domanda di {month}} other {ti restano {left} domande di {month}}}. Riprova tra poco."
+  },
+  "quotaNote": {
+    "first": "Userai 1 delle {quota} domande di {month}.",
+    "left": "{left, plural, one {Ti resta 1 domanda di {month}.} other {Ti restano {left} domande di {month}.}}"
+  },
+  "limitNotice": {
+    "title": "Hai usato le {quota} domande di {month}",
+    "free": "Con Pro diventano {proLimit} al mese. Altrimenti tornano disponibili il 1 {nextMonth}.",
+    "pro": "Tornano disponibili il 1 {nextMonth}."
+  },
+  "slow": "Ci vuole più del solito. La risposta arriva: resta su questa pagina.",
+  "count": "{count, plural, one {feedback ne parla} other {feedback ne parlano}}",
+  "summary": {
+    "noEvidence": "Non trovo feedback che ne parlano. Letti {count} feedback degli ultimi 90 giorni.",
+    "quotesOne": "Sotto c'è 1 citazione.",
+    "quotesOther": "Sotto ci sono {count} citazioni.",
+    "answered": "Risposta pronta. {count} {countLabel}. {answer} {quotes}"
+  },
+  "answer": {
+    "heading": "Risposta a «{question}»",
+    "noEvidenceTitle": "Non trovo feedback che ne parlano.",
+    "noEvidenceBody": "Letti {count} feedback degli ultimi 90 giorni. Prova con altre parole, per esempio il nome della funzione come lo scrivono i clienti.",
+    "writtenAll": "Cosa hanno scritto",
+    "writtenPartial": "Cosa hanno scritto: {quotes} dei {total} feedback",
+    "keep": "La risposta non resta su questa pagina: se ti serve, copiala.",
+    "perimeterFull": "Letti {count} feedback degli ultimi 90 giorni. {keep}",
+    "perimeterPartial": "Letti i {considered} feedback più recenti degli ultimi 90 giorni, su {total}: i più vecchi non entrano nella risposta. {keep}"
+  }
+}

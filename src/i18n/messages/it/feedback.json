@@ -1,0 +1,31 @@
+{
+  "page": {
+    "title": "Feedback",
+    "ledeEmpty": "Qui trovi ogni feedback raccolto, dal più recente, con il canale da cui arriva.",
+    "ledeCount": "<b>{total} feedback</b> {channelCount, plural, one {da un canale} other {da {channelCount} canali}}, dal più recente."
+  },
+  "filters": {
+    "all": "Tutti"
+  },
+  "table": {
+    "feedback": "Feedback",
+    "channel": "Canale",
+    "customer": "Cliente",
+    "date": "Data",
+    "actions": "Azioni",
+    "emptyChannel": "Nessun feedback da questo canale."
+  },
+  "pagination": {
+    "newer": "Più recenti",
+    "older": "Meno recenti",
+    "page": "Pagina {page} di {pageCount}"
+  },
+  "delete": {
+    "button": "Elimina",
+    "confirmQuestion": "Eliminare questo feedback?",
+    "cancel": "Annulla",
+    "confirm": "Sì, elimina",
+    "pending": "Elimino…",
+    "failed": "Non è stato eliminato. Riprova."
+  }
+}

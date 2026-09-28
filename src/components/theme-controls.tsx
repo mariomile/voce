@@ -1,12 +1,14 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { useState, useTransition } from "react"
 import { updateTheme } from "@/app/actions"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
-import { PRIORITY_LABELS, STATUS_LABELS } from "@/lib/format"
 import type { Priority, ThemeStatus } from "@/lib/types"
 
+const PRIORITY_KEYS: Priority[] = ["high", "medium", "low"]
+const STATUS_KEYS: ThemeStatus[] = ["to_review", "roadmap", "done", "discarded"]
 const STATUS_TONE = { roadmap: "strong", done: "positive" } as const
 
 export function ThemeControls({
@@ -18,6 +20,9 @@ export function ThemeControls({
   priority: Priority | null
   status: ThemeStatus
 }) {
+  const t = useTranslations("themes.controls")
+  const tPriority = useTranslations("common.priority")
+  const tStatus = useTranslations("common.status")
   const [priority, setPriority] = useState(initialPriority)
   const [status, setStatus] = useState(initialStatus)
   const [, startTransition] = useTransition()
@@ -38,7 +43,7 @@ export function ThemeControls({
   return (
     <div className="flex flex-col gap-4">
       <Field quiet>
-        <FieldLabel htmlFor={`priority-${themeId}`}>Priorità</FieldLabel>
+        <FieldLabel htmlFor={`priority-${themeId}`}>{t("priority")}</FieldLabel>
         <NativeSelect
           id={`priority-${themeId}`}
           tone={priority ? "default" : "empty"}
@@ -47,25 +52,25 @@ export function ThemeControls({
             save({ priority: (e.target.value || null) as Priority | null, status })
           }
         >
-          <NativeSelectOption value="">Da impostare</NativeSelectOption>
-          {Object.entries(PRIORITY_LABELS).map(([value, label]) => (
+          <NativeSelectOption value="">{t("unset")}</NativeSelectOption>
+          {PRIORITY_KEYS.map((value) => (
             <NativeSelectOption key={value} value={value}>
-              {label}
+              {tPriority(value)}
             </NativeSelectOption>
           ))}
         </NativeSelect>
       </Field>
       <Field quiet>
-        <FieldLabel htmlFor={`status-${themeId}`}>Stato</FieldLabel>
+        <FieldLabel htmlFor={`status-${themeId}`}>{t("status")}</FieldLabel>
         <NativeSelect
           id={`status-${themeId}`}
           tone={STATUS_TONE[status as keyof typeof STATUS_TONE] ?? "default"}
           value={status}
           onChange={(e) => save({ priority, status: e.target.value as ThemeStatus })}
         >
-          {Object.entries(STATUS_LABELS).map(([value, label]) => (
+          {STATUS_KEYS.map((value) => (
             <NativeSelectOption key={value} value={value}>
-              {label}
+              {tStatus(value)}
             </NativeSelectOption>
           ))}
         </NativeSelect>

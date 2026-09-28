@@ -1,5 +1,7 @@
+import type { useTranslations } from "next-intl";
 import Papa from "papaparse";
 
+import type { Locale } from "@/i18n/locale";
 import { formatNumber } from "./format";
 import {
   CHANNEL_MAX_LENGTH,
@@ -11,6 +13,10 @@ import {
 
 // Reads a feedback CSV as people export it: from Excel (semicolons, Windows-1252), Google Sheets,
 // support tools. Column `testo` is required; `canale`, `cliente`, `data` are optional.
+
+// Error and status strings read from the "collect.csvImport" catalog: it carries the Italian source
+// and the English translation.
+export type CsvImportT = ReturnType<typeof useTranslations<"collect">>;
 
 export const CSV_DEFAULT_CHANNEL = "Importazione CSV";
 
@@ -40,10 +46,9 @@ export function decodeCsv(bytes: Uint8Array) {
   }
 }
 
-export function parseFeedbackCsv(bytes: Uint8Array, today: string): ParsedCsv {
-  if (bytes.byteLength === 0) return { ok: false, error: "Il file è vuoto." };
-  if (bytes.byteLength > CSV_MAX_BYTES)
-    return { ok: false, error: "Il file supera 1 MB. Dividilo in più file e importali uno alla volta." };
+export function parseFeedbackCsv(bytes: Uint8Array, today: string, t: CsvImportT, locale: Locale): ParsedCsv {
+  if (bytes.byteLength === 0) return { ok: false, error: t("csvImport.emptyFile") };
+  if (bytes.byteLength > CSV_MAX_BYTES) return { ok: false, error: t("csvImport.sizeError") };
 
   // Postgres text cannot hold NUL characters.
   const content = decodeCsv(bytes).replace(/^\uFEFF/, "").replaceAll("\0", "");
@@ -60,17 +65,20 @@ export function parseFeedbackCsv(bytes: Uint8Array, today: string): ParsedCsv {
     return {
       ok: false,
       error: found.length
-        ? `Manca la colonna testo. Colonne trovate: ${found.join(", ")}.`
-        : "Manca la colonna testo nella prima riga del file.",
+        ? t("csvImport.missingColumnFound", { columns: found.join(", ") })
+        : t("csvImport.missingColumnNone"),
     };
   }
 
   const filled = records.filter((r) => r.fields.some((f) => f.trim() !== ""));
-  if (filled.length === 0) return { ok: false, error: "Il file ha solo l'intestazione, nessun feedback." };
+  if (filled.length === 0) return { ok: false, error: t("csvImport.onlyHeader") };
   if (filled.length > CSV_MAX_ROWS)
     return {
       ok: false,
-      error: `Il file ha ${formatNumber(filled.length)} righe, il massimo è ${formatNumber(CSV_MAX_ROWS)}. Dividilo in più file.`,
+      error: t("csvImport.tooManyRows", {
+        rows: formatNumber(filled.length, locale),
+        max: formatNumber(CSV_MAX_ROWS, locale),
+      }),
     };
 
   const rows: CsvRow[] = [];
@@ -78,18 +86,21 @@ export function parseFeedbackCsv(bytes: Uint8Array, today: string): ParsedCsv {
   for (const { fields, line } of filled) {
     const get = (name: string) => (col(name) === -1 ? "" : (fields[col(name)] ?? "").trim());
     const text = get("testo").replace(/\r\n?/g, "\n");
-    const reason = rowError(fields, columns.length, line - 1, brokenQuotes);
-    const date = parseDate(get("data"), today);
+    const reason = rowError(fields, columns.length, line - 1, brokenQuotes, t);
+    const date = parseDate(get("data"), today, t);
     const problem =
       reason ??
       (!text
-        ? "Il testo è vuoto."
+        ? t("csvImport.emptyText")
         : text.length > FEEDBACK_MAX_LENGTH
-          ? `Il testo ha ${formatNumber(text.length)} caratteri, il massimo è ${formatNumber(FEEDBACK_MAX_LENGTH)}.`
+          ? t("csvImport.textTooLong", {
+              length: formatNumber(text.length, locale),
+              max: formatNumber(FEEDBACK_MAX_LENGTH, locale),
+            })
           : get("canale").length > CHANNEL_MAX_LENGTH
-            ? `Il canale supera ${CHANNEL_MAX_LENGTH} caratteri.`
+            ? t("csvImport.channelTooLong", { max: CHANNEL_MAX_LENGTH })
             : get("cliente").length > CUSTOMER_MAX_LENGTH
-              ? `Il cliente supera ${CUSTOMER_MAX_LENGTH} caratteri.`
+              ? t("csvImport.customerTooLong", { max: CUSTOMER_MAX_LENGTH })
               : date !== null && typeof date === "object"
                 ? date.error
                 : null);
@@ -117,29 +128,27 @@ function delimiterOf(content: string) {
   return best.n > 0 ? best.d : "\u001f";
 }
 
-function rowError(fields: string[], columnCount: number, recordIndex: number, brokenQuotes: Set<number>) {
-  if (brokenQuotes.has(recordIndex))
-    return "Le virgolette di questa riga non sono chiuse o sono fuori posto: il testo potrebbe essersi unito alle righe dopo.";
+function rowError(fields: string[], columnCount: number, recordIndex: number, brokenQuotes: Set<number>, t: CsvImportT) {
+  if (brokenQuotes.has(recordIndex)) return t("csvImport.brokenQuotes");
   // Extra empty cells are harmless (trailing separators); extra text usually means a comma outside quotes.
-  if (fields.slice(columnCount).some((f) => f.trim() !== ""))
-    return "La riga ha più colonne dell'intestazione: forse c'è una virgola nel testo senza virgolette.";
+  if (fields.slice(columnCount).some((f) => f.trim() !== "")) return t("csvImport.extraColumns");
   return null;
 }
 
 // "2026-09-01", "01/09/2026", "1-9-2026", "01.09.2026", also followed by a time.
 // Returns the ISO date, null when empty, or the reason it is not valid.
-export function parseDate(value: string, today: string): string | null | { error: string } {
+export function parseDate(value: string, today: string, t: CsvImportT): string | null | { error: string } {
   if (!value) return null;
   const iso = value.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T\s].*)?$/);
   const italian = value.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})(?:\s.*)?$/);
   const parts = iso ? [iso[1], iso[2], iso[3]] : italian ? [italian[3], italian[2], italian[1]] : null;
-  const invalid = { error: `La data "${snippet(value, 30)}" non è valida. Usa 25/09/2026 o 2026-09-25.` };
+  const invalid = { error: t("csvImport.invalidDate", { value: snippet(value, 30) }) };
   if (!parts) return invalid;
   const [year, month, day] = parts.map(Number);
   const date = new Date(Date.UTC(year, month - 1, day));
   if (year < 2000 || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return invalid;
   const result = date.toISOString().slice(0, 10);
-  if (result > today) return { error: `La data ${day}/${month}/${year} è nel futuro.` };
+  if (result > today) return { error: t("csvImport.futureDate", { date: `${day}/${month}/${year}` }) };
   return result;
 }
 

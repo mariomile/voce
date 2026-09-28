@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { useState, useTransition } from "react"
 import { setFormQuestion } from "@/app/(app)/collect/actions"
 import { Button } from "@/components/ui/button"
@@ -8,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { FORM_QUESTION_MAX_LENGTH } from "@/lib/plans"
 
 export function FormQuestionField({ question, defaultQuestion }: { question: string | null; defaultQuestion: string }) {
+  const t = useTranslations("collect.formQuestion")
   const [value, setValue] = useState(question ?? "")
   const [saved, setSaved] = useState(question ?? "")
   const [message, setMessage] = useState<"saved" | "failed" | null>(null)
@@ -29,7 +31,7 @@ export function FormQuestionField({ question, defaultQuestion }: { question: str
   return (
     <form noValidate onSubmit={submit} className="mt-8 flex max-w-[720px] flex-col gap-3">
       <Field>
-        <FieldLabel htmlFor="form-question">Domanda del modulo</FieldLabel>
+        <FieldLabel htmlFor="form-question">{t("label")}</FieldLabel>
         <Input
           id="form-question"
           maxLength={FORM_QUESTION_MAX_LENGTH}
@@ -41,7 +43,7 @@ export function FormQuestionField({ question, defaultQuestion }: { question: str
           }}
         />
         <div className="flex justify-between gap-4">
-          <FieldHint>Se la lasci vuota, il modulo chiede «{defaultQuestion}»</FieldHint>
+          <FieldHint>{t("hint", { question: defaultQuestion })}</FieldHint>
           <FieldCount>
             {value.length} / {FORM_QUESTION_MAX_LENGTH}
           </FieldCount>
@@ -49,11 +51,11 @@ export function FormQuestionField({ question, defaultQuestion }: { question: str
       </Field>
       <div className="flex items-center gap-4">
         <Button type="submit" variant="secondary" disabled={pending || value.trim() === saved}>
-          {pending ? "Salvo…" : "Salva la domanda"}
+          {pending ? t("saving") : t("save")}
         </Button>
         <p role="status" className="text-base text-ink-muted">
-          {message === "saved" && "Salvata. Il modulo la mostra da subito."}
-          {message === "failed" && <span className="text-problem">Non è andata. Riprova tra poco.</span>}
+          {message === "saved" && t("saved")}
+          {message === "failed" && <span className="text-problem">{t("failed")}</span>}
         </p>
       </div>
     </form>

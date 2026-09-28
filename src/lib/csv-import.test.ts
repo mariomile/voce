@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest"
+import { TEST_LOCALE, translator } from "@/test/next-intl"
 import { CSV_DEFAULT_CHANNEL, parseDate, parseFeedbackCsv } from "./csv-import"
 
 const TODAY = "2026-09-25"
+const t = translator("collect")
 const utf8 = (text: string) => new TextEncoder().encode(text)
-const parse = (text: string) => parseFeedbackCsv(utf8(text), TODAY)
+const parse = (text: string) => parseFeedbackCsv(utf8(text), TODAY, t, TEST_LOCALE)
 
 describe("parseFeedbackCsv", () => {
   it("reads a clean file with every column", () => {
@@ -54,7 +56,7 @@ describe("parseFeedbackCsv", () => {
   it("reads Windows-1252 files from Excel", () => {
     // "Perché è lento" in Windows-1252: é = 0xE9, è = 0xE8
     const bytes = new Uint8Array([...utf8("testo\nPerch"), 0xe9, ...utf8(" "), 0xe8, ...utf8(" lento\n")])
-    expect(parseFeedbackCsv(bytes, TODAY)).toMatchObject({ ok: true, rows: [{ text: "Perché è lento" }] })
+    expect(parseFeedbackCsv(bytes, TODAY, t, TEST_LOCALE)).toMatchObject({ ok: true, rows: [{ text: "Perché è lento" }] })
   })
 
   it("keeps quoted commas, quotes and line breaks inside a feedback", () => {
@@ -132,7 +134,7 @@ describe("parseFeedbackCsv", () => {
       ok: false,
       error: "Manca la colonna testo. Colonne trovate: feedback, data.",
     })
-    expect(parseFeedbackCsv(new Uint8Array(), TODAY)).toEqual({ ok: false, error: "Il file è vuoto." })
+    expect(parseFeedbackCsv(new Uint8Array(), TODAY, t, TEST_LOCALE)).toEqual({ ok: false, error: "Il file è vuoto." })
     expect(parse("\n\n")).toEqual({ ok: false, error: "Manca la colonna testo nella prima riga del file." })
     expect(parse("testo,canale\n\n")).toEqual({ ok: false, error: "Il file ha solo l'intestazione, nessun feedback." })
   })
@@ -164,17 +166,17 @@ describe("parseDate", () => {
     ["2026-09-25", "2026-09-25"],
     ["", null],
   ])("%s → %s", (value, expected) => {
-    expect(parseDate(value, TODAY)).toEqual(expected)
+    expect(parseDate(value, TODAY, t)).toEqual(expected)
   })
 
   it.each(["2025-02-29", "13/13/2026", "09/01/26", "1999-12-31", "settembre", "2026/09/01"])(
     "%s is not valid",
     (value) => {
-      expect(parseDate(value, TODAY)).toHaveProperty("error")
+      expect(parseDate(value, TODAY, t)).toHaveProperty("error")
     }
   )
 
   it("refuses tomorrow", () => {
-    expect(parseDate("2026-09-26", TODAY)).toEqual({ error: "La data 26/9/2026 è nel futuro." })
+    expect(parseDate("2026-09-26", TODAY, t)).toEqual({ error: "La data 26/9/2026 è nel futuro." })
   })
 })

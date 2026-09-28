@@ -3,13 +3,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react"
 import Link from "next/link"
 import { cn } from "cn"
+import { useLocale, useTranslations } from "next-intl"
 import { roomThemes } from "@/app/sala/actions"
 import { analyze } from "@/app/(app)/themes/actions"
-import { ANALYSIS_FAILURES, type AnalysisFailure } from "@/components/analyze-button"
+import { failureMessage, type AnalysisFailure } from "@/components/analyze-button"
 import { Logo } from "@/components/logo"
 import { RoomDots } from "@/components/room-dots"
 import { Badge } from "@/components/ui/badge"
-import { formatNumber, KIND_LABELS, KIND_PLURALS } from "@/lib/format"
+import type { Locale } from "@/i18n/locale"
+import { formatNumber } from "@/lib/format"
 import type { RoomStatus, RoomTheme } from "@/lib/room"
 import {
   dotOrderByX,
@@ -169,16 +171,18 @@ function PileView({
   onAnalyze: () => void
   pileRef: (element: HTMLElement | null) => void
 }) {
+  const t = useTranslations("room")
+  const tFailures = useTranslations("themes.analyzeButton.failures")
   const note = pending
-    ? "Può volerci qualche minuto. I temi compaiono qui appena è finita."
+    ? t("pile.runningNote")
     : failure === "no_open_themes"
-      ? "L'analisi è finita, ma non ci sono temi aperti da mostrare. Li trovi in Temi."
+      ? t("pile.noOpenThemes")
       : failure
-        ? ANALYSIS_FAILURES[failure]
+        ? failureMessage(tFailures, failure)
         : limitNote
           ? limitNote
           : status.responses === 0
-            ? "Si accende con la prima risposta."
+            ? t("pile.idle")
             : undefined
 
   return (
@@ -203,7 +207,7 @@ function PileView({
                 onClick={onAnalyze}
                 disabled={pending || Boolean(limitNote) || status.responses === 0}
               >
-                {pending ? "Analisi in corso…" : "Analizza le risposte"}
+                {pending ? t("pile.running") : t("pile.analyze")}
               </button>
               <p
                 role="status"
@@ -221,23 +225,23 @@ function PileView({
         <aside className="flex max-w-[min(52svh,30vw)] flex-col justify-center gap-[2svh] self-center">
           {status.form === "open" ? (
             <>
-              <p className="room-lede">Inquadra e rispondi dal telefono. Non serve un account.</p>
+              <p className="room-lede">{t("pile.scanHelp")}</p>
               {qrCode}
               <p className="room-url">{shortUrl}</p>
             </>
           ) : status.form === "off" ? (
             <FormPanel
-              title="Il modulo è spento."
-              text="Chi inquadra il QR code non trova il modulo."
+              title={t("pile.formOff.title")}
+              text={t("pile.formOff.text")}
               href="/collect"
-              action="Riaccendi il link in Raccolta"
+              action={t("pile.formOff.action")}
             />
           ) : (
             <FormPanel
-              title="Il modulo è pieno."
-              text="Con il piano Free entrano al massimo 100 feedback: le nuove risposte non arrivano."
+              title={t("pile.formFull.title")}
+              text={t("pile.formFull.text")}
               href="/billing"
-              action="Passa a Pro"
+              action={t("pile.formFull.action")}
             />
           )}
         </aside>
@@ -310,14 +314,16 @@ function useRelativeRect(element: HTMLElement | null, root: HTMLElement | null) 
 }
 
 function Counter({ responses }: { responses: number }) {
+  const locale = useLocale()
+  const t = useTranslations("room.units")
   // The number jumps a little when it goes up; not on the first render, not with reduced motion.
   const [first] = useState(responses)
   return (
     <p aria-live="polite" className="flex flex-wrap items-baseline gap-x-[1.2vw]">
       <span key={responses} className={cn("room-count", responses !== first && "room-bump")}>
-        {formatNumber(responses)}
+        {formatNumber(responses, locale)}
       </span>{" "}
-      <span className="room-unit">{responses === 1 ? "risposta" : "risposte"}</span>
+      <span className="room-unit">{t("response", { count: responses })}</span>
     </p>
   )
 }
@@ -331,6 +337,7 @@ function RoomHeader({
   onPaper?: boolean
   children?: ReactNode
 }) {
+  const t = useTranslations("room")
   return (
     <header className="l-wrap flex min-h-[max(56px,9svh)] items-center gap-5">
       <p className="room-lede flex items-center gap-3 font-extrabold">
@@ -343,7 +350,7 @@ function RoomHeader({
           href="/collect"
           className={cn("room-lede underline-offset-4 hover:underline", onPaper ? "text-ink-muted" : "text-on-highlight")}
         >
-          Esci dallo schermo
+          {t("exit")}
         </Link>
       </div>
     </header>
@@ -384,6 +391,9 @@ function ThemesView({
   onBack: () => void
   stageRef: (element: HTMLElement | null) => void
 }) {
+  const t = useTranslations("room")
+  const tCommon = useTranslations("common")
+  const locale = useLocale()
   const heading = useRef<HTMLHeadingElement>(null)
   useEffect(() => heading.current?.focus(), [])
   const themes = groups.filter((g): g is ThemeGroup => g.kind !== "other")
@@ -392,23 +402,23 @@ function ThemesView({
   return (
     <>
       <RoomHeader workspaceName={workspaceName} onPaper>
-        <div className="flex items-center rounded-full border border-line p-[0.2em]" role="group" aria-label="Come mostrare i temi">
+        <div className="flex items-center rounded-full border border-line p-[0.2em]" role="group" aria-label={t("themesView.modeGroupLabel")}>
           <button type="button" aria-pressed={view === "bubbles"} onClick={() => onView("bubbles")} className={toggle}>
-            Bolle
+            {t("themesView.bubbles")}
           </button>
           <button type="button" aria-pressed={view === "list"} onClick={() => onView("list")} className={toggle}>
-            Elenco
+            {t("themesView.list")}
           </button>
         </div>
         <button type="button" onClick={onBack} className="room-lede font-extrabold underline underline-offset-4">
-          Torna al QR code
+          {t("themesView.back")}
         </button>
       </RoomHeader>
       <div className="l-wrap flex flex-wrap items-end justify-between gap-x-[3vw] gap-y-2 pb-[2svh]">
         <h1 ref={heading} tabIndex={-1} className="room-panel-title outline-none">
-          Cosa dice la sala
+          {t("themesView.heading")}
         </h1>
-        <p className="room-lede text-ink-muted">{themesSummary(responses, themes)}</p>
+        <p className="room-lede text-ink-muted">{themesSummary(responses, themes, t, tCommon, locale)}</p>
       </div>
 
       {view === "bubbles" ? (
@@ -428,7 +438,7 @@ function ThemesView({
                     }}
                   >
                     {group.kind === "other" ? (
-                      group.count > 0 && <span className="room-lede text-ink-muted">Altro</span>
+                      group.count > 0 && <span className="room-lede text-ink-muted">{t("themesView.other")}</span>
                     ) : (
                       <ThemeLabel kind={group.kind} title={group.title} count={group.count} layout="bubble" />
                     )}
@@ -454,14 +464,21 @@ function ThemesView({
   )
 }
 
+type RoomT = ReturnType<typeof useTranslations<"room">>
+type CommonT = ReturnType<typeof useTranslations<"common">>
+
 // "230 risposte, 5 temi: 2 problemi, 2 opportunità, 1 apprezzamento." What the bubbles say, in words.
-function themesSummary(responses: number, themes: ThemeGroup[]) {
-  const plural = (n: number, [one, many]: [string, string]) => `${formatNumber(n)} ${n === 1 ? one : many}`
-  const kinds = (Object.keys(KIND_LABELS) as RoomTheme["kind"][])
-    .map((kind) => [kind, themes.filter((t) => t.kind === kind).length] as const)
+function themesSummary(responses: number, themes: ThemeGroup[], t: RoomT, tCommon: CommonT, locale: Locale) {
+  const plural = (n: number, one: string, many: string) => `${formatNumber(n, locale)} ${n === 1 ? one : many}`
+  const kinds = (["problem", "opportunity", "praise"] as const)
+    .map((kind) => [kind, themes.filter((th) => th.kind === kind).length] as const)
     .filter(([, n]) => n > 0)
-    .map(([kind, n]) => plural(n, [KIND_LABELS[kind].toLowerCase(), KIND_PLURALS[kind].toLowerCase()]))
-  return `${plural(responses, ["risposta", "risposte"])}, ${plural(themes.length, ["tema", "temi"])}: ${kinds.join(", ")}.`
+    .map(([kind, n]) => plural(n, tCommon(`kind.${kind}`).toLowerCase(), tCommon(`kindPlural.${kind}`).toLowerCase()))
+  return t("themesView.summary", {
+    responses: `${formatNumber(responses, locale)} ${t("units.response", { count: responses })}`,
+    themes: `${formatNumber(themes.length, locale)} ${t("units.theme", { count: themes.length })}`,
+    kinds: kinds.join(", "),
+  })
 }
 
 // Count, kind and title of a theme: under its bubble, or as a row of the list.
@@ -476,13 +493,15 @@ function ThemeLabel({
   count: number
   layout: "bubble" | "row"
 }) {
+  const locale = useLocale()
+  const tCommon = useTranslations("common")
   const bubble = layout === "bubble"
   return (
     <>
-      <span className={bubble ? "room-bubble-count" : "room-theme-count w-[1.8em] text-right"}>{formatNumber(count)}</span>
+      <span className={bubble ? "room-bubble-count" : "room-theme-count w-[1.8em] text-right"}>{formatNumber(count, locale)}</span>
       <div className={bubble ? "flex flex-col items-center gap-[0.8svh]" : "min-w-0"}>
         <Badge variant={kind} className={cn("room-kind", !bubble && "mb-[0.6svh]")}>
-          {KIND_LABELS[kind]}
+          {tCommon(`kind.${kind}`)}
         </Badge>
         <p className={bubble ? "room-bubble-title" : "room-theme-title"}>{title}</p>
       </div>

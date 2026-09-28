@@ -1,61 +1,29 @@
-import type { Priority, Sentiment, ThemeKind, ThemeStatus } from "./types";
+import type { Locale } from "@/i18n/locale";
 
-export const KIND_LABELS: Record<ThemeKind, string> = {
-  problem: "Problema",
-  opportunity: "Opportunità",
-  praise: "Apprezzamento",
-};
+// Dates and numbers in the language of the interface. Quotas and received_at stay on the Italian
+// calendar (Europe/Rome) in every language.
+const INTL_LOCALES: Record<Locale, string> = { it: "it-IT", en: "en-US" };
 
-export const KIND_PLURALS: Record<ThemeKind, string> = {
-  problem: "Problemi",
-  opportunity: "Opportunità",
-  praise: "Apprezzamenti",
-};
-
-export const SENTIMENT_LABELS: Record<Sentiment, string> = {
-  positive: "Tono positivo",
-  neutral: "Tono neutro",
-  negative: "Tono negativo",
-  mixed: "Tono misto",
-};
-
-export const PRIORITY_LABELS: Record<Priority, string> = {
-  high: "Alta",
-  medium: "Media",
-  low: "Bassa",
-};
-
-export const STATUS_LABELS: Record<ThemeStatus, string> = {
-  to_review: "Da valutare",
-  roadmap: "In roadmap",
-  done: "Fatto",
-  discarded: "Scartato",
-};
-
-// Set when the monthly analyses are used up: the analysis button is off and says why.
-export function analysisLimitNote(
-  usage: { plan: "free" | "pro"; analysesThisMonth: number; analysesLimit: number },
-  now = new Date()
-) {
-  if (usage.analysesThisMonth < usage.analysesLimit) return undefined;
-  const month = formatMonth(now);
-  return usage.plan === "free"
-    ? `Hai usato le ${usage.analysesLimit} analisi di ${month}. Con Pro diventano 100 al mese.`
-    : `Hai usato le ${usage.analysesLimit} analisi di ${month}.`;
+function formatters(locale: Locale) {
+  const tag = INTL_LOCALES[locale];
+  return {
+    dayMonth: new Intl.DateTimeFormat(tag, { day: "numeric", month: "long", timeZone: "UTC" }),
+    monthName: new Intl.DateTimeFormat(tag, { month: "long", timeZone: "Europe/Rome" }),
+    number: new Intl.NumberFormat(tag, { useGrouping: "always" }),
+  };
 }
 
-const dayMonth = new Intl.DateTimeFormat("it-IT", { day: "numeric", month: "long", timeZone: "UTC" });
-const monthName = new Intl.DateTimeFormat("it-IT", { month: "long", timeZone: "Europe/Rome" });
+const byLocale = { it: formatters("it"), en: formatters("en") } satisfies Record<Locale, unknown>;
+
 const monthKey = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", timeZone: "Europe/Rome" });
-const number = new Intl.NumberFormat("it-IT", { useGrouping: "always" });
 
-// "2026-09-18" → "18 settembre"
-export function formatDate(isoDate: string) {
-  return dayMonth.format(new Date(isoDate));
+// "2026-09-18" → "18 settembre", "September 18"
+export function formatDate(isoDate: string, locale: Locale) {
+  return byLocale[locale].dayMonth.format(new Date(isoDate));
 }
 
-export function formatMonth(date: Date) {
-  return monthName.format(date);
+export function formatMonth(date: Date, locale: Locale) {
+  return byLocale[locale].monthName.format(date);
 }
 
 // Quotas reset on the Italian calendar month: "2026-09"
@@ -63,9 +31,9 @@ export function monthOf(date: Date) {
   return monthKey.format(date);
 }
 
-// 2000 → "2.000"
-export function formatNumber(n: number) {
-  return number.format(n);
+// 2000 → "2.000", "2,000"
+export function formatNumber(n: number, locale: Locale) {
+  return byLocale[locale].number.format(n);
 }
 
 const isoDay = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome" });

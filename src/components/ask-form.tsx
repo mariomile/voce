@@ -1,10 +1,11 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { useEffect, useRef, useState, useTransition } from "react"
 import { ask, type AskResult, type AskUsage } from "@/app/(app)/ask/actions"
 import { AskAnswer } from "@/components/ask-answer"
-import { ASK_ERRORS, SLOW_MESSAGE, answerSummary, askButtonLabel, failedMessage, limitNotice, quotaNote } from "@/components/ask-copy"
+import { askErrors, answerSummary, askButtonLabel, failedMessage, limitNotice, quotaNote, slowMessage, type AskT } from "@/components/ask-copy"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardText, CardTitle } from "@/components/ui/card"
 import { Field, FieldCount, FieldError, FieldHint, FieldLabel } from "@/components/ui/field"
@@ -35,6 +36,7 @@ export function AskForm({
   month: string
   nextMonth: string
 }) {
+  const t = useTranslations("ask")
   const field = useRef<HTMLTextAreaElement>(null)
   const [question, setQuestion] = useState("")
   const [answer, setAnswer] = useState<Extract<AskResult, { ok: true }> | null>(null)
@@ -67,7 +69,7 @@ export function AskForm({
   const tooLong = length > MAX_LENGTH
   const invalid = failure === "invalid" ? (tooLong ? "tooLong" : "empty") : tooLong ? "tooLong" : null
   const limitReached = failure === "limit" || (usage !== null && usage.used >= usage.quota)
-  const notice = limitReached && usage ? limitNotice(currentPlan, usage.quota, month, nextMonth) : null
+  const notice = limitReached && usage ? limitNotice(t, currentPlan, usage.quota, month, nextMonth) : null
 
   function submit() {
     if (sending.current || pending || limitReached) return
@@ -117,7 +119,7 @@ export function AskForm({
           </div>
           {notice.upgrade && (
             <Link href="/billing" className={buttonVariants()}>
-              Passa a Pro
+              {t("form.upgrade")}
             </Link>
           )}
         </Card>
@@ -130,7 +132,7 @@ export function AskForm({
         }}
       >
         <Field className="flex-1">
-          <FieldLabel htmlFor="ask-question">La tua domanda</FieldLabel>
+          <FieldLabel htmlFor="ask-question">{t("form.label")}</FieldLabel>
           <Textarea
             ref={field}
             id="ask-question"
@@ -152,38 +154,35 @@ export function AskForm({
               }
             }}
           />
-          {length >= COUNT_FROM && (
-            <FieldCount>
-              {length} di {MAX_LENGTH}
-            </FieldCount>
-          )}
+          {length >= COUNT_FROM && <FieldCount>{t("form.count", { length, max: MAX_LENGTH })}</FieldCount>}
           {invalid ? (
-            <FieldError id="ask-error">{invalid === "tooLong" ? ASK_ERRORS.tooLong : ASK_ERRORS.empty}</FieldError>
+            <FieldError id="ask-error">{askErrors(t)[invalid === "tooLong" ? "tooLong" : "empty"]}</FieldError>
           ) : (
-            <FieldHint id="ask-hint">Per esempio: cosa chiedono i clienti sull&apos;export in Excel?</FieldHint>
+            <FieldHint id="ask-hint">{t("form.hint")}</FieldHint>
           )}
         </Field>
         <div className="mt-7 flex max-w-[36ch] flex-col gap-2">
           <Button type="submit" size="lg" aria-disabled={pending || limitReached || undefined}>
-            {pending ? "Risposta in arrivo…" : askButtonLabel(feedbackConsidered, feedbackInWindow)}
+            {pending ? t("form.sending") : askButtonLabel(t, feedbackConsidered, feedbackInWindow)}
           </Button>
           <p role="status" className="text-sm text-ink-muted empty:hidden">
             {pending ? (
-              slow ? SLOW_MESSAGE : `Sto leggendo ${feedbackConsidered} feedback…`
+              slow ? slowMessage(t) : t("form.reading", { count: feedbackConsidered })
             ) : answer ? (
               <span className="sr-only">
                 {answerSummary(
+                  t,
                   answer.outcome === "answered"
                     ? { ...answer, quoteCount: answer.quotes.length }
                     : answer
                 )}
               </span>
             ) : (
-              <FailureNote failure={failure} usage={usage} month={month} notice={notice} />
+              <FailureNote t={t} failure={failure} usage={usage} month={month} notice={notice} />
             )}
           </p>
           {!pending && !limitReached && (!failure || failure === "invalid") && usage && (
-            <p className="text-sm text-ink-muted">{quotaNote(usage, month)}</p>
+            <p className="text-sm text-ink-muted">{quotaNote(t, usage, month)}</p>
           )}
         </div>
       </form>
@@ -193,16 +192,19 @@ export function AskForm({
 }
 
 function FailureNote({
+  t,
   failure,
   usage,
   month,
   notice,
 }: {
+  t: AskT
   failure: Failure | null
   usage: AskUsage | null
   month: string
   notice: { title: string; text: string } | null
 }) {
+  const errors = askErrors(t)
   switch (failure) {
     case "limit":
       // The E3/E4 notice already shows above the field: read it here too, so a screen reader
@@ -213,14 +215,14 @@ function FailureNote({
         </span>
       ) : null
     case "busy":
-      return <span className="text-problem">{ASK_ERRORS.busy}</span>
+      return <span className="text-problem">{errors.busy}</span>
     case "failed":
-      return usage ? <span className="text-problem">{failedMessage(usage, month)}</span> : null
+      return usage ? <span className="text-problem">{failedMessage(t, usage, month)}</span> : null
     case "network":
-      return <span className="text-problem">{ASK_ERRORS.network}</span>
+      return <span className="text-problem">{errors.network}</span>
     case "session":
     case "no_feedback": {
-      const copy = failure === "session" ? ASK_ERRORS.session : ASK_ERRORS.noFeedback
+      const copy = failure === "session" ? errors.session : errors.noFeedback
       return (
         <span className="text-problem">
           {copy.text}{" "}

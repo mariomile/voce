@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { signUp } from "@/app/(auth)/actions"
 import { AuthFieldError, AuthForm, fieldProps } from "@/components/auth-form"
 import { PasswordInput } from "@/components/password-input"
@@ -8,23 +9,24 @@ import { Input } from "@/components/ui/input"
 
 // The password rule matches Supabase Auth (password_min_length 8) and the server check in signUp.
 export function SignupForm() {
+  const t = useTranslations("auth")
   return (
-    <AuthForm action={signUp} submitLabel="Crea il workspace">
+    <AuthForm action={signUp} submitLabel={t("signup.submit")}>
       {(state) => (
         <>
           <Field>
-            <FieldLabel htmlFor="workspace">Nome del prodotto</FieldLabel>
+            <FieldLabel htmlFor="workspace">{t("signup.workspaceLabel")}</FieldLabel>
             <Input
               {...fieldProps(state, "workspace", "workspace-hint")}
               autoComplete="organization"
               maxLength={60}
               required
             />
-            <FieldHint id="workspace-hint">Lo vedono i clienti nel modulo pubblico.</FieldHint>
+            <FieldHint id="workspace-hint">{t("signup.workspaceHint")}</FieldHint>
             <AuthFieldError state={state} name="workspace" />
           </Field>
           <Field>
-            <FieldLabel htmlFor="email">Email</FieldLabel>
+            <FieldLabel htmlFor="email">{t("fields.email")}</FieldLabel>
             <Input
               {...fieldProps(state, "email")}
               type="email"
@@ -38,7 +40,7 @@ export function SignupForm() {
             <AuthFieldError state={state} name="email" />
           </Field>
           <Field>
-            <FieldLabel htmlFor="password">Password</FieldLabel>
+            <FieldLabel htmlFor="password">{t("fields.password")}</FieldLabel>
             <PasswordInput
               {...fieldProps(state, "password", "password-hint")}
               autoComplete="new-password"
@@ -46,7 +48,7 @@ export function SignupForm() {
               maxLength={72}
               required
             />
-            <FieldHint id="password-hint">Almeno 8 caratteri.</FieldHint>
+            <FieldHint id="password-hint">{t("signup.passwordHint")}</FieldHint>
             <AuthFieldError state={state} name="password" />
           </Field>
         </>
