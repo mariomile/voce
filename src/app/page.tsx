@@ -96,7 +96,7 @@ export default function LandingPage() {
     <div className="landing flex flex-1 flex-col">
       <main>
         {/* Hero: the whole first screen is the highlighter */}
-        <section className="flex min-h-svh flex-col bg-highlight text-ink">
+        <section className="flex flex-col bg-highlight text-ink md:min-h-svh">
           <header className="l-wrap flex h-16 items-center gap-5 md:h-20 md:gap-8">
             <Link href="/" className="flex items-center gap-2 text-xl font-extrabold tracking-tight">
               <Logo className="size-8 text-base" />
@@ -112,7 +112,7 @@ export default function LandingPage() {
             </nav>
           </header>
 
-          <div className="l-wrap flex flex-1 flex-col justify-between gap-10 pt-4 pb-10 md:pt-6 md:pb-12">
+          <div className="l-wrap flex flex-1 flex-col gap-10 pt-4 pb-10 md:justify-between md:pt-6 md:pb-12">
             <h1 className="l-hero-title max-w-[9.5em]">
               Chi si lamenta più forte <span className="l-ink-mark">non decide la roadmap.</span>
             </h1>
