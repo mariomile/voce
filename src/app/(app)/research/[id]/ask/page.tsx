@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { getLocale, getTranslations } from "next-intl/server"
@@ -7,6 +8,11 @@ import { PageLede } from "@/components/page"
 import { buttonVariants } from "@/components/ui/button"
 import { getAnalysisPerimeter, getResearch, getResearchStats, getUsage } from "@/lib/data"
 import { formatMonth } from "@/lib/format"
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("research.tabs")
+  return { title: t("ask") }
+}
 
 // The question action runs from this page: the model stops at 60 seconds.
 export const maxDuration = 90
