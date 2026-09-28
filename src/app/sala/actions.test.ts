@@ -14,7 +14,8 @@ vi.mock("@/lib/analysis", async (importOriginal) => ({
   analysisLanguageModel: () => ai.model,
 }))
 
-const { roomStatus, roomThemes } = await import("./actions")
+const { roomThemes } = await import("./actions")
+const { GET } = await import("./status/route")
 const { analyze } = await import("@/app/(app)/themes/actions")
 const { getRoomStatus } = await import("@/lib/data")
 
@@ -42,7 +43,15 @@ async function addFeedback(texts: string[], channel: string) {
   if (error) throw error
 }
 
-describe("roomStatus", () => {
+// Polled by the screen while an analysis may be running: a route handler, because server actions
+// from one page run one at a time and the counter would stop for the whole analysis.
+async function roomStatus() {
+  const response = await GET()
+  expect(response.headers.get("cache-control")).toBe("private, no-store")
+  return response.json()
+}
+
+describe("GET /sala/status", () => {
   it("counts only the responses from the public form", async () => {
     await addFeedback(["Uno", "Due"], "Modulo pubblico")
     await addFeedback(["Tre"], "Supporto")
