@@ -202,6 +202,21 @@ export const getResearch = cache(async (id: string): Promise<Research | null> =>
   };
 });
 
+// The Research created last in the workspace, or null when there is none.
+export async function getLatestResearchId(workspaceId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const row = unwrap(
+    await supabase
+      .from("research")
+      .select("id")
+      .eq("workspace_id", workspaceId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+  );
+  return row?.id ?? null;
+}
+
 export async function getResearchStats(research: Pick<Research, "id" | "workspaceId">): Promise<ResearchStats> {
   const supabase = await createClient();
   const row = unwrap(
