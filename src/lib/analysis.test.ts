@@ -202,6 +202,20 @@ describe("runAnalysis", () => {
     expect(JSON.stringify(user)).toContain("feedback_data")
     expect(JSON.stringify(system)).not.toContain("ogni lunedì")
     expect(call.responseFormat?.type).toBe("json")
+    // Sonnet 5 thinks by default and thinking counts against maxOutputTokens: on a large set it
+    // used the whole budget and returned no themes. Grouping feedback does not need it.
+    expect(call.providerOptions?.anthropic).toMatchObject({ thinking: { type: "disabled" } })
+  })
+
+  it("says why the model stopped when it ran out of output tokens", async () => {
+    await expect(
+      runAnalysis({
+        model: fakeModel('{"themes": [', { input: 1200, output: 16000 }, "length"),
+        modelId: "x",
+        feedback,
+        existingTitles: [],
+      })
+    ).rejects.toThrow(/length.*16000/)
   })
 
   it("fails when the model does not return the expected shape", async () => {
