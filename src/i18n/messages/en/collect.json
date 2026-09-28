@@ -4,8 +4,7 @@
   },
   "page": {
     "sections": {
-      "csv": "Import a CSV",
-      "manual": "Paste feedback"
+      "csv": "Import a CSV"
     }
   },
   "channels": {
@@ -46,35 +45,13 @@
     "copy": "Copy the link",
     "copied": "Link copied"
   },
-  "manualForm": {
-    "intro": "Copied from an email, Slack, or your notes, one at a time.",
-    "feedbackLabel": "Feedback",
-    "feedbackPlaceholder": "The customer's words, exactly as they wrote them",
-    "channelLabel": "Channel",
-    "channelPlaceholder": "Support, Slack…",
-    "customerLabel": "Customer",
-    "customerOptional": "optional",
-    "customerPlaceholder": "Name or company",
-    "dateLabel": "Date",
-    "dateOptional": "today if left empty",
-    "submit": "Add the feedback",
-    "submitting": "Adding…",
-    "added": "Added. You'll find it among your feedback.",
-    "limitReached": "You've reached the Free plan limit: this feedback wasn't saved.",
-    "errors": {
-      "text": "Write the feedback text, {limit} characters at most.",
-      "channel": "Write where it came from, {limit} characters at most.",
-      "customer": "{limit} characters at most.",
-      "receivedAt": "Pick a date today or in the past."
-    }
-  },
   "csvImport": {
     "chooseFile": "Choose the file",
     "reading": "Reading {name}…",
     "defaultFileName": "the file",
     "sizeError": "The file is over 1 MB. Split it into several files and import them one at a time.",
     "chooseFileError": "Choose a CSV file.",
-    "intro": "You need a <b>text</b> column. Channel, customer, and date are optional. Up to {max} rows and 1 MB. Before saving you'll see what comes in and which rows don't; feedback already saved won't be duplicated.",
+    "intro": "You need a <b>text</b> column. Channel, customer, and date are optional. Up to {max} rows and 1 MB. Before saving you'll see what comes in and which rows don't; feedback already in this Research won't be duplicated.",
     "toImport": "{count, plural, one {1 feedback to import} other {{n} feedback to import}}",
     "freeLimitTitle": "The Free plan holds 100 feedback",
     "overLimitNoneOne": "No room left: the new feedback stays out.",
@@ -97,7 +74,7 @@
     "import": "{count, plural, one {Import 1 feedback} other {Import {n} feedback}}",
     "importing": "Importing…",
     "chooseAnother": "Choose another file",
-    "imported": "{count, plural, one {Imported 1 feedback} other {Imported {n} feedback}}",
+    "imported": "{count, plural, one {Imported 1 feedback into this Research} other {Imported {n} feedback into this Research}}",
     "seeFeedback": "See the feedback",
     "importAnother": "Import another file",
     "ignoredPrefix": ". Left out: ",

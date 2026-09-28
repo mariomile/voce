@@ -1,54 +1,69 @@
+import type { Metadata } from "next"
 import { getLocale, getTranslations } from "next-intl/server"
 import Link from "next/link"
+import { notFound } from "next/navigation"
 import { DeleteFeedbackButton } from "@/components/delete-feedback-button"
-import { Page, PageHeader, PageLede, PageMore, PageTitle } from "@/components/page"
+import { LimitWarning } from "@/components/limit-warning"
+import { PageLede, PageMore } from "@/components/page"
 import { buttonVariants } from "@/components/ui/button"
 import { ChipCount, chipVariants, FilterBar } from "@/components/ui/chip"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { getCurrentWorkspace, listFeedback } from "@/lib/data"
+import { getResearch, getUsage, listFeedback } from "@/lib/data"
 import { formatDate } from "@/lib/format"
 
-export default async function FeedbackPage({ searchParams }: PageProps<"/feedback">) {
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("feedback.page")
+  return { title: t("title") }
+}
+
+// The Feedback tab of a Research: its feedback, newest first, filtered by channel.
+export default async function FeedbackPage({ params, searchParams }: PageProps<"/research/[id]/feedback">) {
+  // Rendered alongside the layout, which shows the not-found page: getResearch is cached for the request.
+  const research = await getResearch((await params).id)
+  if (!research) notFound()
   const t = await getTranslations("feedback")
   const locale = await getLocale()
-  const params = await searchParams
-  const channel = typeof params.channel === "string" ? params.channel : undefined
-  const workspace = await getCurrentWorkspace()
-  const { total, channels, feedback, page, pageCount } = await listFeedback(workspace.id, {
-    channel,
-    page: Number(params.page) || 1,
-  })
+  const query = await searchParams
+  const channel = typeof query.channel === "string" ? query.channel : undefined
+  const [{ total, channels, feedback, page, pageCount }, usage] = await Promise.all([
+    listFeedback(research, { channel, page: Number(query.page) || 1 }),
+    getUsage(research.workspaceId),
+  ])
+  const path = `/research/${research.id}/feedback`
   const pageHref = (to: number) => {
-    const query = new URLSearchParams()
-    if (channel) query.set("channel", channel)
-    if (to > 1) query.set("page", String(to))
-    return `/feedback${query.size ? `?${query}` : ""}`
+    const params = new URLSearchParams()
+    if (channel) params.set("channel", channel)
+    if (to > 1) params.set("page", String(to))
+    return `${path}${params.size ? `?${params}` : ""}`
   }
+  const limitReached = usage.feedbackLimit !== null && usage.feedbackCount >= usage.feedbackLimit
 
   return (
-    <Page>
-      <PageHeader>
-        <div>
-          <PageTitle>{t("page.title")}</PageTitle>
-          <PageLede>
-            {total === 0
-              ? t("page.ledeEmpty")
-              : t.rich("page.ledeCount", { total, channelCount: channels.length, b: (chunks) => <b>{chunks}</b> })}
-          </PageLede>
-        </div>
-      </PageHeader>
+    <>
+      {limitReached && <LimitWarning usage={usage} />}
+      <PageLede className="mb-6">
+        {total === 0
+          ? t("page.ledeEmpty")
+          : t.rich("page.ledeCount", { total, channelCount: channels.length, b: (chunks) => <b>{chunks}</b> })}
+      </PageLede>
+
+      {total === 0 && (
+        <Link href={`/research/${research.id}/collect#notes`} className={buttonVariants()}>
+          {t("page.addFeedback")}
+        </Link>
+      )}
 
       {total > 0 && (
         <>
           <FilterBar className="flex-wrap border-b-0 pb-6">
-            <Link href="/feedback" aria-current={!channel} className={chipVariants()}>
+            <Link href={path} aria-current={!channel} className={chipVariants()}>
               {t("filters.all")}
               <ChipCount>{total}</ChipCount>
             </Link>
             {channels.map((c) => (
               <Link
                 key={c.name}
-                href={`/feedback?${new URLSearchParams({ channel: c.name })}`}
+                href={`${path}?${new URLSearchParams({ channel: c.name })}`}
                 aria-current={channel === c.name}
                 className={chipVariants()}
               >
@@ -72,7 +87,7 @@ export default async function FeedbackPage({ searchParams }: PageProps<"/feedbac
             <TableBody>
               {feedback.map((f) => (
                 <TableRow key={f.id}>
-                  <TableCell className="max-w-[64ch]">{f.text}</TableCell>
+                  <TableCell className="max-w-[64ch] whitespace-pre-line">{f.text}</TableCell>
                   <TableCell className="whitespace-nowrap text-ink-muted">{f.channel}</TableCell>
                   <TableCell className="whitespace-nowrap text-ink-muted">{f.customer}</TableCell>
                   <TableCell className="text-right whitespace-nowrap tabular-nums">
@@ -85,9 +100,7 @@ export default async function FeedbackPage({ searchParams }: PageProps<"/feedbac
               ))}
             </TableBody>
           </Table>
-          {feedback.length === 0 && (
-            <p className="mt-8 text-base text-ink-muted">{t("table.emptyChannel")}</p>
-          )}
+          {feedback.length === 0 && <p className="mt-8 text-base text-ink-muted">{t("table.emptyChannel")}</p>}
           {pageCount > 1 && (
             <PageMore className="flex items-center gap-6">
               {page > 1 && (
@@ -105,6 +118,6 @@ export default async function FeedbackPage({ searchParams }: PageProps<"/feedbac
           )}
         </>
       )}
-    </Page>
+    </>
   )
 }

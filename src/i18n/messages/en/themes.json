@@ -16,9 +16,9 @@
       "csvTitle": "Import a CSV",
       "csvText": "You need a <b>text</b> column. Channel, customer and date are optional. Up to 2,000 rows.",
       "chooseFile": "Choose the file",
-      "pasteTitle": "Paste feedback",
-      "pasteText": "Copied from an email, Slack or your notes, one at a time.",
-      "pasteAction": "Paste a text"
+      "pasteTitle": "Paste notes",
+      "pasteText": "The notes of an interview, or a message copied from an email or Slack.",
+      "pasteAction": "Paste notes"
     },
     "emptyNoAnalysis": {
       "title": "{count} feedback, no themes yet",
@@ -65,7 +65,7 @@
   },
   "limitWarning": {
     "title": "You've reached {limit} feedback, the Free plan limit",
-    "text": "The public form no longer accepts new feedback. With Pro, feedback is unlimited and analyses go up to 100 a month.",
+    "text": "The limit covers all your Research: the public forms no longer accept new feedback. With Pro, feedback is unlimited and analyses go up to 100 a month.",
     "cta": "Upgrade to Pro"
   },
   "qrCode": {

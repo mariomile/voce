@@ -16,9 +16,9 @@
       "csvTitle": "Importa un CSV",
       "csvText": "Serve una colonna <b>testo</b>. Canale, cliente e data sono facoltativi. Fino a 2.000 righe.",
       "chooseFile": "Scegli il file",
-      "pasteTitle": "Incolla un feedback",
-      "pasteText": "Copiato da un'email, da Slack o dalle tue note, uno alla volta.",
-      "pasteAction": "Incolla un testo"
+      "pasteTitle": "Incolla le note",
+      "pasteText": "Le note di un'intervista, o un messaggio copiato da un'email o da Slack.",
+      "pasteAction": "Incolla le note"
     },
     "emptyNoAnalysis": {
       "title": "{count} feedback, ancora nessun tema",
@@ -65,7 +65,7 @@
   },
   "limitWarning": {
     "title": "Hai raggiunto {limit} feedback, il limite del piano Free",
-    "text": "Il modulo pubblico non accetta nuovi feedback. Con Pro i feedback sono illimitati e le analisi diventano 100 al mese.",
+    "text": "Il limite vale per tutte le tue Research: i moduli pubblici non accettano nuovi feedback. Con Pro i feedback sono illimitati e le analisi diventano 100 al mese.",
     "cta": "Passa a Pro"
   },
   "qrCode": {

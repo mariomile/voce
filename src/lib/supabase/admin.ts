@@ -214,3 +214,21 @@ export async function workspaceOfForm(slug: string) {
   if (error) throw error
   return data?.workspace_id ?? null
 }
+
+// The workspace of a Research (by id, or by the link of its public form) once it has at least 5 feedback.
+// Null before: first_research_collected is not due yet.
+export const COLLECTED_FEEDBACK = 5
+export async function workspaceOfCollectedResearch(research: { id: string } | { slug: string }) {
+  const client = adminClient()
+  const query = client.from("research").select("id, workspace_id")
+  const { data, error } = await ("id" in research ? query.eq("id", research.id) : query.eq("form_slug", research.slug)).maybeSingle()
+  if (error) throw error
+  if (!data) return null
+  const { count, error: countError } = await client
+    .from("feedback")
+    .select("id", { count: "exact", head: true })
+    .eq("workspace_id", data.workspace_id)
+    .eq("research_id", data.id)
+  if (countError) throw countError
+  return (count ?? 0) >= COLLECTED_FEEDBACK ? data.workspace_id : null
+}

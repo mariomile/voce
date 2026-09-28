@@ -166,20 +166,41 @@ describe("getTheme", () => {
 })
 
 describe("listFeedback", () => {
-  it("lists only the workspace's feedback", async () => {
+  it("lists only the Research's feedback", async () => {
     const id = as("orto")
-    const { feedback } = await listFeedback(id)
+    const [orto] = await listResearch(id)
+    const { feedback } = await listFeedback({ id: orto.id, workspaceId: id })
     expect(feedback.length).toBeGreaterThan(0)
     expect(feedback.every((f) => f.workspaceId === id)).toBe(true)
   })
 
   it("filters by channel, newest first", async () => {
-    const { feedback, channels, total } = await listFeedback(as("fatturino"), { channel: "Supporto" })
+    const id = as("fatturino")
+    const initial = (await listResearch(id)).find((r) => r.feedbackCount > 0)!
+    const { feedback, channels, total } = await listFeedback({ id: initial.id, workspaceId: id }, { channel: "Supporto" })
     expect(feedback.length).toBe(channels.find((c) => c.name === "Supporto")!.count)
     expect(feedback.every((f) => f.channel === "Supporto")).toBe(true)
     expect(total).toBe(55)
     const dates = feedback.map((f) => f.receivedAt)
     expect(dates).toEqual([...dates].sort().reverse())
+  })
+
+  it("leaves out the feedback and channels of another Research of the same workspace", async () => {
+    const user = await createTestUser("list-research")
+    try {
+      const second = await user.client.rpc("create_research", { ws: user.workspaceId, question: "Seconda?" })
+      await admin.from("feedback").insert([
+        { workspace_id: user.workspaceId, research_id: user.researchId, text: "Mia", channel: "Supporto" },
+        { workspace_id: user.workspaceId, research_id: second.data!, text: "Altrui", channel: "Intervista" },
+      ])
+      session.client = user.client
+      const list = await listFeedback({ id: user.researchId, workspaceId: user.workspaceId })
+      expect(list.feedback.map((f) => f.text)).toEqual(["Mia"])
+      expect(list.channels).toEqual([{ name: "Supporto", count: 1 }])
+      expect(list.total).toBe(1)
+    } finally {
+      await deleteTestUsers([user])
+    }
   })
 })
 
@@ -197,23 +218,24 @@ describe("listFeedback pages", () => {
       const { error } = await admin.from("feedback").insert(rows)
       if (error) throw error
       session.client = user.client
-      const first = await listFeedback(user.workspaceId)
+      const research = { id: user.researchId, workspaceId: user.workspaceId }
+      const first = await listFeedback(research)
       expect(first).toMatchObject({ total: 1050, page: 1, pageCount: 11 })
       expect(first.feedback).toHaveLength(FEEDBACK_PAGE_SIZE)
 
       const pages = await Promise.all(
-        Array.from({ length: 11 }, (_, i) => listFeedback(user.workspaceId, { page: i + 1 }))
+        Array.from({ length: 11 }, (_, i) => listFeedback(research, { page: i + 1 }))
       )
       expect(pages[10].feedback).toHaveLength(50)
       expect(new Set(pages.flatMap((p) => p.feedback.map((f) => f.id))).size).toBe(1050)
 
-      const support = await listFeedback(user.workspaceId, { channel: "Supporto", page: 6 })
+      const support = await listFeedback(research, { channel: "Supporto", page: 6 })
       expect(support).toMatchObject({ page: 6, pageCount: 6 })
       expect(support.feedback).toHaveLength(25)
       expect(support.feedback.every((f) => f.channel === "Supporto")).toBe(true)
 
       // A page beyond the last shows the last one.
-      expect((await listFeedback(user.workspaceId, { page: 99 })).page).toBe(11)
+      expect((await listFeedback(research, { page: 99 })).page).toBe(11)
     } finally {
       await deleteTestUsers([user])
     }

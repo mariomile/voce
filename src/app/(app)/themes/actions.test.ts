@@ -28,7 +28,7 @@ vi.mock("next-intl/server", async (importOriginal) => ({
 
 const { analyze } = await import("./actions")
 const { analysisInstructions } = await import("@/lib/analysis")
-const { deleteFeedback } = await import("@/app/(app)/feedback/actions")
+const { deleteFeedback } = await import("@/app/(app)/research/[id]/feedback/actions")
 const { getDashboard, getUsage } = await import("@/lib/data")
 
 let user: TestUser

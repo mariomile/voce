@@ -10,7 +10,7 @@ vi.mock("next/cache", () => ({ revalidatePath: () => {} }))
 const analytics = vi.hoisted(() => ({ trackMilestone: vi.fn() }))
 vi.mock("@/lib/analytics", () => analytics)
 
-const { addFeedback, importCsv, previewCsv, regenerateFormLink, setFormEnabled, setFormQuestion } = await import(
+const { addNotes, importCsv, previewCsv, regenerateFormLink, setFormEnabled, setFormQuestion } = await import(
   "./actions"
 )
 
@@ -49,49 +49,83 @@ async function fillTo(count: number) {
   if (error) throw error
 }
 
-describe("addFeedback", () => {
+describe("addNotes", () => {
   const valid = { text: "La banca si scollega", channel: "Email", customer: "", receivedAt: "" }
 
-  it("saves a feedback with today's date when none is given", async () => {
-    expect(await addFeedback(user.researchId, valid)).toEqual({ ok: true })
-    expect(await addFeedback(user.researchId, { text: "  Con cliente  ", channel: " Slack ", customer: " Rossi ", receivedAt: "2026-09-01" })).toEqual({ ok: true })
-    expect(await savedFeedback()).toEqual([
-      { text: "La banca si scollega", channel: "Email", customer: null, received_at: isoDateOf(new Date()) },
-      { text: "Con cliente", channel: "Slack", customer: "Rossi", received_at: "2026-09-01" },
-    ])
+  it("addNotes saves in the open Research with channel Intervista", async () => {
+    const second = await user.client.rpc("create_research", { ws: user.workspaceId, question: "Seconda?" })
+    expect(second.error).toBeNull()
+    try {
+      expect(await addNotes(user.researchId, { ...valid, channel: "  " })).toEqual({ ok: true })
+      expect(await addNotes(user.researchId, { text: "  Con persona  ", channel: " Slack ", customer: " Rossi, CTO ", receivedAt: "2026-09-01" })).toEqual({ ok: true })
+      expect(await savedFeedback()).toEqual([
+        { text: "La banca si scollega", channel: "Intervista", customer: null, received_at: isoDateOf(new Date()) },
+        { text: "Con persona", channel: "Slack", customer: "Rossi, CTO", received_at: "2026-09-01" },
+      ])
+      const { data } = await admin.from("feedback").select("research_id").eq("workspace_id", user.workspaceId)
+      expect(data!.map((f) => f.research_id)).toEqual([user.researchId, user.researchId])
+    } finally {
+      await admin.from("research").delete().eq("id", second.data!)
+    }
   })
 
-  it("rejects empty or too long text, missing channel, future or broken dates", async () => {
-    expect(await addFeedback(user.researchId, { ...valid, text: "   " })).toEqual({ ok: false, reason: "invalid", fields: ["text"] })
-    expect(await addFeedback(user.researchId, { ...valid, text: "a".repeat(2001) })).toEqual({ ok: false, reason: "invalid", fields: ["text"] })
-    expect(await addFeedback(user.researchId, { ...valid, channel: "" })).toEqual({ ok: false, reason: "invalid", fields: ["channel"] })
-    expect(await addFeedback(user.researchId, { ...valid, customer: "c".repeat(201) })).toEqual({ ok: false, reason: "invalid", fields: ["customer"] })
-    expect(await addFeedback(user.researchId, { ...valid, receivedAt: "2999-01-01" })).toEqual({ ok: false, reason: "invalid", fields: ["receivedAt"] })
-    expect(await addFeedback(user.researchId, { ...valid, receivedAt: "31/12/2026" })).toEqual({ ok: false, reason: "invalid", fields: ["receivedAt"] })
+  it("10,000 characters pass and 10,001 are too_long", async () => {
+    expect(await addNotes(user.researchId, { ...valid, text: "a".repeat(10001) })).toEqual({ ok: false, reason: "too_long" })
+    // Characters, not UTF-16 units: 10,000 emoji are 10,000 characters.
+    expect(await addNotes(user.researchId, { ...valid, text: "😀".repeat(10000) })).toEqual({ ok: true })
+    expect(await addNotes(user.researchId, { ...valid, text: ` ${"a".repeat(10000)} ` })).toEqual({ ok: true })
+    expect(await savedFeedback()).toHaveLength(2)
+  })
+
+  it("a 2,001-character CSV row is still refused", async () => {
+    expect(await importCsv(user.researchId, csv(`testo\n${"a".repeat(2001)}\nCorto`))).toMatchObject({ imported: 1, invalidCount: 1 })
+    expect((await savedFeedback()).map((f) => f.text)).toEqual(["Corto"])
+  })
+
+  it("empty notes are invalid, a future date is future_date, other fields are invalid", async () => {
+    expect(await addNotes(user.researchId, { ...valid, text: "   " })).toEqual({ ok: false, reason: "invalid", fields: ["text"] })
+    expect(await addNotes(user.researchId, { ...valid, receivedAt: "2999-01-01" })).toEqual({ ok: false, reason: "future_date" })
+    expect(await addNotes(user.researchId, { ...valid, receivedAt: "31/12/2026" })).toEqual({ ok: false, reason: "invalid", fields: ["receivedAt"] })
+    expect(await addNotes(user.researchId, { ...valid, channel: "c".repeat(61) })).toEqual({ ok: false, reason: "invalid", fields: ["channel"] })
+    expect(await addNotes(user.researchId, { ...valid, customer: "c".repeat(201) })).toEqual({ ok: false, reason: "invalid", fields: ["customer"] })
     // @ts-expect-error not an object on purpose
-    expect(await addFeedback(user.researchId, null)).toMatchObject({ ok: false, reason: "invalid" })
-    expect(await addFeedback(user.researchId, { ...valid, text: "a".repeat(2000) })).toEqual({ ok: true })
-    expect(await savedFeedback()).toHaveLength(1)
+    expect(await addNotes(user.researchId, null)).toMatchObject({ ok: false, reason: "invalid" })
+    expect(await savedFeedback()).toHaveLength(0)
   })
 
   it("drops NUL characters instead of crashing", async () => {
-    expect(await addFeedback(user.researchId, { ...valid, text: "Ci\u0000ao", customer: "Ro\u0000ssi" })).toEqual({ ok: true })
+    expect(await addNotes(user.researchId, { ...valid, text: "Ci\u0000ao", customer: "Ro\u0000ssi" })).toEqual({ ok: true })
     expect(await savedFeedback()).toMatchObject([{ text: "Ciao", customer: "Rossi" }])
   })
 
-    it("stops at the Free limit", async () => {
-    await fillTo(100)
-    expect(await addFeedback(user.researchId, valid)).toEqual({ ok: false, reason: "limit" })
-    expect(await savedFeedback()).toHaveLength(100)
+  it("at 100 feedback across Research addNotes returns limit and CSV rows are over_limit", async () => {
+    const second = await user.client.rpc("create_research", { ws: user.workspaceId, question: "Seconda?" })
+    try {
+      await fillTo(60)
+      const rows = Array.from({ length: 40 }, (_, i) => ({ workspace_id: user.workspaceId, research_id: second.data!, text: `Altra ${i}`, channel: "Supporto" }))
+      expect((await admin.from("feedback").insert(rows)).error).toBeNull()
+      expect(await addNotes(user.researchId, valid)).toEqual({ ok: false, reason: "limit" })
+      expect(await importCsv(user.researchId, csv("testo\nNuovo"))).toMatchObject({ imported: 0, overLimitCount: 1 })
+      expect(await savedFeedback()).toHaveLength(100)
+    } finally {
+      await admin.from("research").delete().eq("id", second.data!)
+    }
+  })
+
+  it("without a session returns session and saves nothing", async () => {
+    session.client = anon()
+    expect(await addNotes(user.researchId, valid)).toEqual({ ok: false, reason: "session" })
+    session.client = user.client
+    expect(await savedFeedback()).toHaveLength(0)
   })
 })
 
 describe("first feedback event", () => {
   beforeEach(() => analytics.trackMilestone.mockClear())
 
-  it("asks for it after a manual feedback is saved, without the text", async () => {
-    await addFeedback(user.researchId, { text: "Testo riservato", channel: "Email", customer: "Rossi", receivedAt: "" })
-    expect(analytics.trackMilestone).toHaveBeenCalledExactlyOnceWith(user.workspaceId, {
+  it("asks for it after notes are saved, without the text", async () => {
+    await addNotes(user.researchId, { text: "Testo riservato", channel: "Email", customer: "Rossi", receivedAt: "" })
+    expect(analytics.trackMilestone).toHaveBeenCalledWith(user.workspaceId, {
       event: "first_feedback_added",
       properties: { source: "manual" },
     })
@@ -102,7 +136,7 @@ describe("first feedback event", () => {
     await previewCsv(user.researchId, csv(file))
     expect(analytics.trackMilestone).not.toHaveBeenCalled()
     await importCsv(user.researchId, csv(file))
-    expect(analytics.trackMilestone).toHaveBeenCalledExactlyOnceWith(user.workspaceId, {
+    expect(analytics.trackMilestone).toHaveBeenCalledWith(user.workspaceId, {
       event: "first_feedback_added",
       properties: { source: "csv" },
     })
@@ -255,12 +289,12 @@ describe("the Research of another workspace", () => {
     const other = await createTestUser("collect-other")
     try {
       const valid = { text: "Intruso", channel: "Email", customer: "", receivedAt: "" }
-      await expect(addFeedback(other.researchId, valid)).rejects.toThrow()
+      await expect(addNotes(other.researchId, valid)).rejects.toThrow()
       await expect(importCsv(other.researchId, csv("testo\nIntruso"))).rejects.toThrow()
       expect(await setFormEnabled(other.researchId, false)).toEqual({ ok: false })
       expect(await regenerateFormLink(other.researchId)).toEqual({ ok: false })
       expect(await setFormQuestion(other.researchId, "Presa?")).toEqual({ ok: false })
-      expect(await addFeedback("non-un-uuid", valid)).toEqual({ ok: false, reason: "invalid", fields: [] })
+      expect(await addNotes("non-un-uuid", valid)).toEqual({ ok: false, reason: "invalid", fields: [] })
       const { data } = await admin.from("research").select("form_slug, form_enabled, form_question").eq("id", other.researchId).single()
       expect(data).toEqual({ form_slug: other.formSlug, form_enabled: true, form_question: null })
       const { count } = await admin.from("feedback").select("id", { count: "exact", head: true }).eq("research_id", other.researchId)

@@ -301,10 +301,10 @@ describe("in their own workspace", () => {
     expect(links.data).toEqual([])
   })
 
-  it("cannot add a feedback longer than 2,000 characters, even through the API", async () => {
+  it("cannot add a feedback longer than 10,000 characters, the length of interview notes, even through the API", async () => {
     const { error } = await a.client
       .from("feedback")
-      .insert({ workspace_id: a.workspaceId, research_id: a.researchId, text: "a".repeat(2001), channel: "Supporto" })
+      .insert({ workspace_id: a.workspaceId, research_id: a.researchId, text: "a".repeat(10001), channel: "Supporto" })
     expect(error?.code).toBe("23514")
   })
 

@@ -1,7 +1,7 @@
 -- Research: the table, its access rules, create_research, and feedback that always belong to one.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(24);
+select plan(31);
 
 -- ===== AC 1 (part): RLS on in the migration that creates the table =====
 
@@ -146,6 +146,62 @@ select results_eq(
   $$select question from public.research where id = (select id from b_research)$$,
   $$values ('La domanda di B?')$$,
   'B''s Research is unchanged'
+);
+
+-- ===== AC 27: CSV duplicates are looked for only in the same Research =====
+
+insert into public.feedback (workspace_id, research_id, text, channel)
+select r.workspace_id, r.id, 'Doppione', 'Supporto' from public.research r where r.id = (select id from a_research);
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-0000000000a2", "role": "authenticated"}';
+select is(
+  public.import_feedback((select id from ws where name = 'a'), (select id from a_research),
+    '[{"text": "Doppione", "channel": "Supporto", "customer": null, "received_at": null}]', true),
+  array['duplicate'],
+  'a row equal to a feedback of the same Research is duplicate'
+);
+select is(
+  public.import_feedback((select id from ws where name = 'a'),
+    (select r.id from public.research r where r.workspace_id = (select id from ws where name = 'a')
+       and r.id <> (select id from a_research)),
+    '[{"text": "Doppione", "channel": "Supporto", "customer": null, "received_at": null}]', true),
+  array['new'],
+  'the same row is new when the equal feedback is in another Research'
+);
+
+-- ===== AC 25 (database part): notes up to 10,000 characters; the CSV stays at 2,000 =====
+
+select throws_ok(
+  format($$select public.import_feedback(%L, %L, %L::jsonb, true)$$,
+    (select id from ws where name = 'a'), (select id from a_research),
+    jsonb_build_array(jsonb_build_object('text', repeat('a', 2001), 'channel', 'Supporto'))),
+  '22023', 'invalid_rows', 'a 2,001-character CSV row is still refused'
+);
+reset role;
+
+select lives_ok(
+  $$insert into public.feedback (workspace_id, research_id, text, channel)
+    select r.workspace_id, r.id, repeat('n', 10000), 'Intervista' from public.research r where r.id = (select id from a_research)$$,
+  'a feedback of 10,000 characters is saved'
+);
+select throws_ok(
+  $$insert into public.feedback (workspace_id, research_id, text, channel)
+    select r.workspace_id, r.id, repeat('n', 10001), 'Intervista' from public.research r where r.id = (select id from a_research)$$,
+  '23514', null, 'a feedback of 10,001 characters violates the check'
+);
+select is(
+  public.submit_public_feedback((select r.form_slug from public.research r where r.id = (select id from b_research)),
+    repeat('m', 2001), null, 'hash-ip'),
+  'invalid',
+  'a 2,001-character public form response is still refused'
+);
+
+-- ===== AC 66 (database part) =====
+
+select lives_ok(
+  $$insert into public.analytics_milestones (workspace_id, event) select id, 'first_research_collected' from ws where name = 'a'$$,
+  'analytics_milestones accepts first_research_collected'
 );
 
 -- ===== AC 2: a feedback needs a Research =====

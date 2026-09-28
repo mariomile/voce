@@ -71,7 +71,7 @@ test("the list shows each Research with its count and form state", async ({ page
   )
 })
 
-test("the app bar has Research and Piano, and Sintesi is current on the Research but not on Raccolta", async ({ page }) => {
+test("the app bar has Research and Piano, and Sintesi is current on the Research but not on Feedback and Raccolta", async ({ page }) => {
   const user = await signedInUser(page, "schede")
   const bar = page.getByRole("navigation", { name: "Sezioni dell'app" })
   await expect(bar.getByRole("link")).toHaveText(["Research", "Piano"])
@@ -79,7 +79,7 @@ test("the app bar has Research and Piano, and Sintesi is current on the Research
 
   await page.goto(`/research/${user.researchId}`)
   const tabs = page.getByRole("navigation", { name: "Sezioni della Research" })
-  await expect(tabs.getByRole("link")).toHaveText(["Sintesi", "Raccolta"])
+  await expect(tabs.getByRole("link")).toHaveText(["Sintesi", "Feedback", "Raccolta"])
   await expect(tabs.getByRole("link", { name: "Sintesi" })).toHaveAttribute("aria-current", "page")
   await expect(tabs.getByRole("link", { name: "Raccolta" })).not.toHaveAttribute("aria-current", "page")
   await expect(bar.getByRole("link", { name: "Research" })).toHaveAttribute("aria-current", "page")
@@ -88,19 +88,31 @@ test("the app bar has Research and Piano, and Sintesi is current on the Research
   await expect(page).toHaveURL(`/research/${user.researchId}/collect`)
   await expect(tabs.getByRole("link", { name: "Raccolta" })).toHaveAttribute("aria-current", "page")
   await expect(tabs.getByRole("link", { name: "Sintesi" })).not.toHaveAttribute("aria-current", "page")
+
+  await tabs.getByRole("link", { name: "Feedback" }).click()
+  await expect(page).toHaveURL(`/research/${user.researchId}/feedback`)
+  await expect(tabs.getByRole("link", { name: "Feedback" })).toHaveAttribute("aria-current", "page")
+  await expect(tabs.getByRole("link", { name: "Sintesi" })).not.toHaveAttribute("aria-current", "page")
 })
 
 test("every path under /research without a session goes to /login", async ({ page }) => {
   const id = crypto.randomUUID()
-  for (const path of ["/research", "/research/new", `/research/${id}`, `/research/${id}/collect`, `/research/${id}/sala`]) {
+  for (const path of [
+    "/research",
+    "/research/new",
+    `/research/${id}`,
+    `/research/${id}/feedback`,
+    `/research/${id}/collect`,
+    `/research/${id}/sala`,
+  ]) {
     await page.goto(path)
     await expect(page).toHaveURL(/\/login$/)
   }
 })
 
-test("the collection and room routes of today answer 404", async ({ page, request }) => {
+test("the feedback, collection and room routes of today answer 404", async ({ page, request }) => {
   await signedInUser(page, "vecchie")
-  for (const path of ["/collect", "/collect/qr", "/sala", "/sala/status"]) {
+  for (const path of ["/feedback", "/collect", "/collect/qr", "/sala", "/sala/status"]) {
     const response = await page.goto(path)
     expect(response?.status(), path).toBe(404)
   }
@@ -179,4 +191,53 @@ test("a disabled form and a full Free workspace show FormUnavailable", async ({ 
   await insertFeedback(second, Array.from({ length: 40 }, (_, i) => `Seconda ${i}`))
   await page.goto(`/f/${second.formSlug}`)
   await expect(page.getByText("Per ora questo modulo non accetta nuovi feedback.")).toBeVisible()
+})
+
+test("notes pasted in the Raccolta land in this Research, as Intervista, and show in its Feedback tab", async ({ page }) => {
+  const user = await signedInUser(page, "note")
+  const other = await createResearch(user.workspaceId, "altra-note")
+  await insertFeedback(other, ["Di un'altra Research."])
+  await page.goto(`/research/${user.researchId}/collect`)
+  await expect(page.getByRole("heading", { name: "Incolla le note di un'intervista" })).toBeVisible()
+  await expect(page.getByLabel("Canale", { exact: true })).toHaveValue("Intervista")
+  await expect(page.getByText("Le note non si salvano finché non le aggiungi.")).toBeVisible()
+
+  // N1: nothing pasted, the focus goes back to the field.
+  await page.getByRole("button", { name: "Aggiungi le note" }).click()
+  const notes = page.getByLabel("Note", { exact: true })
+  await expect(page.getByText("Incolla le note prima di aggiungerle.")).toBeVisible()
+  await expect(notes).toHaveAttribute("aria-invalid", "true")
+  await expect(notes).toBeFocused()
+
+  // N2: 10,001 characters, the counter says so.
+  await notes.fill("a".repeat(10001))
+  await expect(page.getByText("10.001 / 10.000")).toBeVisible()
+  await page.getByRole("button", { name: "Aggiungi le note" }).click()
+  await expect(page.getByText("Le note superano i 10.000 caratteri.", { exact: false })).toBeVisible()
+  await expect(notes).toBeFocused()
+
+  const text = "Usa Voce solo il lunedì.\nIl report lo apre il socio, non lei."
+  await notes.fill(text)
+  await page.getByLabel("Persona o ruolo").fill("Giulia, CFO")
+  await page.getByRole("button", { name: "Aggiungi le note" }).click()
+  await expect(page.getByText("Aggiunte a questa Research. Le trovi in Feedback.")).toBeVisible()
+  await expect(notes).toHaveValue("")
+
+  await page.getByRole("link", { name: "Feedback", exact: true }).click()
+  const rows = page.getByRole("row")
+  await expect(rows).toHaveCount(2)
+  await expect(rows.nth(1)).toContainText("Usa Voce solo il lunedì.")
+  await expect(rows.nth(1)).toContainText("Intervista")
+  await expect(rows.nth(1)).toContainText("Giulia, CFO")
+  await expect(page.getByText("Di un'altra Research.")).toHaveCount(0)
+})
+
+test("the Feedback tab of an empty Research points to the Raccolta", async ({ page }) => {
+  const user = await signedInUser(page, "feedback-vuoto")
+  await page.goto(`/research/${user.researchId}/feedback`)
+  await expect(page.getByText("Qui trovi ogni feedback di questa Research", { exact: false })).toBeVisible()
+  await expect(page.getByRole("link", { name: "Aggiungi feedback" })).toHaveAttribute(
+    "href",
+    `/research/${user.researchId}/collect#notes`
+  )
 })

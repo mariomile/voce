@@ -39,11 +39,40 @@
   "tabs": {
     "label": "Research sections",
     "synthesis": "Summary",
+    "feedback": "Feedback",
     "collect": "Collect"
   },
   "notFound": {
     "title": "I can't find this Research.",
     "text": "It may have been deleted, or the link belongs to another account.",
     "action": "All Research"
+  },
+  "notes": {
+    "title": "Paste the notes of an interview",
+    "lede": "One interview at a time: one person's notes are one feedback. A message copied from an email or Slack works too: change the channel.",
+    "textLabel": "Notes",
+    "textPlaceholder": "The person's words, as you wrote them down",
+    "emptyHint": "Notes are not saved until you add them.",
+    "count": "{count} / {max}",
+    "channelLabel": "Channel",
+    "defaultChannel": "Interview",
+    "customerLabel": "Person or role",
+    "customerOptional": "optional",
+    "customerPlaceholder": "Name, role or company",
+    "dateLabel": "Date",
+    "dateOptional": "if empty, today",
+    "submit": "Add the notes",
+    "submitting": "Adding…",
+    "added": "Added to this Research. You'll find them in Feedback.",
+    "errors": {
+      "empty": "Paste the notes before adding them.",
+      "tooLong": "The notes are over 10,000 characters. Keep the parts that report what the person said.",
+      "limit": "You've reached 100 feedback, the Free plan limit across all your Research: these notes weren't saved.",
+      "futureDate": "Pick today or a date in the past.",
+      "channel": "Say where it comes from, at most {limit} characters.",
+      "customer": "At most {limit} characters.",
+      "session": "Your session has expired. Sign in again to continue: copy the text you wrote first, it won't stay here.",
+      "sessionLink": "Sign in"
+    }
   }
 }

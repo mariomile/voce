@@ -45,7 +45,7 @@ export function CollectionPaths({ research, origin }: { research: Pick<Research,
           <CardTitle>{t("pasteTitle")}</CardTitle>
           <CardText>{t("pasteText")}</CardText>
           <CardActions>
-            <Link href={`${collect}#manual`} className={buttonVariants({ variant: "secondary" })}>
+            <Link href={`${collect}#notes`} className={buttonVariants({ variant: "secondary" })}>
               {t("pasteAction")}
             </Link>
           </CardActions>

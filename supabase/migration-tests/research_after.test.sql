@@ -2,13 +2,19 @@
 -- workspace, carrying the form and the feedback, so /f/phc26 keeps working.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(9);
+select plan(10);
 
 create temporary table ws on commit drop as
-select case m.user_id when '00000000-0000-0000-0000-0000000000f1' then 'phc' else 'orto' end as name,
+select case m.user_id
+    when '00000000-0000-0000-0000-0000000000f1' then 'phc'
+    when '00000000-0000-0000-0000-0000000000f2' then 'orto'
+    when '00000000-0000-0000-0000-0000000000f5' then 'cinque'
+    else 'quattro'
+  end as name,
   m.workspace_id as id
 from public.workspace_members m
-where m.user_id in ('00000000-0000-0000-0000-0000000000f1', '00000000-0000-0000-0000-0000000000f2');
+where m.user_id in ('00000000-0000-0000-0000-0000000000f1', '00000000-0000-0000-0000-0000000000f2',
+                    '00000000-0000-0000-0000-0000000000f5', '00000000-0000-0000-0000-0000000000f4');
 
 -- ===== AC 3 (part) =====
 
@@ -68,6 +74,15 @@ select results_eq(
     from public.feedback f where f.text = 'Dopo la migrazione.'$$,
   $$values ('Modulo pubblico', true)$$,
   'submit_public_feedback(''phc26'') lands in the initial Research as Modulo pubblico'
+);
+
+-- ===== AC 7 =====
+
+select results_eq(
+  $$select w.name from ws w join public.analytics_milestones m on m.workspace_id = w.id
+    where m.event = 'first_research_collected' order by w.name$$,
+  $$values ('cinque')$$,
+  'first_research_collected is claimed for a workspace with 5 feedback and not for one with 4'
 );
 
 select * from finish();

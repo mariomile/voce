@@ -16,6 +16,8 @@ export type Milestone =
   | { event: "first_feedback_added"; properties: { source: "manual" | "csv" | "form" } }
   | { event: "first_analysis_completed"; properties: { feedback_count: number; theme_count: number } }
   | { event: "upgraded_to_pro"; properties: Record<string, never> }
+  // The first Research of the workspace that reaches 5 feedback, from the form, the notes or the CSV.
+  | { event: "first_research_collected"; properties: Record<string, never> }
 
 // Repeatable events: sent every time, without analytics_milestones.
 export type RepeatedEvent = {

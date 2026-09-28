@@ -534,9 +534,17 @@ export type Database = {
         Row: {
           channel: string | null
           feedback_count: number | null
+          research_id: string | null
           workspace_id: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "feedback_research_fkey"
+            columns: ["workspace_id", "research_id"]
+            isOneToOne: false
+            referencedRelation: "research"
+            referencedColumns: ["workspace_id", "id"]
+          },
           {
             foreignKeyName: "feedback_workspace_id_fkey"
             columns: ["workspace_id"]

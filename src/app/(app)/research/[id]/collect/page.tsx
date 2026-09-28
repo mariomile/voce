@@ -21,9 +21,10 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("title") }
 }
 
-// The Raccolta tab of a Research: its public form and QR code, the CSV import, the manual feedback.
+// The Raccolta tab of a Research: its public form and QR code, the interview notes, the CSV import.
 export default async function CollectPage({ params }: PageProps<"/research/[id]/collect">) {
   const t = await getTranslations("collect")
+  const tNotes = await getTranslations("research.notes")
   // The question the form really shows: the form is always in Italian (see pinnedLocale).
   const tForm = await getTranslations({ locale: PUBLIC_FORM_LOCALE, namespace: "form" })
   // Rendered alongside the layout, which shows the not-found page: getResearch is cached for the request.
@@ -90,14 +91,14 @@ export default async function CollectPage({ params }: PageProps<"/research/[id]/
         />
       </section>
 
-      <section id="csv" className="mb-12 scroll-mt-8">
-        <SectionTitle>{t("page.sections.csv")}</SectionTitle>
-        <CsvImport researchId={research.id} />
+      <section id="notes" className="mb-12 scroll-mt-8">
+        <SectionTitle>{tNotes("title")}</SectionTitle>
+        <ManualFeedbackForm researchId={research.id} channels={suggestions} today={isoDateOf(new Date())} />
       </section>
 
-      <section id="manual" className="scroll-mt-8">
-        <SectionTitle>{t("page.sections.manual")}</SectionTitle>
-        <ManualFeedbackForm researchId={research.id} channels={suggestions} today={isoDateOf(new Date())} />
+      <section id="csv" className="scroll-mt-8">
+        <SectionTitle>{t("page.sections.csv")}</SectionTitle>
+        <CsvImport researchId={research.id} />
       </section>
     </>
   )

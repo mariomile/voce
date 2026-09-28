@@ -1,4 +1,5 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { afterAll, beforeAll, beforeEach, describe, expect, expectTypeOf, it, vi } from "vitest"
+import type { Milestone } from "./analytics"
 import { admin, createTestUser, deleteTestUsers, type TestUser } from "@/test/supabase"
 
 // The milestones are recorded for real in the local database; only PostHog is fake.
@@ -68,6 +69,20 @@ describe("trackMilestone", () => {
     })
   })
 
+  it("Milestone carries first_research_collected, with no properties", async () => {
+    expectTypeOf<Extract<Milestone, { event: "first_research_collected" }>["properties"]>().toEqualTypeOf<
+      Record<string, never>
+    >()
+    trackMilestone(user.workspaceId, { event: "first_research_collected", properties: {} })
+    await settle()
+    expect(sent()).toEqual([
+      expect.objectContaining({
+        event: "first_research_collected",
+        properties: { $process_person_profile: false, $geoip_disable: true },
+      }),
+    ])
+  })
+
   it("sends nothing when the workspace cannot be found", async () => {
     trackMilestone(async () => null, { event: "upgraded_to_pro", properties: {} })
     await settle()
@@ -109,8 +124,11 @@ describe("first feedback from the public form", () => {
     )
     expect(results.every((r) => r.ok)).toBe(true)
     await settle()
-    expect(sent()).toEqual([expect.objectContaining({ event: "first_feedback_added", distinct_id: user.workspaceId })])
-    expect(sent()[0].properties).toEqual({ source: "form", $process_person_profile: false, $geoip_disable: true })
+    // Five responses also bring the Research to 5: first_research_collected leaves once too.
+    expect(sent().map((b) => b.event).sort()).toEqual(["first_feedback_added", "first_research_collected"])
+    const first = sent().find((b) => b.event === "first_feedback_added")
+    expect(first).toMatchObject({ distinct_id: user.workspaceId })
+    expect(first.properties).toEqual({ source: "form", $process_person_profile: false, $geoip_disable: true })
     const body = JSON.stringify(sent())
     expect(body).not.toContain("segreto")
     expect(body).not.toContain("cliente@")

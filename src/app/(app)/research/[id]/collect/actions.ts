@@ -7,7 +7,8 @@ import { trackMilestone } from "@/lib/analytics"
 import { parseFeedbackCsv, type CsvInvalidRow, type CsvRow } from "@/lib/csv-import"
 import { getCurrentWorkspace } from "@/lib/data"
 import { isoDateOf } from "@/lib/format"
-import { CHANNEL_MAX_LENGTH, CUSTOMER_MAX_LENGTH, FEEDBACK_MAX_LENGTH, FORM_QUESTION_MAX_LENGTH } from "@/lib/plans"
+import { CHANNEL_MAX_LENGTH, CUSTOMER_MAX_LENGTH, FORM_QUESTION_MAX_LENGTH, NOTES_MAX_LENGTH } from "@/lib/plans"
+import { workspaceOfCollectedResearch } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
 
 // Every write runs as the signed-in user: RLS, column grants and the database functions decide
@@ -19,47 +20,60 @@ import { createClient } from "@/lib/supabase/server"
 const text = (schema: z.ZodString) => z.string().transform((t) => t.replaceAll("\0", "")).pipe(schema)
 const researchIdSchema = z.uuid()
 
-const manualFeedbackSchema = z.object({
-  text: text(z.string().trim().min(1).max(FEEDBACK_MAX_LENGTH)),
-  channel: text(z.string().trim().min(1).max(CHANNEL_MAX_LENGTH)),
+// Interview notes: one person, one set of notes, one feedback. The channel defaults to "Intervista"
+// (in the language of the interface) and can be changed, for a message copied from an email or Slack.
+const notesSchema = z.object({
+  text: text(z.string().trim().min(1)),
+  channel: text(z.string().trim().max(CHANNEL_MAX_LENGTH)),
   customer: text(z.string().trim().max(CUSTOMER_MAX_LENGTH)),
   receivedAt: z.union([z.literal(""), z.iso.date()]),
 })
 
-export type ManualFeedbackField = keyof z.infer<typeof manualFeedbackSchema>
+export type NotesField = keyof z.infer<typeof notesSchema>
 
-export type AddFeedbackResult =
+export type AddNotesResult =
   | { ok: true }
-  | { ok: false; reason: "invalid"; fields: ManualFeedbackField[] }
-  | { ok: false; reason: "limit" }
+  | { ok: false; reason: "invalid"; fields: NotesField[] }
+  | { ok: false; reason: "too_long" | "future_date" | "limit" | "session" }
 
-export async function addFeedback(
-  researchId: string,
-  input: z.input<typeof manualFeedbackSchema>
-): Promise<AddFeedbackResult> {
+export async function addNotes(researchId: string, input: z.input<typeof notesSchema>): Promise<AddNotesResult> {
   if (!researchIdSchema.safeParse(researchId).success) return { ok: false, reason: "invalid", fields: [] }
-  const parsed = manualFeedbackSchema.safeParse(input)
-  const today = isoDateOf(new Date())
-  const future = parsed.success && parsed.data.receivedAt > today
-  if (!parsed.success || future) {
-    const fields = parsed.success ? [] : parsed.error.issues.map((i) => i.path[0] as ManualFeedbackField)
-    return { ok: false, reason: "invalid", fields: future ? [...fields, "receivedAt"] : fields }
+  const parsed = notesSchema.safeParse(input)
+  if (!parsed.success) {
+    return { ok: false, reason: "invalid", fields: parsed.error.issues.map((i) => i.path[0] as NotesField) }
   }
-  const workspace = await getCurrentWorkspace()
+  // Counted like char_length in the database: characters, not UTF-16 units.
+  if ([...parsed.data.text].length > NOTES_MAX_LENGTH) return { ok: false, reason: "too_long" }
+  const today = isoDateOf(new Date())
+  if (parsed.data.receivedAt > today) return { ok: false, reason: "future_date" }
+
   const supabase = await createClient()
+  const { data: auth } = await supabase.auth.getClaims()
+  if (!auth?.claims) return { ok: false, reason: "session" }
+  const workspace = await getCurrentWorkspace()
+  const channel = parsed.data.channel || (await getTranslations("research.notes"))("defaultChannel")
   const { error } = await supabase.from("feedback").insert({
     workspace_id: workspace.id,
     research_id: researchId,
     text: parsed.data.text,
-    channel: parsed.data.channel,
+    channel,
     customer: parsed.data.customer || null,
     received_at: parsed.data.receivedAt || today,
   })
   if (error?.message === "feedback_limit_reached") return { ok: false, reason: "limit" }
   if (error) throw error
   trackMilestone(workspace.id, { event: "first_feedback_added", properties: { source: "manual" } })
+  trackCollected(researchId)
   revalidatePath("/", "layout")
   return { ok: true }
+}
+
+// Sent once per workspace, by the feedback that brings one of its Research to 5.
+function trackCollected(researchId: string) {
+  trackMilestone(() => workspaceOfCollectedResearch({ id: researchId }), {
+    event: "first_research_collected",
+    properties: {},
+  })
 }
 
 export type CsvPreview = {
@@ -104,7 +118,10 @@ export async function importCsv(researchId: string, formData: FormData): Promise
   const result = await runImport(researchId, formData, false)
   if (!result.ok) return result
   const imported = result.outcomes.filter((o) => o === "new").length
-  if (imported > 0) trackMilestone(result.workspaceId, { event: "first_feedback_added", properties: { source: "csv" } })
+  if (imported > 0) {
+    trackMilestone(result.workspaceId, { event: "first_feedback_added", properties: { source: "csv" } })
+    trackCollected(researchId)
+  }
   revalidatePath("/", "layout")
   return {
     ok: true,

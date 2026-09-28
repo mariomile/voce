@@ -46,6 +46,7 @@ export default async function ResearchLayout({ children, params }: LayoutProps<"
         className="mb-10 flex h-12 gap-6 border-b border-line"
         tabs={[
           { href: path, label: t("tabs.synthesis"), exact: true },
+          { href: `${path}/feedback`, label: t("tabs.feedback") },
           { href: `${path}/collect`, label: t("tabs.collect") },
         ]}
       />

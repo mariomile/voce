@@ -39,11 +39,40 @@
   "tabs": {
     "label": "Sezioni della Research",
     "synthesis": "Sintesi",
+    "feedback": "Feedback",
     "collect": "Raccolta"
   },
   "notFound": {
     "title": "Non trovo questa Research.",
     "text": "Forse è stata eliminata, o il link è di un altro account.",
     "action": "Tutte le Research"
+  },
+  "notes": {
+    "title": "Incolla le note di un'intervista",
+    "lede": "Un'intervista alla volta: le note di una persona sono un feedback. Va bene anche un messaggio copiato da un'email o da Slack: cambia il canale.",
+    "textLabel": "Note",
+    "textPlaceholder": "Le parole della persona, così come le hai annotate",
+    "emptyHint": "Le note non si salvano finché non le aggiungi.",
+    "count": "{count} / {max}",
+    "channelLabel": "Canale",
+    "defaultChannel": "Intervista",
+    "customerLabel": "Persona o ruolo",
+    "customerOptional": "facoltativo",
+    "customerPlaceholder": "Nome, ruolo o azienda",
+    "dateLabel": "Data",
+    "dateOptional": "se vuota, oggi",
+    "submit": "Aggiungi le note",
+    "submitting": "Aggiungo…",
+    "added": "Aggiunte a questa Research. Le trovi in Feedback.",
+    "errors": {
+      "empty": "Incolla le note prima di aggiungerle.",
+      "tooLong": "Le note superano i 10.000 caratteri. Tieni le parti che riportano cosa ha detto la persona.",
+      "limit": "Hai raggiunto 100 feedback, il limite del piano Free per tutte le tue Research: queste note non sono state salvate.",
+      "futureDate": "Scegli una data di oggi o del passato.",
+      "channel": "Scrivi da dove arriva, al massimo {limit} caratteri.",
+      "customer": "Al massimo {limit} caratteri.",
+      "session": "La sessione è scaduta. Accedi di nuovo per continuare: copia prima il testo che hai scritto, qui non resta.",
+      "sessionLink": "Accedi"
+    }
   }
 }

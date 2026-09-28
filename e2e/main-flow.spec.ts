@@ -26,10 +26,10 @@ test("sign up, create a Research, add feedback and get the first themes", async 
     "Mi serve il PDF dei report da mandare al mio socio.",
   ]
   for (const text of feedback) {
-    await page.getByLabel("Feedback", { exact: true }).fill(text)
+    await page.getByLabel("Note", { exact: true }).fill(text)
     await page.getByLabel("Canale", { exact: true }).fill("Supporto")
-    await page.getByRole("button", { name: "Aggiungi il feedback" }).click()
-    await expect(page.getByText("Aggiunto. Lo trovi tra i feedback.")).toBeVisible()
+    await page.getByRole("button", { name: "Aggiungi le note" }).click()
+    await expect(page.getByText("Aggiunte a questa Research. Le trovi in Feedback.")).toBeVisible()
   }
 
   await page.goto("/themes")

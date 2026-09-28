@@ -294,10 +294,13 @@ export async function getDashboard(
   };
 }
 
-// One page of the list, newest first. The channel counts give the totals without another query.
-export async function listFeedback(workspaceId: string, filters: { channel?: string; page?: number } = {}) {
+// One page of the Research's feedback, newest first. The channel counts give the totals without another query.
+export async function listFeedback(
+  research: Pick<Research, "id" | "workspaceId">,
+  filters: { channel?: string; page?: number } = {}
+) {
   const supabase = await createClient();
-  const channels = await channelCounts(workspaceId);
+  const channels = await channelCounts(research.workspaceId, research.id);
   const total = channels.reduce((sum, c) => sum + c.count, 0);
   const matching = filters.channel ? (channels.find((c) => c.name === filters.channel)?.count ?? 0) : total;
   const pageCount = Math.max(1, Math.ceil(matching / FEEDBACK_PAGE_SIZE));
@@ -306,7 +309,8 @@ export async function listFeedback(workspaceId: string, filters: { channel?: str
   let query = supabase
     .from("feedback")
     .select(FEEDBACK_COLUMNS)
-    .eq("workspace_id", workspaceId)
+    .eq("workspace_id", research.workspaceId)
+    .eq("research_id", research.id)
     .order("received_at", { ascending: false })
     .order("created_at", { ascending: false })
     .order("id")
@@ -395,12 +399,14 @@ async function summarizeAnalysis(workspaceId: string, analysis: Analysis): Promi
   });
 }
 
-export async function channelCounts(workspaceId: string) {
+// The channels of the workspace, or of one of its Research, with their number of feedback.
+export async function channelCounts(workspaceId: string, researchId?: string) {
   const supabase = await createClient();
-  const rows = unwrap(await supabase.from("feedback_channels").select("*").eq("workspace_id", workspaceId));
-  return rows
-    .map((r) => ({ name: r.channel!, count: r.feedback_count! }))
-    .sort((a, b) => b.count - a.count);
+  let query = supabase.from("feedback_channels").select("*").eq("workspace_id", workspaceId);
+  if (researchId) query = query.eq("research_id", researchId);
+  const counts = new Map<string, number>();
+  for (const r of unwrap(await query)) counts.set(r.channel!, (counts.get(r.channel!) ?? 0) + r.feedback_count!);
+  return [...counts].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
 }
 
 function weeklyTrend(receivedDates: string[], end: string) {

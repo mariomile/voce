@@ -78,7 +78,7 @@ export function CsvImport({ researchId }: { researchId: string }) {
           {ignoredSummary(t, locale, result.duplicateCount, result.invalidCount, result.overLimitCount)}
         </p>
         <div className="flex gap-3">
-          <Link href="/feedback" className={buttonVariants()}>
+          <Link href={`/research/${researchId}/feedback`} className={buttonVariants()}>
             {t("seeFeedback")}
           </Link>
           <Button variant="secondary" onClick={() => input.current?.click()}>

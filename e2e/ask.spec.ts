@@ -23,10 +23,10 @@ test("ask a question from the keyboard and read the answer", async ({ page }) =>
   await page.getByRole("button", { name: "Crea la Research" }).click()
   await page.getByRole("link", { name: "Raccolta", exact: true }).click()
   const feedback = "Vorrei esportare il report mensile in PDF per il commercialista."
-  await page.getByLabel("Feedback", { exact: true }).fill(feedback)
+  await page.getByLabel("Note", { exact: true }).fill(feedback)
   await page.getByLabel("Canale", { exact: true }).fill("Supporto")
-  await page.getByRole("button", { name: "Aggiungi il feedback" }).click()
-  await expect(page.getByText("Aggiunto. Lo trovi tra i feedback.")).toBeVisible()
+  await page.getByRole("button", { name: "Aggiungi le note" }).click()
+  await expect(page.getByText("Aggiunte a questa Research. Le trovi in Feedback.")).toBeVisible()
 
   // From here on, keyboard only: the field has the focus, type and press Enter. (Chiedi reads the
   // whole workspace until it moves inside the Research, with its own tab.)

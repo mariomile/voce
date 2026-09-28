@@ -3,13 +3,16 @@
 -- the workspace row.
 --   PHC: /f/phc26, enabled, default form question; 3 feedback, 1 analysis with 2 themes, 1 question.
 --   Orto: its own form question "Come va?", disabled form, 1 feedback.
+--   Cinque and Quattro: 5 and 4 feedback, for the first_research_collected milestone.
 
 -- One DO block: `supabase db query` runs a single statement.
 do $fixture$
 begin
   insert into auth.users (id, email, raw_user_meta_data) values
     ('00000000-0000-0000-0000-0000000000f1', 'before-phc@test.voce', '{"workspace_name": "PHC"}'),
-    ('00000000-0000-0000-0000-0000000000f2', 'before-orto@test.voce', '{"workspace_name": "Orto"}');
+    ('00000000-0000-0000-0000-0000000000f2', 'before-orto@test.voce', '{"workspace_name": "Orto"}'),
+    ('00000000-0000-0000-0000-0000000000f5', 'before-cinque@test.voce', '{"workspace_name": "Cinque"}'),
+    ('00000000-0000-0000-0000-0000000000f4', 'before-quattro@test.voce', '{"workspace_name": "Quattro"}');
 
   update public.workspaces w set form_slug = 'phc26', form_enabled = true, form_question = null
   from public.workspace_members m
@@ -31,6 +34,16 @@ begin
   insert into public.feedback (id, workspace_id, text, channel)
   select 'f0000000-0000-0000-0000-000000000004', m.workspace_id, 'Troppi clic per un ordine.', 'Supporto'
   from public.workspace_members m where m.user_id = '00000000-0000-0000-0000-0000000000f2';
+
+  insert into public.feedback (workspace_id, text, channel)
+  select m.workspace_id, 'Feedback ' || n, 'Supporto'
+  from public.workspace_members m, generate_series(1, 5) n
+  where m.user_id = '00000000-0000-0000-0000-0000000000f5';
+
+  insert into public.feedback (workspace_id, text, channel)
+  select m.workspace_id, 'Feedback ' || n, 'Supporto'
+  from public.workspace_members m, generate_series(1, 4) n
+  where m.user_id = '00000000-0000-0000-0000-0000000000f4';
 
   insert into public.analyses (id, workspace_id, period_start, feedback_count, status)
   select 'a0000000-0000-0000-0000-000000000001', m.workspace_id, current_date - 89, 3, 'done'
