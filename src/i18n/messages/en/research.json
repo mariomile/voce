@@ -82,6 +82,7 @@
     "analyze": {
       "label": "Analyze {count} feedback",
       "labelPartial": "Analyze the {count} most recent feedback",
+      "labelThemesOnly": "Analyze only the themes of {count} feedback",
       "partialNote": "of {total} in this Research",
       "running": "Analysis running…",
       "runningNote": "It can take a few minutes. Themes and verdicts show up here as soon as it's done.",
@@ -96,11 +97,13 @@
       "lowFeedbackNote": "With fewer than 5 feedback the themes say little: you can analyze them anyway.",
       "cost": {
         "one": "You'll use 1 of your {limit} analyses for {month}.",
-        "left": "You have {remaining} analyses left for {month}."
+        "left": "You have {remaining} analyses left for {month}.",
+        "two": "You'll use 2 of your {limit} analyses for {month}: one for the themes, one for the hypothesis verdict."
       },
       "themesFailed": "The themes were not updated and don't count toward this month's limit: the ones from {date} stay. The hypothesis verdict is ready below.",
       "themesFailedFirst": "The themes didn't come through and don't count toward this month's limit. The hypothesis verdict is ready below.",
-      "verdictFailed": "The verdict didn't come through and doesn't count toward this month's limit: the hypotheses still show the previous verdict. Try again with “Verdict only”."
+      "verdictFailed": "The verdict didn't come through and doesn't count toward this month's limit: the hypotheses still show the previous verdict. Try again with “Verdict only”.",
+      "themesOnlyNote": "You have 1 analysis left for {month}: enough for the themes, not for the verdict, which uses another one. The hypothesis verdict is available again on {nextMonth} 1, or right away with Pro."
     },
     "changes": {
       "line": "Since the analysis of {date}: {feedback, plural, one {1 more feedback} other {# more feedback}}, {themes, plural, one {1 new theme} other {# new themes}}.",
@@ -139,6 +142,10 @@
       "session": "Your session has expired. Sign in again to continue: copy the text you wrote first, it won't stay here.",
       "sessionLink": "Sign in",
       "busy": "An analysis of this Research is running: you can change the hypotheses once it's done."
+    },
+    "verdictOnly": {
+      "label": "Verdict only for {count, plural, one {1 hypothesis} other {# hypotheses}}",
+      "running": "Verdict running…"
     }
   },
   "verdict": {

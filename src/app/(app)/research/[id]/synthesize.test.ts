@@ -891,16 +891,6 @@ describe("synthesize with hypotheses", () => {
     expect(logged.every((line) => !line.includes(MARKER))).toBe(true)
   })
 
-  it("Free with 2 analyses used and hypotheses: the request of 2 is limit, no call", async () => {
-    await addFeedback()
-    await addHypotheses(["La banca si scollega"])
-    await insertAnalyses(2, "done")
-    const model = fakeSynthesisModel({ themes: [bank] }, priced)
-    ai.model = model
-    expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "limit" })
-    expect(model.doGenerateCalls).toHaveLength(0)
-  })
-
   it("the hypotheses stay locked while the verdict runs", async () => {
     await addFeedback()
     const [hypothesis] = await addHypotheses(["La banca si scollega"])
@@ -922,6 +912,97 @@ describe("synthesize with hypotheses", () => {
     expect(error?.message).toBe("analysis_running")
     release()
     expect(await running).toMatchObject({ ok: true, verdict: "done" })
+  })
+})
+
+// ===== The quota of the verdict and "Solo il verdetto" =====
+
+describe("synthesize and the quota of the verdict", () => {
+  it("with 1 analysis left and hypotheses the server reserves only themes, even when asked for both", async () => {
+    await addFeedback()
+    const hypotheses = await addHypotheses(["La banca si scollega"])
+    await insertAnalyses(2, "done")
+    const model = fakeSynthesisModel({ themes: [bank] }, priced)
+    ai.model = model
+    expect(await synthesize(user.researchId)).toEqual({
+      ok: true,
+      themes: "done",
+      themeCount: 1,
+      verdict: "limit",
+      verdicts: { confirmed: 0, refuted: 0, toReview: 0 },
+      // The 2 analyses used this month are themes analyses too.
+      previousThemesDate: expect.any(String),
+    })
+    expect(model.doGenerateCalls).toHaveLength(1)
+    expect(JSON.stringify(model.doGenerateCalls[0].prompt)).not.toContain("<hypotheses_data>")
+    const { themes, verdict } = await byKind()
+    expect([themes.length, verdict.length]).toEqual([3, 0])
+    expect(await verdictsOf(hypotheses)).toEqual([undefined])
+    expect(analytics.trackEvent).toHaveBeenLastCalledWith(
+      user.workspaceId,
+      expect.objectContaining({ properties: expect.objectContaining({ hypothesis_count: 0 }) })
+    )
+  })
+
+  it("with no analysis left and hypotheses: limit, no call", async () => {
+    await addFeedback()
+    await addHypotheses(["La banca si scollega"])
+    await insertAnalyses(3, "done")
+    const model = fakeSynthesisModel({ themes: [bank] }, priced)
+    ai.model = model
+    expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "limit" })
+    expect(model.doGenerateCalls).toHaveLength(0)
+  })
+
+  it("verdict only reserves one verdict row and redoes every hypothesis", async () => {
+    await addFeedback()
+    await admin.from("subscriptions").update({ plan: "pro" }).eq("workspace_id", user.workspaceId)
+    const hypotheses = await addHypotheses(["La banca si scollega"])
+    ai.model = fakeSynthesisModel({ themes: [bank] }, priced)
+    await synthesize(user.researchId)
+    const [firstVerdict] = (await byKind()).verdict
+    hypotheses.push(...(await addHypotheses(["Vogliono WhatsApp"])))
+
+    const model = fakeSynthesisModel(new Error("the themes must not be called"), priced)
+    ai.model = model
+    analytics.trackMilestone.mockClear()
+    expect(await synthesize(user.researchId, "verdict")).toEqual({
+      ok: true,
+      themes: "skipped",
+      themeCount: 0,
+      verdict: "done",
+      verdicts: { confirmed: 1, refuted: 0, toReview: 1 },
+      previousThemesDate: expect.any(String),
+    })
+    expect(model.doGenerateCalls).toHaveLength(1)
+    const { themes, verdict } = await byKind()
+    expect([themes.length, verdict.length]).toEqual([1, 2])
+    const newVerdict = verdict.find((v) => v.id !== firstVerdict.id)!
+    expect((await verdictsOf(hypotheses)).map((v) => [v?.analysis_id, v?.verdict])).toEqual([
+      [newVerdict.id, "confirmed"],
+      [newVerdict.id, "to_review"],
+    ])
+    expect((await getUsage(user.workspaceId)).analysesThisMonth).toBe(3)
+    expect(analytics.trackMilestone).not.toHaveBeenCalledWith(user.workspaceId, expect.anything())
+  })
+
+  it("verdict only with the analyses used up: a forced submit gets limit from the database and makes no model call", async () => {
+    await addFeedback()
+    await addHypotheses(["La banca si scollega"])
+    await insertAnalyses(3, "done")
+    const model = fakeSynthesisModel({ themes: [bank] }, priced)
+    ai.model = model
+    expect(await synthesize(user.researchId, "verdict")).toEqual({ ok: false, reason: "limit" })
+    expect(model.doGenerateCalls).toHaveLength(0)
+  })
+
+  it("verdict only without hypotheses reserves nothing and makes no call", async () => {
+    await addFeedback()
+    const model = fakeSynthesisModel({ themes: [bank] }, priced)
+    ai.model = model
+    expect(await synthesize(user.researchId, "verdict")).toEqual({ ok: false, reason: "failed" })
+    expect(model.doGenerateCalls).toHaveLength(0)
+    expect(await analyses()).toEqual([])
   })
 })
 

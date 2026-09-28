@@ -74,5 +74,6 @@ test("sign up, create a Research, paste 5 notes, write a hypothesis, analyze and
   await expect(hypothesis.locator("blockquote mark")).toHaveText(notes[4])
   await expect(hypothesis).toContainText("Tutti i 5 feedback letti erano già arrivati quando l'hai scritta")
   await expect(page.getByRole("heading", { level: 3, name: "I clienti chiedono l'esportazione in PDF" })).toBeVisible()
-  await expect(analyze).toBeFocused()
+  // Still the same button, which now says what 1 analysis left buys: the themes alone (S4).
+  await expect(page.getByRole("button", { name: "Analizza solo i temi di 5 feedback" })).toBeFocused()
 })

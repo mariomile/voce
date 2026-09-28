@@ -4,6 +4,7 @@ import type { Hypothesis, Verdict } from "@/lib/data"
 
 // The actions write to the database: here the section only renders.
 vi.mock("@/app/(app)/research/[id]/actions", () => ({
+  synthesize: vi.fn(),
   addHypothesis: vi.fn(),
   updateHypothesis: vi.fn(),
   deleteHypothesis: vi.fn(),
@@ -133,5 +134,43 @@ describe("HypothesisList", () => {
     const t = translator("research.hypotheses") as Parameters<typeof FailureNote>[0]["t"]
     const html = renderToStaticMarkup(<FailureNote failure="busy" t={t} message="x" />)
     expect(html).toContain("C&#x27;è un&#x27;analisi in corso su questa Research: le ipotesi si cambiano quando è finita.")
+  })
+
+  describe("Solo il verdetto", () => {
+    const note = "Userai 1 delle 3 analisi di ottobre."
+    const renderWith = (hypotheses: Hypothesis[], feedbackSinceThemes: number | null, limitNote?: string) =>
+      renderToStaticMarkup(
+        <HypothesisList researchId={RESEARCH} hypotheses={hypotheses} verdictOnly={{ feedbackSinceThemes, note, limitNote }} />
+      )
+    const second = { ...hypothesis(2), verdict: confirmed }
+
+    it("shows only when a hypothesis lacks a verdict or has newer feedback and nothing is newer than the last themes analysis", () => {
+      // A hypothesis without a verdict: every hypothesis is redone, so the label counts them all.
+      const html = renderWith([hypothesis(1), second], 0)
+      expect(html).toContain(">Solo il verdetto di 2 ipotesi<")
+      expect(html).toContain(note)
+      expect(renderWith([withVerdict({ arrivedAfterVerdict: 2 })], 0)).toContain(">Solo il verdetto di 1 ipotesi<")
+      // Every verdict up to date.
+      expect(renderWith([withVerdict({}), second], 0)).not.toContain("Solo il verdetto")
+      // Feedback arrived after the last themes analysis: the whole analysis is due.
+      expect(renderWith([hypothesis(1)], 3)).not.toContain("Solo il verdetto")
+      // No themes analysis yet.
+      expect(renderWith([hypothesis(1)], null)).not.toContain("Solo il verdetto")
+      // Not in the Sintesi without feedback.
+      expect(render([hypothesis(1)])).not.toContain("Solo il verdetto")
+    })
+
+    it("comes after Aggiungi l'ipotesi, as a secondary button", () => {
+      const html = renderWith([hypothesis(1)], 0)
+      expect(html.indexOf("Aggiungi l&#x27;ipotesi")).toBeLessThan(html.indexOf("Solo il verdetto"))
+    })
+
+    it("Solo il verdetto off with the same note", () => {
+      const limit = "Hai usato le 3 analisi di ottobre."
+      const html = renderWith([hypothesis(1)], 0, limit)
+      expect(html).toMatch(/<button[^>]*aria-disabled="true"[^>]*>Solo il verdetto di 1 ipotesi</)
+      expect(html).toContain(limit)
+      expect(html).not.toContain(note)
+    })
   })
 })

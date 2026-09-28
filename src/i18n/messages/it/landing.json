@@ -84,6 +84,7 @@
       "period": "per sempre",
       "feedback": "Fino a {count} feedback",
       "analyses": "{count} analisi AI al mese",
+      "verdict": "Il verdetto delle ipotesi usa 1 analisi",
       "questions": "{count} domande ai feedback al mese",
       "sources": "Modulo pubblico, CSV e inserimento manuale",
       "cta": "Inizia gratis"
@@ -93,6 +94,7 @@
       "period": "al mese",
       "feedback": "Feedback illimitati",
       "analyses": "{count} analisi AI al mese",
+      "verdict": "Il verdetto delle ipotesi usa 1 analisi",
       "questions": "{count} domande ai feedback al mese",
       "everything": "Tutto quello che c'è in Free",
       "cta": "Prova Pro"

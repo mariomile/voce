@@ -82,6 +82,7 @@
     "analyze": {
       "label": "Analizza {count} feedback",
       "labelPartial": "Analizza i {count} feedback più recenti",
+      "labelThemesOnly": "Analizza solo i temi di {count} feedback",
       "partialNote": "su {total} di questa Research",
       "running": "Analisi in corso…",
       "runningNote": "Può volerci qualche minuto. Temi e verdetti compaiono qui appena è finita.",
@@ -96,11 +97,13 @@
       "lowFeedbackNote": "Con meno di 5 feedback i temi dicono poco: puoi analizzarli lo stesso.",
       "cost": {
         "one": "Userai 1 delle {limit} analisi di {month}.",
-        "left": "Ti restano {remaining} analisi di {month}."
+        "left": "Ti restano {remaining} analisi di {month}.",
+        "two": "Userai 2 delle {limit} analisi di {month}: una per i temi, una per il verdetto delle ipotesi."
       },
       "themesFailed": "I temi non sono stati aggiornati e non contano nel limite del mese: restano quelli del {date}. Il verdetto delle ipotesi è pronto qui sotto.",
       "themesFailedFirst": "I temi non sono arrivati e non contano nel limite del mese. Il verdetto delle ipotesi è pronto qui sotto.",
-      "verdictFailed": "Il verdetto non è arrivato e non conta nel limite del mese: le ipotesi mostrano ancora il verdetto precedente. Riprova con «Solo il verdetto»."
+      "verdictFailed": "Il verdetto non è arrivato e non conta nel limite del mese: le ipotesi mostrano ancora il verdetto precedente. Riprova con «Solo il verdetto».",
+      "themesOnlyNote": "Ti resta 1 analisi di {month}: basta per i temi, non per il verdetto, che ne usa un'altra. Il verdetto delle ipotesi torna disponibile il 1 {nextMonth}, o subito con Pro."
     },
     "changes": {
       "line": "Dall'analisi del {date}: {feedback, plural, one {1 feedback in più} other {# feedback in più}}, {themes, plural, one {1 tema nuovo} other {# temi nuovi}}.",
@@ -139,6 +142,10 @@
       "session": "La sessione è scaduta. Accedi di nuovo per continuare: copia prima il testo che hai scritto, qui non resta.",
       "sessionLink": "Accedi",
       "busy": "C'è un'analisi in corso su questa Research: le ipotesi si cambiano quando è finita."
+    },
+    "verdictOnly": {
+      "label": "Solo il verdetto di {count} ipotesi",
+      "running": "Verdetto in corso…"
     }
   },
   "verdict": {

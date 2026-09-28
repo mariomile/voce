@@ -225,7 +225,7 @@ export async function listHypotheses(research: Pick<Research, "id" | "workspaceI
 }
 
 // The feedback of a Research that entered Voce after a moment (created_at, not the date of the feedback).
-async function countFeedbackAfter(research: Pick<Research, "id" | "workspaceId">, since: string) {
+export async function countFeedbackAfter(research: Pick<Research, "id" | "workspaceId">, since: string) {
   const supabase = await createClient();
   return countOf(
     await supabase

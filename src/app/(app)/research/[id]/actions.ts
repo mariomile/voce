@@ -31,10 +31,11 @@ export type SynthesizeResult =
   | {
       ok: true
       // Each part counts in the quota only when done. previousThemesDate: the day of the themes still shown
-      // when this run's themes did not come (S5).
-      themes: "done" | "failed" | "no_themes"
+      // when this run's themes did not come (S5). themes "skipped": "Solo il verdetto". verdict "skipped": no
+      // hypotheses; "limit": only 1 analysis was left, so only the themes ran (S4).
+      themes: "done" | "failed" | "no_themes" | "skipped"
       themeCount: number
-      verdict: "done" | "failed" | "skipped"
+      verdict: "done" | "failed" | "skipped" | "limit"
       // The verdicts saved by this run, per word: what the end of the analysis announces.
       verdicts: VerdictCounts
       previousThemesDate: string | null
@@ -42,12 +43,14 @@ export type SynthesizeResult =
   | { ok: false; reason: "no_feedback" | "busy" | "limit" | "no_themes" | "failed" | "session" | "not_found" }
 
 // One click on "Analizza": the themes of this Research and, when it has hypotheses, their verdict, two model
-// calls that run together. Reads run as the signed-in user, so RLS limits them to their workspace: a
+// calls that run together. With only 1 analysis left in the month, the themes alone (S4), whatever the page
+// showed. mode "verdict" is "Solo il verdetto": the verdict of every hypothesis, 1 analysis, no themes. Reads run as the signed-in user, so RLS limits them to their workspace: a
 // Research of another workspace is not found, and nothing is sent to the model. The database reserves both
 // analyses (quota, one at a time per workspace) before the model is called, and locks the hypotheses until
 // they are closed; the themes and verdicts of before stay until the new ones are saved in full. Used by the
 // Sintesi and by the room screen.
-export async function synthesize(researchId: string): Promise<SynthesizeResult> {
+export async function synthesize(researchId: string, mode: "full" | "verdict" = "full"): Promise<SynthesizeResult> {
+  const verdictOnly = mode === "verdict"
   const supabase = await createClient()
   const { data: auth } = await supabase.auth.getClaims()
   if (!auth?.claims) return { ok: false, reason: "session" }
@@ -89,6 +92,7 @@ export async function synthesize(researchId: string): Promise<SynthesizeResult> 
   }))
   if (feedback.length === 0) return { ok: false, reason: "no_feedback" }
   const hypotheses: VerdictHypothesis[] = hypothesisRows.data.map((h) => ({ id: h.id, text: h.text, writtenAt: h.written_at }))
+  if (verdictOnly && hypotheses.length === 0) return { ok: false, reason: "failed" }
 
   let existingTitles: string[] = []
   if (latest.data) {
@@ -100,37 +104,44 @@ export async function synthesize(researchId: string): Promise<SynthesizeResult> 
   const modelId = analysisModel()
   const today = isoDateOf(new Date())
   const feedbackIds = feedback.map((f) => f.id)
-  const start = await startAnalysis({
-    workspaceId: research.workspaceId,
-    researchId: research.id,
-    model: modelId,
-    // The verdict joins the themes when the Research has hypotheses.
-    kinds: hypotheses.length > 0 ? ["themes", "verdict"] : ["themes"],
-    periodStart: feedback.reduce((min, f) => (f.receivedAt < min ? f.receivedAt : min), today),
-    feedbackCount: feedback.length,
-    inputs: {
-      themes: {
-        instructions: analysisInstructions(locale),
-        prompt: buildPrompt(feedback, existingTitles),
-        feedback_ids: feedbackIds,
-      },
-      ...(hypotheses.length > 0 && {
-        verdict: {
-          instructions: verdictInstructions(locale),
-          prompt: buildVerdictPrompt(hypotheses, feedback),
+  const reserve = (kinds: ("themes" | "verdict")[]) =>
+    startAnalysis({
+      workspaceId: research.workspaceId,
+      researchId: research.id,
+      model: modelId,
+      kinds,
+      periodStart: feedback.reduce((min, f) => (f.receivedAt < min ? f.receivedAt : min), today),
+      feedbackCount: feedback.length,
+      inputs: {
+        themes: {
+          instructions: analysisInstructions(locale),
+          prompt: buildPrompt(feedback, existingTitles),
           feedback_ids: feedbackIds,
-          hypothesis_ids: hypotheses.map((h) => h.id),
         },
-      }),
-    },
-  })
+        ...(hypotheses.length > 0 && {
+          verdict: {
+            instructions: verdictInstructions(locale),
+            prompt: buildVerdictPrompt(hypotheses, feedback),
+            feedback_ids: feedbackIds,
+            hypothesis_ids: hypotheses.map((h) => h.id),
+          },
+        }),
+      },
+    })
+  // The verdict joins the themes when the Research has hypotheses. The database decides the quota: when two
+  // analyses do not fit, one may still, and the themes go first (S4).
+  let start = await reserve(verdictOnly ? ["verdict"] : hypotheses.length > 0 ? ["themes", "verdict"] : ["themes"])
+  const verdictLeftOut = !verdictOnly && hypotheses.length > 0 && start.outcome === "limit"
+  if (verdictLeftOut) start = await reserve(["themes"])
   if (start.outcome !== "ok") return { ok: false, reason: start.outcome }
 
   const [themes, verdict] = await Promise.all([
-    themesPart(start.analyses.themes!, { modelId, feedback, existingTitles, locale }),
+    start.analyses.themes
+      ? themesPart(start.analyses.themes, { modelId, feedback, existingTitles, locale })
+      : ({ outcome: "skipped" } as const),
     start.analyses.verdict
       ? verdictPart(start.analyses.verdict, { modelId, feedback, hypotheses, locale, supabase })
-      : ({ outcome: "skipped" } as const),
+      : ({ outcome: verdictLeftOut ? "limit" : "skipped" } as const),
   ])
   if (themes.outcome !== "done" && verdict.outcome !== "done") {
     return { ok: false, reason: themes.outcome === "no_themes" ? "no_themes" : "failed" }

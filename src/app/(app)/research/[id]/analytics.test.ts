@@ -377,4 +377,16 @@ describe("first_analysis_completed", () => {
       await admin.from("research").delete().eq("id", second.data!)
     }
   })
+
+  it("a verdict-only synthesis does not send it, and sends research_synthesized with its hypotheses", async () => {
+    await fiveFeedback()
+    await twoHypotheses()
+    ai.model = fakeSynthesisModel(new Error("the themes must not be called"), verdicts)
+    expect(await synthesize(user.researchId, "verdict")).toMatchObject({ ok: true, themes: "skipped", verdict: "done" })
+    await settle()
+    expect(sentEvents("first_analysis_completed")).toEqual([])
+    expect(sentEvents("research_synthesized")).toEqual([
+      expect.objectContaining({ properties: expect.objectContaining({ citation_count: 2, hypothesis_count: 2 }) }),
+    ])
+  })
 })

@@ -15,6 +15,7 @@ import { Card, CardText, CardTitle } from "@/components/ui/card"
 import { ChipCount, chipVariants, FilterBar, FilterBarSep } from "@/components/ui/chip"
 import type { Locale } from "@/i18n/locale"
 import {
+  countFeedbackAfter,
   getAnalysisPerimeter,
   getDashboard,
   getResearch,
@@ -24,7 +25,7 @@ import {
   type StatusFilter,
   type Usage,
 } from "@/lib/data"
-import { formatDate, formatMonth } from "@/lib/format"
+import { formatDate, formatMonth, monthOf } from "@/lib/format"
 import { getOrigin } from "@/lib/origin"
 import type { ThemeKind } from "@/lib/types"
 
@@ -70,15 +71,23 @@ export default async function SynthesisPage({ params, searchParams }: PageProps<
   ])
 
   const limitReached = usage.feedbackLimit !== null && usage.feedbackCount >= usage.feedbackLimit
-  const month = formatMonth(new Date(), locale)
-  const remaining = usage.analysesLimit - usage.analysesThisMonth
-  const notes = [
-    remaining === usage.analysesLimit
-      ? tSynthesis("analyze.cost.one", { limit: usage.analysesLimit, month })
-      : tSynthesis("analyze.cost.left", { remaining, month }),
-    ...(stats.feedbackCount < FEW_FEEDBACK ? [tSynthesis("analyze.lowFeedbackNote")] : []),
-  ]
+  const now = new Date()
+  const [year, monthNumber] = monthOf(now).split("-").map(Number)
+  const quota = {
+    remaining: Math.max(0, usage.analysesLimit - usage.analysesThisMonth),
+    limit: usage.analysesLimit,
+    month: formatMonth(now, locale),
+    // The middle of next month on the Italian calendar: its name, for S4.
+    nextMonth: formatMonth(new Date(Date.UTC(year, monthNumber, 15)), locale),
+  }
+  const notes = stats.feedbackCount < FEW_FEEDBACK ? [tSynthesis("analyze.lowFeedbackNote")] : []
   const { analysis } = dashboard
+  const limitNote = analysisLimitNote(usage, tCommon, locale)
+  const verdictOnly = {
+    feedbackSinceThemes: analysis ? await countFeedbackAfter(research, analysis.createdAt) : null,
+    note: tSynthesis("analyze.cost.one", { limit: quota.limit, month: quota.month }),
+    limitNote,
+  }
   const path = `/research/${research.id}`
   const visible = showAll ? dashboard.themes : dashboard.themes.slice(0, VISIBLE_THEMES)
   const hidden = dashboard.themes.slice(visible.length)
@@ -105,11 +114,13 @@ export default async function SynthesisPage({ params, searchParams }: PageProps<
           researchId={research.id}
           count={perimeter}
           total={stats.feedbackCount}
+          quota={quota}
+          hypothesisCount={hypotheses.length}
           notes={notes}
-          limitNote={analysisLimitNote(usage, tCommon, locale)}
+          limitNote={limitNote}
         />
       </div>
-      <HypothesisList researchId={research.id} hypotheses={hypotheses} />
+      <HypothesisList researchId={research.id} hypotheses={hypotheses} verdictOnly={verdictOnly} />
       <section aria-labelledby="synthesis-title">
         <div className="mb-6">
           <h2 id="synthesis-title" className="mb-2 text-4xl leading-tight font-bold tracking-tight">

@@ -6,9 +6,12 @@ import { useEffect, useRef, useState, useTransition } from "react"
 import {
   addHypothesis,
   deleteHypothesis,
+  synthesize,
   updateHypothesis,
   type HypothesisResult,
+  type SynthesizeResult,
 } from "@/app/(app)/research/[id]/actions"
+import { failureMessage, verdictsMessage } from "@/components/analyze-button"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Field, FieldError, FieldHint, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -29,7 +32,20 @@ const unreachable = { ok: false as const, reason: "failed" as const }
 // (confirmed in the row), then the field for a new one. Empty, it is one line and a secondary button,
 // in the same place, so the page does not move when the first hypothesis is written. The text of a
 // hypothesis is the PM's and shows as text; so does the reasoning of its verdict.
-export function HypothesisList({ researchId, hypotheses }: { researchId: string; hypotheses: Hypothesis[] }) {
+// verdictOnly, in a Sintesi with feedback: what "Solo il verdetto" needs. feedbackSinceThemes: the feedback
+// that entered Voce after the last done themes analysis, null without one. note: its cost; limitNote: why
+// it is off, with the month's analyses used up.
+type VerdictOnly = { feedbackSinceThemes: number | null; note: string; limitNote?: string }
+
+export function HypothesisList({
+  researchId,
+  hypotheses,
+  verdictOnly,
+}: {
+  researchId: string
+  hypotheses: Hypothesis[]
+  verdictOnly?: VerdictOnly
+}) {
   const t = useTranslations("research.hypotheses")
   const tAnalyze = useTranslations("research.synthesis.analyze")
   const { failed: verdictFailed } = useVerdictFailure()
@@ -103,6 +119,19 @@ export function HypothesisList({ researchId, hypotheses }: { researchId: string;
             last={hypotheses.length + 1 >= MAX_HYPOTHESES}
           />
         ))}
+      {verdictOnly && showVerdictOnly(hypotheses, verdictOnly) && (
+        <VerdictOnlyButton
+          researchId={researchId}
+          count={hypotheses.length}
+          {...verdictOnly}
+          onDone={(text) => {
+            // The button goes away once every verdict is up to date: the result is announced by the
+            // section, and the focus goes to its title.
+            setAnnouncement(text)
+            heading.current?.focus()
+          }}
+        />
+      )}
       <p role="status" className="mt-2 text-sm text-ink-muted empty:hidden">
         {announcement}
       </p>
@@ -111,6 +140,70 @@ export function HypothesisList({ researchId, hypotheses }: { researchId: string;
         {verdictFailed && tAnalyze("verdictFailed")}
       </p>
     </section>
+  )
+}
+
+// "Solo il verdetto" is for the PM who read the themes and wrote a hypothesis: some hypothesis has no verdict,
+// or feedback arrived after its verdict, while nothing arrived after the last themes analysis (else the whole
+// analysis is due).
+function showVerdictOnly(hypotheses: Hypothesis[], { feedbackSinceThemes }: VerdictOnly) {
+  if (feedbackSinceThemes !== 0) return false
+  return hypotheses.some((h) => !h.verdict || h.verdict.arrivedAfterVerdict > 0)
+}
+
+// The verdict of every hypothesis again, 1 analysis. The section announces the result; a failed verdict is S6,
+// shown by the section; the other failures stay here.
+function VerdictOnlyButton({
+  researchId,
+  count,
+  note,
+  limitNote,
+  onDone,
+}: VerdictOnly & { researchId: string; count: number; onDone: (announcement: string) => void }) {
+  const t = useTranslations("research.hypotheses.verdictOnly")
+  const tAnalyze = useTranslations("research.synthesis.analyze")
+  const tFailures = useTranslations("themes.analyzeButton.failures")
+  const verdictFailure = useVerdictFailure()
+  const [outcome, setOutcome] = useState<SynthesizeResult | { ok: false; reason: "network" } | null>(null)
+  const [pending, startTransition] = useTransition()
+
+  function run() {
+    if (pending || limitNote) return
+    setOutcome(null)
+    verdictFailure.setFailed(false)
+    startTransition(async () => {
+      const result = await synthesize(researchId, "verdict").catch(() => ({ ok: false as const, reason: "network" as const }))
+      setOutcome(result)
+      if (result.ok) onDone(verdictsMessage(tAnalyze, result.verdicts))
+      if (!result.ok && result.reason === "failed") verdictFailure.setFailed(true)
+    })
+  }
+
+  // Done: the section announces it. failed: S6, in the section.
+  const failure = outcome && !outcome.ok && outcome.reason !== "failed" ? outcome.reason : null
+  let status: React.ReactNode = null
+  if (failure === "network") status = <span className="text-problem">{tAnalyze("network")}</span>
+  else if (failure === "session")
+    status = (
+      <span className="text-problem">
+        {failureMessage(tFailures, failure)}{" "}
+        <Link href="/login" className={buttonVariants({ variant: "link", className: "text-sm" })}>
+          {tAnalyze("sessionLink")}
+        </Link>
+      </span>
+    )
+  else if (failure) status = <span className="text-problem">{failureMessage(tFailures, failure)}</span>
+
+  return (
+    <div className="mt-6 flex flex-col items-start gap-2">
+      <Button variant="secondary" onClick={run} aria-disabled={pending || Boolean(limitNote) || undefined}>
+        {pending ? t("running") : t("label", { count })}
+      </Button>
+      {!pending && <p className="text-sm text-ink-muted">{limitNote ?? note}</p>}
+      <p role="status" className="text-sm text-ink-muted empty:hidden">
+        {status}
+      </p>
+    </div>
   )
 }
 

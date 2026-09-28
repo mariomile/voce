@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test"
-import { admin, createResearch, insertFeedback, signedInUser } from "./helpers"
+import { admin, createResearch, daysAgo, insertFeedback, signedInUser } from "./helpers"
 
 // The Research: first run, list, creation, the page with its tabs, the not-found page, and the
 // public form and QR code of each Research.
@@ -335,6 +335,88 @@ test("a verdict that fails while the themes succeed says so (S6) in the Ipotesi 
   await expect(hypotheses.getByRole("status").filter({ hasText: "Il verdetto non è arrivato e non conta nel limite del mese" })).toBeVisible()
   const { data: analyses } = await admin.from("analyses").select("kind, status").eq("workspace_id", user.workspaceId)
   expect(analyses!.map((a) => `${a.kind} ${a.status}`).sort()).toEqual(["themes done", "verdict failed"])
+})
+
+// Analyses of the month the workspace already used: done themes analyses, with no theme.
+async function usedAnalyses(user: { workspaceId: string; researchId: string }, count: number) {
+  const { error } = await admin.from("analyses").insert(
+    Array.from({ length: count }, () => ({
+      workspace_id: user.workspaceId,
+      research_id: user.researchId,
+      kind: "themes" as const,
+      period_start: daysAgo(30),
+      feedback_count: 1,
+      status: "done" as const,
+    }))
+  )
+  if (error) throw error
+}
+
+async function hypothesis(user: { workspaceId: string; researchId: string }, text: string) {
+  const { error } = await admin.from("research_hypotheses").insert({ workspace_id: user.workspaceId, research_id: user.researchId, text })
+  if (error) throw error
+}
+
+test("the cost is said before the click: 2 analyses with hypotheses, the themes alone with 1 left (S4)", async ({ page }) => {
+  const user = await signedInUser(page, "quota-s4")
+  await insertFeedback(user, ["Vorrei il report in PDF.", "Mi serve il PDF del report."])
+  await hypothesis(user, "I clienti vogliono il PDF")
+  await page.goto(`/research/${user.researchId}`)
+  await expect(page.getByText("Userai 2 delle 3 analisi di", { exact: false })).toContainText("una per i temi, una per il verdetto delle ipotesi.")
+
+  await usedAnalyses(user, 2)
+  await page.reload()
+  const S4 = "basta per i temi, non per il verdetto, che ne usa un'altra."
+  await expect(page.getByText(S4, { exact: false })).toBeVisible()
+  await page.getByRole("button", { name: "Analizza solo i temi di 2 feedback" }).click()
+  await expect(page.getByRole("status").filter({ hasText: "Analisi finita: 1 tema." })).toContainText(S4)
+  const { data: analyses } = await admin.from("analyses").select("kind, status").eq("workspace_id", user.workspaceId)
+  expect(analyses!.map((a) => `${a.kind} ${a.status}`)).toEqual(["themes done", "themes done", "themes done"])
+  await expect(page.getByText("Nessun verdetto ancora. Arriva con la prossima analisi.")).toBeVisible()
+})
+
+test("Solo il verdetto: after the themes, a new hypothesis gets its verdict for 1 analysis", async ({ page }) => {
+  const user = await signedInUser(page, "solo-verdetto")
+  await insertFeedback(user, ["Vorrei il report in PDF.", "Mi serve il PDF del report."])
+  await hypothesis(user, "I clienti vogliono il PDF")
+  await page.goto(`/research/${user.researchId}`)
+  await expect(page.getByRole("button", { name: /Solo il verdetto/ })).toHaveCount(0)
+  await page.getByRole("button", { name: "Analizza 2 feedback" }).click()
+  await expect(page.getByRole("status").filter({ hasText: "Analisi finita: 1 tema. 1 verdetto: 1 confermata." })).toBeVisible()
+  // Every verdict is up to date: nothing to redo.
+  await expect(page.getByRole("button", { name: /Solo il verdetto/ })).toHaveCount(0)
+
+  await hypothesis(user, "I clienti vogliono Excel")
+  await page.reload()
+  const verdictOnly = page.getByRole("button", { name: "Solo il verdetto di 2 ipotesi" })
+  await expect(page.getByText("Userai 1 delle 3 analisi di", { exact: false })).toBeVisible()
+  await verdictOnly.focus()
+  await page.keyboard.press("Enter")
+  await expect(page.getByRole("status").filter({ hasText: "2 verdetti: 2 confermate." })).toBeVisible()
+  // Every verdict is up to date and the button is gone: the focus is on the section title.
+  await expect(verdictOnly).toHaveCount(0)
+  await expect(page.getByRole("heading", { level: 2, name: "Ipotesi" })).toBeFocused()
+  await expect(page.getByRole("listitem").filter({ hasText: "I clienti vogliono Excel" })).toContainText("Confermata")
+  const { data: analyses } = await admin.from("analyses").select("kind, status").eq("workspace_id", user.workspaceId)
+  expect(analyses!.map((a) => `${a.kind} ${a.status}`).sort()).toEqual(["themes done", "verdict done", "verdict done"])
+})
+
+test("analyses used up: the analyze button and Solo il verdetto are off with the note of the plan", async ({ page }) => {
+  const user = await signedInUser(page, "quota-finita")
+  await insertFeedback(user, ["Vorrei il report in PDF.", "Mi serve il PDF del report."])
+  await hypothesis(user, "I clienti vogliono il PDF")
+  await usedAnalyses(user, 3)
+  await page.goto(`/research/${user.researchId}`)
+  await expect(page.getByRole("button", { name: "Analizza 2 feedback" })).toHaveAttribute("aria-disabled", "true")
+  const verdictOnly = page.getByRole("button", { name: "Solo il verdetto di 1 ipotesi" })
+  await expect(verdictOnly).toHaveAttribute("aria-disabled", "true")
+  await expect(page.getByText("Hai usato le 3 analisi di", { exact: false })).toHaveCount(2)
+  // Playwright will not click an aria-disabled button: the keyboard still can.
+  await verdictOnly.focus()
+  await page.keyboard.press("Enter")
+  await expect(verdictOnly).toBeFocused()
+  const { data: analyses } = await admin.from("analyses").select("kind").eq("workspace_id", user.workspaceId)
+  expect(analyses).toHaveLength(3)
 })
 
 test("hypotheses: write, edit and delete from the keyboard, with the focus where the design puts it", async ({ page }) => {
