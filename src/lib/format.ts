@@ -17,9 +17,11 @@ const byLocale = { it: formatters("it"), en: formatters("en") } satisfies Record
 
 const monthKey = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", timeZone: "Europe/Rome" });
 
-// "2026-09-18" → "18 settembre", "September 18"
+// "2026-09-18" → "18 settembre", "September 18". A timestamp is first dated on the Italian calendar:
+// "2026-09-28T23:10:00Z" is the 29th in Rome.
 export function formatDate(isoDate: string, locale: Locale) {
-  return byLocale[locale].dayMonth.format(new Date(isoDate));
+  const day = isoDate.length > 10 ? isoDateOf(new Date(isoDate)) : isoDate;
+  return byLocale[locale].dayMonth.format(new Date(day));
 }
 
 export function formatMonth(date: Date, locale: Locale) {
