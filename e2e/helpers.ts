@@ -24,6 +24,15 @@ export async function confirmationLink(email: string) {
   throw new Error(`No confirmation email for ${email} in Mailpit`)
 }
 
+// The link Supabase's default template sends ({{ .ConfirmationURL }}), used in production while the
+// custom template cannot be applied there: the verify endpoint, then back to the app with a code.
+// Built from the token hash of the local email, which is the same token.
+export async function defaultTemplateLink(email: string) {
+  const tokenHash = new URL(await confirmationLink(email)).searchParams.get("token_hash")!
+  const redirectTo = "http://localhost:3000/auth/callback?flow=signup"
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/verify?token=${tokenHash}&type=signup&redirect_to=${encodeURIComponent(redirectTo)}`
+}
+
 export const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!, {
   auth: { persistSession: false, autoRefreshToken: false },
 })
@@ -47,7 +56,7 @@ export async function signedInUser(page: Page, label: string) {
   if (memberError) throw memberError
   await page.goto("/login")
   await page.getByLabel("Email").fill(email)
-  await page.getByLabel("Password").fill(password)
+  await page.getByLabel("Password", { exact: true }).fill(password)
   await page.getByRole("button", { name: "Accedi" }).click()
   await expect(page).toHaveURL(/\/themes$/)
   return { workspaceId: member.workspace_id as string }

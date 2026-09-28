@@ -16,7 +16,7 @@ Voce manda a PostHog solo gli eventi che servono a misurare l'attivazione del br
 
 | Evento | Quando parte | Proprietà |
 |---|---|---|
-| `signed_up` | Conferma dell'email di registrazione, o primo accesso con Google | `method`: `email` o `google` |
+| `signed_up` | Conferma dell'email di registrazione (o primo accesso con email e password, se il link è stato aperto in un altro browser), o primo accesso con Google | `method`: `email` o `google` |
 | `first_feedback_added` | Primo feedback salvato nel workspace | `source`: `manual`, `csv` o `form` |
 | `first_analysis_completed` | Prima analisi AI completata con almeno un tema | `feedback_count`: feedback analizzati; `theme_count`: temi prodotti |
 | `upgraded_to_pro` | La prima volta che il webhook Stripe porta il workspace su Pro | nessuna |
