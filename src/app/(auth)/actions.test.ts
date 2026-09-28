@@ -1,10 +1,18 @@
 import { describe, expect, it, vi } from "vitest"
 
 // Only what Supabase Auth answers matters here: the client returns a chosen error.
-const auth = vi.hoisted(() => ({ error: null as { code: string } | null }))
+const auth = vi.hoisted(() => ({ error: null as { code: string } | null, signUpArgs: [] as unknown[] }))
 vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => ({ auth: { signUp: async () => ({ error: auth.error }) } }),
+  createClient: async () => ({
+    auth: {
+      signUp: async (args: unknown) => {
+        auth.signUpArgs.push(args)
+        return { error: auth.error }
+      },
+    },
+  }),
 }))
+vi.mock("@/lib/origin", () => ({ getOrigin: async () => "https://voce.test" }))
 
 const { signUp } = await import("./actions")
 
@@ -25,6 +33,22 @@ describe("signUp", () => {
   it("keeps the generic error for anything else", async () => {
     auth.error = { code: "unexpected_failure" }
     expect(await signUp(form())).toEqual({ error: "Qualcosa non ha funzionato. Riprova tra poco." })
+  })
+
+  it("asks Supabase to send the confirmation link back to the app's callback", async () => {
+    auth.error = null
+    auth.signUpArgs.length = 0
+    await signUp(form())
+    expect(auth.signUpArgs).toEqual([
+      {
+        email: "nuovo@test.voce",
+        password: "password-lunga",
+        options: {
+          emailRedirectTo: "https://voce.test/auth/callback?flow=signup",
+          data: { workspace_name: "Prova" },
+        },
+      },
+    ])
   })
 
   it("sends the email when sign-ups are open", async () => {

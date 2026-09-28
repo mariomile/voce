@@ -16,11 +16,16 @@ const LINK_ERRORS: Record<string, string> = {
 }
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
-  const { error } = await searchParams
+  const { error, confirmed } = await searchParams
   const linkError = typeof error === "string" ? LINK_ERRORS[error] : undefined
   return (
     <>
       <PageTitle className="mb-8">Accedi a Voce</PageTitle>
+      {confirmed === "1" && (
+        <p role="status" className="mb-5 text-base">
+          Email confermata. Accedi per entrare nel tuo workspace.
+        </p>
+      )}
       {linkError && (
         <FieldError role="alert" className="mb-5">
           {linkError}

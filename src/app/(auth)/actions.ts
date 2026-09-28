@@ -3,6 +3,7 @@
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { z } from "zod"
+import { getOrigin } from "@/lib/origin"
 import { createClient } from "@/lib/supabase/server"
 
 export type AuthState = { error?: string; sentTo?: string }
@@ -41,11 +42,16 @@ export async function signUp(formData: FormData): Promise<AuthState> {
     return { error: "Scrivi il nome del prodotto, al massimo 60 caratteri." }
   }
   const supabase = await createClient()
-  // The workspace is created by a database trigger, with this name.
+  // The workspace is created by a database trigger, with this name. Supabase's default email template
+  // links to its verify endpoint, which sends the user to emailRedirectTo with a code: without it, to the
+  // landing page. The custom template links to /auth/confirm instead.
   const { error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
-    options: { data: { workspace_name: parsed.data.workspace } },
+    options: {
+      emailRedirectTo: `${await getOrigin()}/auth/callback?flow=signup`,
+      data: { workspace_name: parsed.data.workspace },
+    },
   })
   // Turned off in Supabase Auth: all sign-ups, or the email ones.
   if (error?.code === "signup_disabled" || error?.code === "email_provider_disabled")
