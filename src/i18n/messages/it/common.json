@@ -37,5 +37,11 @@
   "analysisLimit": {
     "free": "Hai usato le {limit} analisi di {month}. Con Pro diventano 100 al mese.",
     "pro": "Hai usato le {limit} analisi di {month}."
+  },
+  "notFound": {
+    "title": "Questa pagina non esiste.",
+    "text": "Il link potrebbe essere sbagliato, o la pagina è stata tolta.",
+    "action": "Torna alla home",
+    "actionSignedIn": "Tutte le Research"
   }
 }
