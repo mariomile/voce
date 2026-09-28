@@ -4,9 +4,10 @@ import { useState, useTransition } from "react"
 import { analyze, type AnalyzeResult } from "@/app/(app)/themes/actions"
 import { Button } from "@/components/ui/button"
 
-type Failure = Extract<AnalyzeResult, { ok: false }>["reason"]
+export type AnalysisFailure = Extract<AnalyzeResult, { ok: false }>["reason"]
 
-const MESSAGES: Record<Failure, string> = {
+// Also shown by the room screen, which runs the same analysis.
+export const ANALYSIS_FAILURES: Record<AnalysisFailure, string> = {
   no_feedback: "Negli ultimi 90 giorni non ci sono feedback da analizzare.",
   busy: "C'è già un'analisi in corso. Ricarica la pagina tra un minuto.",
   limit: "Hai usato tutte le analisi di questo mese, o troppi tentativi non sono riusciti.",
@@ -24,7 +25,7 @@ export function AnalyzeButton({
   label: string
   limitNote?: string
 }) {
-  const [failure, setFailure] = useState<Failure | null>(null)
+  const [failure, setFailure] = useState<AnalysisFailure | null>(null)
   const [pending, startTransition] = useTransition()
 
   function run() {
@@ -38,7 +39,7 @@ export function AnalyzeButton({
   const note = pending
     ? "Può volerci qualche minuto. I temi compaiono qui appena è finita."
     : failure
-      ? MESSAGES[failure]
+      ? ANALYSIS_FAILURES[failure]
       : limitNote
   return (
     <div className="flex max-w-[36ch] flex-col items-end gap-2 text-right">

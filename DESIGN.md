@@ -188,6 +188,12 @@ Composti dai componenti sopra, servono alle schermate della B.
   - Chiedi su fondo inchiostro: la domanda scritta in grande, il conteggio in giallo a scala da manifesto.
   - Movimento: il conteggio sale da 0, gli evidenziatori passano uno dopo l'altro, la domanda si scrive, la risposta sale. Partono una volta quando il blocco entra nello schermo (`InView`), e con `prefers-reduced-motion` non parte niente. Senza JavaScript tutto è già nello stato finale.
   - Nella fascia inchiostro non ci sono elementi con focus: l'anello inchiostro non si vedrebbe.
+- **Schermo della sala** (`/sala`): si proietta durante una sessione dal vivo, quindi usa le regole della landing (classi `l-*` e `room-*` in `src/app/landing.css`), non quelle dell'app. Niente barra dell'app.
+  - Fondo tutto giallo: la domanda del modulo in Hanken 900, il conteggio "N risposte" a scala da manifesto, a destra il QR code grande su bianco con l'indirizzo breve sotto. Un solo pulsante inchiostro, "Analizza le risposte".
+  - Modulo spento o pieno: al posto del QR code un riquadro inchiostro con il titolo in giallo e il link per rimediare.
+  - Temi: fascia gialla in alto, poi su bianco al massimo 5 righe con numero, tipo e titolo. Mai sintesi, citazioni o testo dei feedback.
+  - Ogni taglia segue sia la larghezza sia l'altezza (`vw` e `svh`): tutto sta in uno schermo da 853x480 (1280x720 al 150%) a 1920x1080.
+  - Movimento: il numero fa un piccolo balzo quando sale; con `prefers-reduced-motion` resta fermo.
 - **Accesso e registrazione**: colonna stretta, marchio in alto, campi `.input` con fondo velo, un solo pulsante primario a tutta larghezza.
 
 ## Nell'app

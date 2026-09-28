@@ -1,0 +1,28 @@
+import type { Theme } from "./types"
+
+// The room screen: what it shows, reduced to counts. Feedback text never reaches it.
+
+// Fixed by the database in submit_public_feedback: the channel of every public form response.
+export const PUBLIC_FORM_CHANNEL = "Modulo pubblico"
+export const ROOM_THEMES = 5
+
+export type FormState = "open" | "off" | "full"
+
+export type RoomStatus = { responses: number; form: FormState }
+
+export type RoomTheme = Pick<Theme, "id" | "kind" | "title"> & { feedbackCount: number }
+
+// Same rule as private.accepts_feedback: the link is on and the Free limit is not reached.
+export function formState(input: { formEnabled: boolean; feedbackCount: number; feedbackLimit: number | null }): FormState {
+  if (!input.formEnabled) return "off"
+  if (input.feedbackLimit !== null && input.feedbackCount >= input.feedbackLimit) return "full"
+  return "open"
+}
+
+// Only what the screen shows: the rest of a theme (summary, quotes) stays on the server.
+export function roomThemes(themes: (RoomTheme & Record<string, unknown>)[]): RoomTheme[] {
+  return [...themes]
+    .sort((a, b) => b.feedbackCount - a.feedbackCount)
+    .slice(0, ROOM_THEMES)
+    .map(({ id, kind, title, feedbackCount }) => ({ id, kind, title, feedbackCount }))
+}

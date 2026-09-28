@@ -32,6 +32,18 @@ export const STATUS_LABELS: Record<ThemeStatus, string> = {
   discarded: "Scartato",
 };
 
+// Set when the monthly analyses are used up: the analysis button is off and says why.
+export function analysisLimitNote(
+  usage: { plan: "free" | "pro"; analysesThisMonth: number; analysesLimit: number },
+  now = new Date()
+) {
+  if (usage.analysesThisMonth < usage.analysesLimit) return undefined;
+  const month = formatMonth(now);
+  return usage.plan === "free"
+    ? `Hai usato le ${usage.analysesLimit} analisi di ${month}. Con Pro diventano 100 al mese.`
+    : `Hai usato le ${usage.analysesLimit} analisi di ${month}.`;
+}
+
 const dayMonth = new Intl.DateTimeFormat("it-IT", { day: "numeric", month: "long", timeZone: "UTC" });
 const monthName = new Intl.DateTimeFormat("it-IT", { month: "long", timeZone: "Europe/Rome" });
 const monthKey = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", timeZone: "Europe/Rome" });

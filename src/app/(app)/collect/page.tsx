@@ -64,6 +64,9 @@ export default async function CollectPage() {
               <a href="/collect/qr" download className={buttonVariants({ variant: "secondary" })}>
                 Scarica il QR code
               </a>
+              <Link href="/sala" className={buttonVariants({ variant: "secondary" })}>
+                Apri lo schermo della sala
+              </Link>
             </CardActions>
           </CardBody>
           <QrCode url={`${origin}${formPath}`} />

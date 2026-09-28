@@ -12,7 +12,7 @@ import { Card, CardActions, CardBody, CardMeta, CardText, CardTitle } from "@/co
 import { ChipCount, chipVariants, FilterBar, FilterBarSep } from "@/components/ui/chip"
 import { getCurrentWorkspace, getDashboard, getUsage, type StatusFilter, type Usage } from "@/lib/data"
 import { getOrigin } from "@/lib/origin"
-import { formatDate, formatMonth, KIND_PLURALS } from "@/lib/format"
+import { analysisLimitNote, formatDate, formatMonth, KIND_PLURALS } from "@/lib/format"
 import type { ThemeKind, Workspace } from "@/lib/types"
 
 const KINDS: ThemeKind[] = ["problem", "opportunity", "praise"]
@@ -75,7 +75,7 @@ export default async function ThemesPage({ searchParams }: PageProps<"/themes">)
             <b>{dashboard.analysisThemeCount} temi</b>.
           </PageLede>
         </div>
-        <AnalyzeButton label="Nuova analisi" limitNote={limitNote(usage)} />
+        <AnalyzeButton label="Nuova analisi" limitNote={analysisLimitNote(usage)} />
       </PageHeader>
 
       <FilterBar>
@@ -206,7 +206,7 @@ function EmptyNoAnalysis({
               : `Ti restano ${remaining} analisi di ${month}.`}
           </CardText>
         </div>
-        <AnalyzeButton label={`Analizza ${dashboard.feedbackCount} feedback`} limitNote={limitNote(usage)} />
+        <AnalyzeButton label={`Analizza ${dashboard.feedbackCount} feedback`} limitNote={analysisLimitNote(usage)} />
       </Card>
       <div className="grid grid-cols-2 gap-x-12">
         {dashboard.recentFeedback.map((f) => (
@@ -222,15 +222,6 @@ function EmptyNoAnalysis({
       </div>
     </>
   )
-}
-
-// Set when the monthly analyses are used up: the button is off and says why.
-function limitNote(usage: Usage) {
-  if (usage.analysesThisMonth < usage.analysesLimit) return undefined
-  const month = formatMonth(new Date())
-  return usage.plan === "free"
-    ? `Hai usato le ${usage.analysesLimit} analisi di ${month}. Con Pro diventano 100 al mese.`
-    : `Hai usato le ${usage.analysesLimit} analisi di ${month}.`
 }
 
 // ["26", "19", "14"] → "26, 19 e 14"
