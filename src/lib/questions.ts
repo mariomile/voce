@@ -1,6 +1,6 @@
 import { generateText, Output, type LanguageModel } from "ai"
 import { z } from "zod"
-import { estimateCost, type AnalysisFeedback } from "./analysis"
+import { MODEL_OPTIONS, checkFinished, estimateCost, explainStop, type AnalysisFeedback } from "./analysis"
 
 // "Chiedi ai tuoi feedback": prompt, output schema, the model call and the checks on the answer.
 // The question and the feedback text are untrusted input: they only travel as data. The count shown
@@ -72,9 +72,11 @@ export async function runQuestion({
     output: Output.object({ schema: questionOutputSchema }),
     maxOutputTokens: QUESTION_MAX_OUTPUT_TOKENS,
     timeout: QUESTION_TIMEOUT_MS,
-  })
+    providerOptions: MODEL_OPTIONS,
+  }).catch(explainStop)
   const durationMs = Math.round(performance.now() - started)
   const { inputTokens, outputTokens } = result.usage
+  checkFinished(result.finishReason, outputTokens)
   const raw = result.output
   return {
     raw,

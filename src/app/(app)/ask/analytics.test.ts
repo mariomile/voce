@@ -104,7 +104,7 @@ describe("question_answered", () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => {})
     ai.model = new MockLanguageModelV4({
       doGenerate: async () => {
-        throw new Error("Gateway down")
+        throw new Error("Anthropic API down")
       },
     })
     expect(await ask({ question: "Fallisce?" })).toMatchObject({ reason: "failed" })

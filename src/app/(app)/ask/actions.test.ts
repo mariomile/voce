@@ -165,7 +165,7 @@ describe("ask", () => {
     const log = await runLog(question.id)
     expect(log).toMatchObject({
       workspace_id: user.workspaceId,
-      model: "anthropic/claude-sonnet-5",
+      model: "claude-sonnet-5",
       output: bank,
       issues: [{ part: "feedback", problem: "unknown_feedback", detail: 999 }],
       input_tokens: 100_000,
@@ -314,14 +314,14 @@ describe("ask: guards before the model", () => {
 describe("ask: failures after the model is called", () => {
   it("model error is failed and counted", async () => {
     await addFeedback()
-    failingModel(new Error("Gateway down"))
+    failingModel(new Error("Anthropic API down"))
     const log = vi.spyOn(console, "error").mockImplementation(() => {})
     expect(await ask({ question: "La banca?" })).toEqual({ ok: false, reason: "failed", usage: { used: 1, quota: 10 } })
     log.mockRestore()
     const [question] = await questions()
     expect(question.status).toBe("failed")
     const run = await runLog(question.id)
-    expect(run.error).toContain("Gateway down")
+    expect(run.error).toContain("Anthropic API down")
     expect(run.finished_at).not.toBeNull()
     expect((await getUsage(user.workspaceId)).questionsThisMonth).toBe(1)
   })
@@ -355,7 +355,7 @@ describe("ask: failures after the model is called", () => {
 
   it("logs only the error name and the question id", async () => {
     await addFeedback(["Il marcatore ZZSEGRETOZZ è nel feedback."])
-    failingModel(new Error("Gateway down on ZZSEGRETOZZ"))
+    failingModel(new Error("Anthropic API down on ZZSEGRETOZZ"))
     const log = vi.spyOn(console, "error").mockImplementation(() => {})
     await ask({ question: "Cosa dice ZZSEGRETOZZ?" })
     const [question] = await questions()

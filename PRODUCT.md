@@ -44,7 +44,7 @@ When accumulo feedback da canali diversi, I want to vedere in pochi minuti quali
 | Type | Constraint | Source |
 |------|-----------|--------|
 | Technical | Segreti solo lato server; Row Level Security su ogni tabella prima che contenga dati; testo dei feedback trattato come input non fidato | `[code:AGENTS.md]` |
-| Regulatory | Dati in Unione Europea; il testo dei feedback non va negli analytics; eccezione accettata in modalità test: Vercel AI Gateway | `[code:AGENTS.md]` |
+| Regulatory | Dati in Unione Europea; il testo dei feedback non va negli analytics; eccezione accettata in modalità test: API Anthropic | `[code:AGENTS.md]` |
 | Resource | Mario da solo con un coding agent; scadenza fissa: masterclass PHC26 del 1 ottobre 2026 | `[doc:user-2026-09-26-init]` |
 | Distribution | Nessun canale oggi; il primo è la sala di PHC26 (circa 230 PM) | `[doc:user-2026-09-26-init]` |
 

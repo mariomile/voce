@@ -28,9 +28,9 @@ describe("the question quota", () => {
 })
 
 describe("prima-dei-clienti-reali", () => {
-  it("lists the question text that goes through the Vercel AI Gateway", () => {
+  it("lists the question text that goes to the Anthropic API", () => {
     const doc = readFileSync("docs/prima-dei-clienti-reali.md", "utf8")
-    expect(doc).toMatch(/\*\*Testo delle domande[^\n]*Vercel AI Gateway/)
+    expect(doc).toMatch(/\*\*Testo delle domande[^\n]*API Anthropic/)
   })
 })
 

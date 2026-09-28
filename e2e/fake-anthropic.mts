@@ -1,28 +1,26 @@
 import { createServer } from "node:http"
 
-// A fake Vercel AI Gateway for the end-to-end test: the app points AI_GATEWAY_BASE_URL here.
+// A fake Anthropic Messages API for the end-to-end test: the app points ANTHROPIC_BASE_URL here.
 // It answers every analysis with one theme that groups all the feedback it received, quoting the
 // first two, so the output passes the checks in src/lib/analysis.ts. It answers every question
 // (a prompt with <question_data>) by linking and quoting the first feedback, so the output passes
 // the checks in src/lib/questions.ts. A question with FUORI_SCHEMA gets text that is not JSON, and one
 // with LENTA gets its answer after 20 seconds. No real model is ever called.
+// Both calls ask for structured output (output_config.format): a request without it is rejected,
+// so the test notices if the provider stops sending the schema.
 // GET /calls?marker=X counts how many prompts received so far contain X: how a test proves the
 // model was called once for a given question, even across submits that raced on the client.
 
-const PORT = Number(process.env.FAKE_GATEWAY_PORT ?? 4010)
+const PORT = Number(process.env.FAKE_ANTHROPIC_PORT ?? 4010)
 
-// Counts calls to the fake model, so a test can prove the client sent exactly one prompt for a
-// given question even when two submits raced: GET /calls?marker=X returns how many prompts this
-// gateway received that contain the string X.
 const prompts: string[] = []
 
-type PromptPart = { type: string; text?: string }
+type ContentBlock = { type: string; text?: string }
+type Message = { role: string; content: ContentBlock[] | string }
 type Feedback = { n: number; text: string }
 
-type Message = { role: string; content: PromptPart[] | string }
-
-function userText(prompt: Message[]) {
-  const user = prompt.find((m) => m.role === "user")
+function userText(messages: Message[]) {
+  const user = messages.find((m) => m.role === "user")
   return Array.isArray(user?.content) ? user.content.map((p) => p.text ?? "").join("") : (user?.content ?? "")
 }
 
@@ -55,6 +53,11 @@ function themesFor(text: string) {
   }
 }
 
+function send(res: import("node:http").ServerResponse, status: number, body: unknown) {
+  res.writeHead(status, { "content-type": "application/json" })
+  res.end(JSON.stringify(body))
+}
+
 createServer((req, res) => {
   let body = ""
   req.on("data", (chunk) => (body += chunk))
@@ -65,36 +68,39 @@ createServer((req, res) => {
     }
     if (req.method === "GET" && req.url?.startsWith("/calls")) {
       const marker = new URL(req.url, "http://localhost").searchParams.get("marker") ?? ""
-      const count = prompts.filter((p) => p.includes(marker)).length
-      res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify({ count }))
+      send(res, 200, { count: prompts.filter((p) => p.includes(marker)).length })
       return
     }
-    if (req.method !== "POST" || !req.url?.endsWith("/language-model")) {
+    if (req.method !== "POST" || req.url !== "/v1/messages") {
       res.writeHead(404).end()
       return
     }
-    const text = userText(JSON.parse(body).prompt)
+    const request = JSON.parse(body)
+    if (request.output_config?.format?.type !== "json_schema") {
+      send(res, 400, {
+        type: "error",
+        error: { type: "invalid_request_error", message: "fake Anthropic API: expected output_config.format" },
+      })
+      return
+    }
+    const text = userText(request.messages)
     prompts.push(text)
     const question = text.match(/<question_data>([\s\S]*)<\/question_data>/)?.[1] ?? ""
     const output = question.includes("FUORI_SCHEMA")
       ? "Ecco la risposta, senza JSON."
-      : question
-        ? answerFor(text)
-        : themesFor(text)
+      : JSON.stringify(question ? answerFor(text) : themesFor(text))
     const delay = question.includes("LENTA") ? 20_000 : 0
     setTimeout(() => {
-      res.writeHead(200, { "content-type": "application/json" })
-      res.end(
-        JSON.stringify({
-          content: [{ type: "text", text: typeof output === "string" ? output : JSON.stringify(output) }],
-          finishReason: { unified: "stop", raw: "end_turn" },
-          usage: {
-            inputTokens: { total: 1200, noCache: 1200 },
-            outputTokens: { total: 300, text: 300 },
-          },
-          warnings: [],
-        })
-      )
+      send(res, 200, {
+        id: "msg_fake",
+        type: "message",
+        role: "assistant",
+        model: request.model,
+        content: [{ type: "text", text: output }],
+        stop_reason: "end_turn",
+        stop_sequence: null,
+        usage: { input_tokens: 1200, output_tokens: 300 },
+      })
     }, delay)
   })
-}).listen(PORT, "127.0.0.1", () => console.log(`Fake AI Gateway on http://127.0.0.1:${PORT}`))
+}).listen(PORT, "127.0.0.1", () => console.log(`Fake Anthropic API on http://127.0.0.1:${PORT}`))

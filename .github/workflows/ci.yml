@@ -2,7 +2,7 @@ name: CI
 
 # Every pull request: typecheck, lint, unit tests, database tests (migrations from zero and RLS)
 # and the end-to-end test of the main flow. Tests run against a local Supabase started in the job,
-# the analysis against a fake AI Gateway: no secret is needed and nothing reaches real services.
+# the analysis against a fake Anthropic API: no secret is needed and nothing reaches real services.
 
 on:
   pull_request:

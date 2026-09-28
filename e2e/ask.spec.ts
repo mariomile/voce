@@ -1,12 +1,12 @@
 import { expect, test } from "@playwright/test"
 import { admin, confirmationLink, insertFeedback, signedInUser } from "./helpers"
 
-// "Chiedi ai tuoi feedback" in the browser. The fake gateway (e2e/fake-gateway.mts) answers every
+// "Chiedi ai tuoi feedback" in the browser. The fake Anthropic API (e2e/fake-anthropic.mts) answers every
 // question by citing the first feedback it received: no real model is ever called.
 
-// Same default and same env var as e2e/fake-gateway.mts and playwright.config.ts, so a run on a
-// different port (FAKE_GATEWAY_PORT set before invoking Playwright) still reaches GET /calls.
-const FAKE_GATEWAY_PORT = Number(process.env.FAKE_GATEWAY_PORT ?? 4010)
+// Same default and same env var as e2e/fake-anthropic.mts and playwright.config.ts, so a run on a
+// different port (FAKE_ANTHROPIC_PORT set before invoking Playwright) still reaches GET /calls.
+const FAKE_ANTHROPIC_PORT = Number(process.env.FAKE_ANTHROPIC_PORT ?? 4010)
 
 test("ask a question from the keyboard and read the answer", async ({ page }) => {
   const email = `e2e-ask-${crypto.randomUUID().slice(0, 8)}@test.voce`
@@ -312,14 +312,14 @@ test("waiting state and the 15-second message", async ({ page }) => {
   await page.clock.runFor(15_000)
   await expect(status(page)).toHaveText("Ci vuole più del solito. La risposta arriva: resta su questa pagina.")
   await expect(field).toBeFocused()
-  // The fake gateway answers after 20 real seconds.
+  // The fake Anthropic API answers after 20 real seconds.
   await expect(page.getByRole("region", { name: "Risposta a «LENTA sul PDF?»" })).toBeVisible({ timeout: 30_000 })
 })
 
 test("two quick submits make one model call", async ({ page, request }) => {
   const { field } = await openAsk(page, "double")
   // A marker unique to this test run, so GET /calls only counts prompts this test sent: with the
-  // LENTA marker the fake gateway holds its answer for 20 real seconds, so both submits below land
+  // LENTA marker the fake Anthropic API holds its answer for 20 real seconds, so both submits below land
   // while the first question is still in flight (a fast reply would make the second submit, once
   // the button is enabled again, a legitimate second question rather than a doubled one).
   const marker = `LENTA-DOPPIO-${crypto.randomUUID().slice(0, 8)}`
@@ -328,6 +328,6 @@ test("two quick submits make one model call", async ({ page, request }) => {
   await page.keyboard.press("Enter")
   await page.keyboard.press("Enter")
   await expect(page.getByRole("region", { name: `Risposta a «${question}»` })).toBeVisible({ timeout: 30_000 })
-  const calls = await request.get(`http://127.0.0.1:${FAKE_GATEWAY_PORT}/calls?marker=${marker}`)
+  const calls = await request.get(`http://127.0.0.1:${FAKE_ANTHROPIC_PORT}/calls?marker=${marker}`)
   expect((await calls.json()).count).toBe(1)
 })

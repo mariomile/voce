@@ -50,9 +50,28 @@ describe("runQuestion", () => {
     expect(timeout).toHaveBeenCalledWith(60_000)
   })
 
+  it("turns thinking off, like the analysis", async () => {
+    const model = fakeModel(answer())
+    await runQuestion({ model, modelId: analysisModel(), question: "La banca?", feedback })
+    // Sonnet 5 thinks by default and thinking counts against maxOutputTokens: with 1500 tokens
+    // it could use the whole budget and return no answer.
+    expect(model.doGenerateCalls[0].providerOptions?.anthropic).toMatchObject({ thinking: { type: "disabled" } })
+  })
+
+  it("says why the model stopped when it ran out of output tokens", async () => {
+    await expect(
+      runQuestion({
+        model: fakeModel('{"answer": "La banca', { input: 1200, output: 1500 }, "length"),
+        modelId: "x",
+        question: "La banca?",
+        feedback,
+      })
+    ).rejects.toThrow(/length.*1500/)
+  })
+
   it("returns the checked answer, the server count, tokens and the cost", async () => {
     const model = fakeModel(answer(), { input: 100_000, output: 1_000 })
-    const result = await runQuestion({ model, modelId: "anthropic/claude-sonnet-5", question: "La banca?", feedback })
+    const result = await runQuestion({ model, modelId: "claude-sonnet-5", question: "La banca?", feedback })
     expect(result).toMatchObject({
       raw: answer(),
       answer: "La banca si scollega spesso e va ricollegata a mano.",
