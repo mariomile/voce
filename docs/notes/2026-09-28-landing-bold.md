@@ -1,27 +1,31 @@
-# Landing più decisa, testo e grafica
+# Landing davvero bold, testo e grafica
 
 ## Cosa è stato fatto
 
 La landing è stata riscritta per la sala di PHC26 del 1 ottobre: circa 230 PM la vedono da un proiettore e dal telefono. Deve dire cosa fa Voce in pochi secondi e non sembrare un modello di SaaS.
 
-- Titolo: "Chi si lamenta più forte non decide la roadmap." a 96 px, con "non decide la roadmap" evidenziato. È il problema del brief (la roadmap segue il cliente più rumoroso) detto come lo direbbe un PM.
-- L'idea della pagina è l'evidenziatore del sistema: cinque clienti scrivono lo stesso problema con parole diverse, ognuno ha la sua frase evidenziata, e Voce li conta in un tema ("58 feedback"). L'esempio dice che i feedback sono inventati.
-- I tre passi diventano tre verbi a tutta scala (Raccogli, Analizza, Decidi), senza numeri: la sequenza la dice già l'ordine.
-- Nuova sezione Chiedi su fascia inchiostro, l'unica scura della pagina: domanda, conteggio in giallo, risposta e due citazioni.
-- Prezzi: il titolo dice il fatto ("Gratis fino a 100 feedback."), prezzi a 96 px. Righe dei piani invariate e lette da `PLAN_LIMITS`.
-- Chiusura con il trigger dell'ICP: "Porta i temi alla prossima riunione di roadmap."
-- La pagina ora è responsive: prima a 390 px il layout a due colonne usciva dallo schermo.
+Primo passaggio: stesso sistema dell'app, titolo a 96 px. Mario: "ti ho detto di fare roba BOLD". Secondo passaggio: la landing esce dal sistema sobrio dell'app, solo lei.
+
+- Primo schermo tutto giallo. Titolo "Chi si lamenta più forte non decide la roadmap." in Hanken 900 fino a 200 px, "non decide la roadmap." in una fascia inchiostro con testo giallo. Una riga di testo e un pulsante grande.
+- "58" alto un terzo dello schermo, a cavallo tra il giallo e il bianco, accanto al tema d'esempio.
+- "Parole diverse, stesso problema.": le cinque citazioni in un solo paragrafo serif grande, ognuna con il canale in un'etichetta e la frase chiave evidenziata. Dichiarate inventate.
+- Raccogli, Analizza, Decidi larghi quanto lo schermo, una riga sotto ciascuno.
+- Chiedi su fondo inchiostro: domanda scritta in grande, "12" in giallo, una riga di risposta e due citazioni. Dichiarato esempio.
+- Prezzi a scala da manifesto, chiusura su fondo giallo.
+- Testo dimezzato ovunque.
+- Responsive: prima a 390 px il layout usciva dallo schermo.
 
 ## Decisioni
 
-- Nessun font, colore o dipendenza nuova. Aggiunte solo tre taglie da display (`--text-7xl` 64, `--text-8xl` 80, `--text-9xl` 96) e `--tracking-display`, solo per la landing, documentate in `DESIGN.md` e in `design/kit.css`. Tetto a 96 px.
-- Un solo movimento: l'evidenziatore passa sul titolo al caricamento, spento con `prefers-reduced-motion`. Il testo è sempre visibile.
-- Niente numeri, loghi o testimonianze inventate. "Non serve una carta" viene dalla pagina di registrazione, che lo dice già.
-- Il test `src/test/plan-pages.test.tsx` e l'e2e "billing and landing show the question quota" cercano le righe delle domande: sono rimaste identiche, nessun test cambiato.
+- Nessun font, colore o dipendenza nuova: stessi token, Hanken e Literata a pesi e taglie estremi. Le regole della landing stanno in `src/app/landing.css`; `globals.css`, `design/kit.css` e le schermate dell'app non cambiano.
+- Le taglie da display aggiunte nel primo passaggio (`--text-7xl`...`9xl`) sono state tolte: la landing usa le sue classi, il sistema dell'app resta com'era.
+- Movimento: conteggio che sale, evidenziatori in sequenza, domanda che si scrive, risposta che sale. Partono una volta quando il blocco entra nello schermo, grazie a un piccolo componente client (`src/components/in-view.tsx`, IntersectionObserver). Prima e senza JavaScript tutto è nello stato finale; con `prefers-reduced-motion` non parte niente. Scartate le animazioni legate allo scroll: su un telefono che scorre veloce il conteggio si sarebbe fermato a metà.
+- Niente numeri, loghi o testimonianze inventate. "Non serve una carta" viene dalla pagina di registrazione.
+- Le righe dei piani sono identiche e lette da `PLAN_LIMITS`: nessun test cambiato.
 
 ## Verifica
 
-`pnpm typecheck` e `pnpm lint` puliti. Unit test senza Supabase: 93 passati, 10 file saltano perché serve Supabase locale (Docker non parte), come su main. `pnpm build` riuscito, `/` resta statica. Screenshot prima e dopo in `/tmp/voce-landing/` a 1440x900, 1280x720 al 150% e 390x844.
+Vedi la descrizione della PR #8 per i numeri. Screenshot in `/tmp/voce-landing/` con prefisso `bold2-`.
 
 ## Cosa resta
 

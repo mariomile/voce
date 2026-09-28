@@ -1,0 +1,253 @@
+/*
+ * Landing only. The app keeps the restrained system in globals.css and DESIGN.md;
+ * the landing uses the same colors and fonts at poster scale. Rules in DESIGN.md, "Landing".
+ */
+
+.landing {
+  --l-pad: clamp(20px, 4vw, 64px);
+}
+
+.landing ::selection {
+  background: var(--color-ink);
+  color: var(--color-highlight);
+}
+
+.l-wrap {
+  width: 100%;
+  max-width: 1680px;
+  margin-inline: auto;
+  padding-inline: var(--l-pad);
+}
+
+/* ---------- Type ---------- */
+
+.l-hero-title {
+  font-size: clamp(56px, min(12.4vw, 18svh), 200px);
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+}
+
+@media (max-width: 639px) {
+  .l-hero-title {
+    font-size: 18vw;
+  }
+}
+
+.l-h2 {
+  font-size: clamp(44px, 7.6vw, 132px);
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+
+.l-verb {
+  font-size: 18.4vw;
+  font-weight: 900;
+  line-height: 0.8;
+  letter-spacing: -0.055em;
+}
+
+.l-lede {
+  font-size: clamp(18px, 1.9vw, 30px);
+  line-height: 1.3;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+/* Billboard numbers: the number leads, at poster size */
+.l-billboard {
+  font-size: clamp(190px, 33vw, 540px);
+  font-weight: 900;
+  line-height: 0.76;
+  letter-spacing: -0.065em;
+  font-variant-numeric: tabular-nums;
+}
+
+.l-price {
+  font-size: clamp(88px, 11vw, 190px);
+  font-weight: 900;
+  line-height: 0.8;
+  letter-spacing: -0.06em;
+}
+
+/* ---------- The ink band: the highlighter, inverted, on the yellow hero ---------- */
+
+.l-ink-mark {
+  color: var(--color-highlight);
+  background: linear-gradient(transparent 16%, var(--color-ink) 16%, var(--color-ink) 100%);
+  padding: 0 0.07em;
+  margin: 0 -0.03em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+/* ---------- Big call to action ---------- */
+
+.l-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+  border-radius: 999px;
+  background: var(--color-ink);
+  color: var(--color-paper);
+  font-size: clamp(18px, 1.6vw, 26px);
+  font-weight: 700;
+  line-height: 1;
+  padding: 1em 1.5em;
+  transition: background-color 160ms ease-out;
+}
+
+.l-cta:hover {
+  background: var(--color-ink-hover);
+}
+
+.l-cta svg {
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.l-cta:hover svg {
+  transform: translateX(0.25em);
+}
+
+.l-cta:focus-visible {
+  outline: 3px solid var(--color-ink);
+  outline-offset: 4px;
+}
+
+/* ---------- The wall of voices ---------- */
+
+.l-wall {
+  font-family: var(--font-serif);
+  font-size: clamp(24px, 3.3vw, 54px);
+  line-height: 1.32;
+  letter-spacing: -0.01em;
+  color: var(--color-ink-muted);
+}
+
+.l-wall mark {
+  color: var(--color-ink);
+}
+
+.l-tag {
+  display: inline-block;
+  vertical-align: 0.28em;
+  margin-right: 0.35em;
+  border-radius: 999px;
+  background: var(--color-ink);
+  color: var(--color-paper);
+  font-family: var(--font-sans);
+  font-size: max(12px, 0.36em);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+  padding: 0.45em 0.8em;
+  white-space: nowrap;
+}
+
+/* ---------- The question, typed large ---------- */
+
+.l-question {
+  font-size: clamp(26px, 4.4vw, 76px);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+.l-caret {
+  display: inline-block;
+  width: 0.06em;
+  height: 0.9em;
+  margin-left: 0.08em;
+  vertical-align: -0.08em;
+  background: var(--color-highlight);
+}
+
+/* ---------- Motion. Every piece is off with prefers-reduced-motion. ---------- */
+
+@property --l-n {
+  syntax: "<integer>";
+  inherits: false;
+  initial-value: 0;
+}
+
+/* The count ticks up to its value. The number is also in the page as text for screen readers. */
+.l-count {
+  --l-n: var(--l-to);
+  counter-reset: l-n var(--l-n);
+}
+
+.l-count::after {
+  content: counter(l-n);
+}
+
+@keyframes l-tick {
+  from {
+    --l-n: 0;
+  }
+}
+
+@keyframes l-reveal {
+  from {
+    clip-path: inset(-10% 100% -10% 0);
+  }
+  to {
+    clip-path: inset(-10% 0 -10% 0);
+  }
+}
+
+@keyframes l-sweep {
+  from {
+    background-size: 0% 100%;
+  }
+  to {
+    background-size: 100% 100%;
+  }
+}
+
+@keyframes l-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .l-caret {
+    animation: l-blink 1s steps(1) infinite;
+  }
+
+  /* Entrances run once, when InView marks the block. Before that, everything is in its final state. */
+  [data-inview] .l-count {
+    animation: l-tick 1600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  [data-inview] .l-wall mark {
+    background-repeat: no-repeat;
+    animation: l-sweep 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  [data-inview] .l-wall > span:nth-child(2) mark { animation-delay: 250ms; }
+  [data-inview] .l-wall > span:nth-child(3) mark { animation-delay: 500ms; }
+  [data-inview] .l-wall > span:nth-child(4) mark { animation-delay: 750ms; }
+  [data-inview] .l-wall > span:nth-child(5) mark { animation-delay: 1000ms; }
+
+  [data-inview] .l-typed {
+    animation: l-reveal 1300ms steps(33, end) both;
+  }
+
+  [data-inview] .l-answer .l-count {
+    animation-delay: 1300ms;
+  }
+
+  [data-inview] .l-answer {
+    animation: l-rise 700ms cubic-bezier(0.16, 1, 0.3, 1) 1300ms both;
+  }
+}
+
+@keyframes l-rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
