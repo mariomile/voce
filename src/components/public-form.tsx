@@ -1,7 +1,7 @@
 "use client"
 
 import { useLocale, useTranslations } from "next-intl"
-import { useState, useTransition } from "react"
+import { useEffect, useRef, useState, useTransition } from "react"
 import { cn } from "cn"
 import { submitFeedback } from "@/app/actions"
 import { Avatar } from "@/components/logo"
@@ -33,6 +33,11 @@ export function PublicForm({
   const [status, setStatus] = useState<Status>("writing")
   const [error, setError] = useState<"invalid_email" | "invalid" | "rate_limited" | null>(null)
   const [pending, startTransition] = useTransition()
+  // After sending, the form is gone: the focus goes to the thank-you, so a screen reader reads it.
+  const sentHeading = useRef<HTMLHeadingElement>(null)
+  useEffect(() => {
+    if (status === "sent") sentHeading.current?.focus()
+  }, [status])
 
   if (status === "unavailable") return <FormUnavailable workspaceName={workspaceName} />
 
@@ -40,7 +45,7 @@ export function PublicForm({
     return (
       <FormShell className="bg-highlight">
         <FormBrand name={workspaceName} className="mb-24" />
-        <h1 className="mb-4 font-serif text-5xl leading-display font-medium tracking-snug">
+        <h1 ref={sentHeading} tabIndex={-1} className="mb-4 font-serif text-5xl leading-display font-medium tracking-snug outline-none">
           {t("sent.title")}
         </h1>
         <p className="mb-8 text-lg leading-normal text-on-highlight">
@@ -75,7 +80,7 @@ export function PublicForm({
   }
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <main className="flex min-h-dvh flex-col">
       <div className={cn("bg-highlight px-6 pt-6", compact ? "pb-4" : "pb-8")}>
         <div className="mx-auto w-full max-w-lg">
           <FormBrand name={workspaceName} className={compact ? "mb-3" : "mb-8"} />
@@ -163,7 +168,7 @@ export function PublicForm({
         </Button>
         <FormFoot className="-mt-2">{t("footer")}</FormFoot>
       </form>
-    </div>
+    </main>
   )
 }
 
@@ -185,9 +190,9 @@ export function FormUnavailable({ workspaceName }: { workspaceName: string }) {
 
 function FormShell({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
-    <div className={cn("flex min-h-dvh flex-col px-6 pt-6 pb-8", className)}>
+    <main className={cn("flex min-h-dvh flex-col px-6 pt-6 pb-8", className)}>
       <div className="mx-auto flex w-full max-w-lg flex-1 flex-col">{children}</div>
-    </div>
+    </main>
   )
 }
 
