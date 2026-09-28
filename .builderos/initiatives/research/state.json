@@ -1,0 +1,70 @@
+{
+  "schema": 2,
+  "slug": "research",
+  "title": "Research: customer discovery",
+  "mode": "lite",
+  "track": "product",
+  "status": "open",
+  "current_phase": 0,
+  "cycle": 1,
+  "created_at": "2026-09-28T16:45:27.844Z",
+  "updated_at": "2026-09-28T16:45:32.666Z",
+  "review_due": null,
+  "phases": {
+    "0": {
+      "status": "in_progress",
+      "artifact": null,
+      "gate": null
+    },
+    "1": {
+      "status": "pending",
+      "artifact": null,
+      "gate": null
+    },
+    "2": {
+      "status": "pending",
+      "artifact": null,
+      "gate": null
+    },
+    "3": {
+      "status": "pending",
+      "artifact": null,
+      "gate": null
+    },
+    "4": {
+      "status": "pending",
+      "artifact": null,
+      "gate": null
+    },
+    "5": {
+      "status": "pending",
+      "artifact": null,
+      "gate": null
+    },
+    "6": {
+      "status": "pending",
+      "artifact": null,
+      "gate": null
+    },
+    "7": {
+      "status": "pending",
+      "artifact": null,
+      "gate": null
+    }
+  },
+  "history": [
+    {
+      "at": "2026-09-28T16:45:27.844Z",
+      "event": "track_set",
+      "track": "feature",
+      "reason": "Voce esiste già e la richiesta la cambia: riposiziona il prodotto sulla customer discovery, con la Research (domanda, ipotesi, raccolta dedicata, temi, Chiedi e verdetto) come contenitore di ogni feedback"
+    },
+    {
+      "at": "2026-09-28T16:45:32.666Z",
+      "event": "track_upgraded",
+      "from": "feature",
+      "to": "product",
+      "reason": "coverage check failed: C.3"
+    }
+  ]
+}
