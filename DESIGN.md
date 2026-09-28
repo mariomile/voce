@@ -180,7 +180,14 @@ Composti dai componenti sopra, servono alle schermate della B.
 - **Modulo pubblico**: `.form-page`; `.form-ask` con `.form-brand` (`.avatar` con l'iniziale del workspace), `.form-ask-title` e `.form-ask-text` su `.surface-highlight`; `.form-body` con i campi a riga e il pulsante in fondo; `.form-foot`. `.form-message` per inviato e non disponibile, `.form-message-title.is-long` quando il messaggio è lungo.
   - La domanda (`.form-ask-title`) la sceglie il PM, con default "Cosa vuoi dire al team di …?". Va a capo su qualsiasi lunghezza; mentre si scrive, `.form-ask.is-compact` la riduce e nasconde il sottotitolo.
   - La domanda è testo scritto dal PM e mostrato a sconosciuti: sempre come testo, mai come HTML. Massimo 140 caratteri.
-- **Landing**: barra con marchio, accesso e "Prova gratis"; titolo sans a `--text-6xl`; un tema d'esempio in una `card`; i tre passi separati da una linea inchiostro; i prezzi in due `card`, Pro in `card-highlight` (è l'azione consigliata della pagina).
+- **Landing**: l'unica superficie che esce dal sistema sobrio, perché si guarda da un proiettore e da un telefono e deve arrivare in pochi secondi. Stessi colori e stessi font, a scala da manifesto; le regole stanno in `src/app/landing.css` (classi `l-*`) e non entrano nell'app.
+  - Il primo schermo è tutto giallo: il titolo in Hanken 900 fino a 200 px, la frase chiave in una fascia inchiostro con testo giallo (l'evidenziatore rovesciato). Un solo pulsante grande.
+  - Il numero guida, alla lettera: "58" alto un terzo dello schermo, a cavallo tra il giallo e il bianco.
+  - "Parole diverse, stesso problema.": le cinque citazioni scorrono in un solo paragrafo serif grande, ogni canale in un'etichetta inchiostro, ogni frase chiave evidenziata. L'esempio dice sempre che i feedback sono inventati.
+  - I tre verbi larghi quanto lo schermo, una riga di testo sotto ciascuno.
+  - Chiedi su fondo inchiostro: la domanda scritta in grande, il conteggio in giallo a scala da manifesto.
+  - Movimento: il conteggio sale da 0, gli evidenziatori passano uno dopo l'altro, la domanda si scrive, la risposta sale. Partono una volta quando il blocco entra nello schermo (`InView`), e con `prefers-reduced-motion` non parte niente. Senza JavaScript tutto è già nello stato finale.
+  - Nella fascia inchiostro non ci sono elementi con focus: l'anello inchiostro non si vedrebbe.
 - **Accesso e registrazione**: colonna stretta, marchio in alto, campi `.input` con fondo velo, un solo pulsante primario a tutta larghezza.
 
 ## Nell'app
