@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest"
 import {
+  FLY_DELAY_MAX,
+  FLY_MS,
+  GROW_DELAY,
+  LABEL_DELAY,
   bubbleLayout,
   bubbleTargets,
   dotOrderByX,
@@ -418,5 +422,13 @@ describe("staggerDelays", () => {
     expect(many[1]).toBeGreaterThan(0)
     expect(staggerDelays(0, 100, 1500)).toEqual([])
     expect(staggerDelays(1, 100, 1500)).toEqual([0])
+  })
+})
+
+describe("the flight's timing", () => {
+  it("grows the extra dots as the first flights land, and brings the labels in after that", () => {
+    expect(GROW_DELAY).toBeGreaterThanOrEqual(FLY_MS)
+    expect(LABEL_DELAY).toBeGreaterThan(GROW_DELAY)
+    expect(LABEL_DELAY).toBeGreaterThan(FLY_DELAY_MAX)
   })
 })

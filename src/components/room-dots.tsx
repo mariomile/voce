@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { staggerDelays, type Circle, type DotColor, type Scene } from "@/lib/room-viz"
+import { FLY_DELAY_MAX, FLY_MS, GROW_DELAY, staggerDelays, type Circle, type DotColor, type Scene } from "@/lib/room-viz"
 
 // The room screen's dots, drawn on one canvas behind the text. React only hands over where each
 // dot should be (a scene); this component keeps the dots in memory and animates them frame by
@@ -161,7 +161,7 @@ function createEngine(canvas: HTMLCanvasElement) {
       if (same && !modeChanged) continue
       if (modeChanged) {
         const distance = Math.hypot(to.x - dot.x, to.y - dot.y)
-        animate(dot, to, "fly", now + Math.random() * 450, 900 + Math.random() * 400, Math.min(260, distance * 0.35))
+        animate(dot, to, "fly", now + Math.random() * FLY_DELAY_MAX, FLY_MS + Math.random() * 400, Math.min(260, distance * 0.35))
       } else if (dot.motion === "drop" && !dot.done) {
         // Still falling: land on the new place instead.
         dot.to = to
@@ -192,7 +192,7 @@ function createEngine(canvas: HTMLCanvasElement) {
         dot.ripple = !firstScene
       } else {
         dot.r = 0
-        animate(dot, to, "grow", now + (modeChanged ? 900 : 0) + delays[k], 450)
+        animate(dot, to, "grow", now + (modeChanged ? GROW_DELAY : 0) + delays[k], 450)
       }
     })
     if (still) dying = []

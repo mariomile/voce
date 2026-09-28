@@ -14,6 +14,8 @@ import type { RoomStatus, RoomTheme } from "@/lib/room"
 import {
   bubbleTargets,
   dotOrderByX,
+  LABEL_DELAY,
+  LABEL_STEP,
   growBubble,
   pilePlaces,
   pileStep,
@@ -417,7 +419,7 @@ function ThemesView({
                         left: label.x,
                         width: label.width,
                         top: label.top,
-                        animationDelay: `${1200 + i * 90}ms`,
+                        animationDelay: `${LABEL_DELAY + i * LABEL_STEP}ms`,
                       }}
                     >
                       {group.kind === "other" ? (

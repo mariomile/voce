@@ -276,6 +276,15 @@ export function bubbleTargets(order: number[], bubbles: { points: Point[] }[]): 
 
 // ---------- Timing ----------
 
+// From the pile to the bubbles: each dot takes off within FLY_DELAY_MAX ms and flies at least
+// FLY_MS. The dots the themes need beyond the pile grow in their bubble as the first flights land;
+// the labels under the bubbles fade in after that, LABEL_STEP ms apart.
+export const FLY_DELAY_MAX = 450
+export const FLY_MS = 900
+export const GROW_DELAY = FLY_MS
+export const LABEL_DELAY = 1200
+export const LABEL_STEP = 90
+
 // Delay of each dot, one after the other: step apart, squeezed so the last starts by max.
 export function staggerDelays(n: number, step: number, max: number): number[] {
   const interval = n > 1 ? Math.min(step, max / (n - 1)) : 0
