@@ -22,7 +22,7 @@ export function ThemeRow({ theme, compact = false }: { theme: ThemeSummary; comp
   return (
     <article
       className={cn(
-        "grid grid-cols-[148px_1fr_168px] gap-8 border-b border-line",
+        "grid grid-cols-1 gap-4 border-b border-line sm:grid-cols-[148px_1fr_168px] sm:gap-8",
         compact ? "py-6" : "py-8"
       )}
     >

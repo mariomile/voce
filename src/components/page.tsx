@@ -4,11 +4,11 @@ import { cn } from "cn"
 // Kit: .page, .page-header, .page-title, .page-lede, .page-section, .page-more
 
 export function Page({ className, ...props }: React.ComponentProps<"main">) {
-  return <main className={cn("mx-auto w-full max-w-[1120px] px-10 pt-12 pb-16", className)} {...props} />
+  return <main className={cn("mx-auto w-full max-w-[1120px] px-5 pt-8 pb-16 sm:px-10 sm:pt-12", className)} {...props} />
 }
 
 export function PageHeader({ className, ...props }: React.ComponentProps<"div">) {
-  return <div className={cn("mb-6 flex items-end justify-between gap-10", className)} {...props} />
+  return <div className={cn("mb-6 flex flex-col items-start gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-10", className)} {...props} />
 }
 
 export function PageTitle({ className, ...props }: React.ComponentProps<"h1">) {

@@ -162,7 +162,7 @@ export default async function SynthesisPage({ params, searchParams }: PageProps<
                 .
               </CardText>
             </Card>
-            <div className="grid grid-cols-2 gap-x-12">
+            <div className="grid grid-cols-1 gap-x-12 sm:grid-cols-2">
               {dashboard.recentFeedback.map((f) => (
                 <Quote
                   key={f.id}

@@ -26,7 +26,7 @@ export function ResearchRow({ research }: { research: ResearchSummary }) {
     research.formEnabled ? null : t("formOff"),
   ].filter((s) => s !== null)
   return (
-    <article className="grid grid-cols-[148px_1fr] gap-8 border-b border-line py-6">
+    <article className="grid grid-cols-1 gap-3 border-b border-line py-6 sm:grid-cols-[148px_1fr] sm:gap-8">
       <div>{research.feedbackCount > 0 && <Stat value={research.feedbackCount} label={t("feedbackLabel")} />}</div>
       <div>
         <h2 className="mb-1 text-2xl leading-snug font-bold tracking-snug">

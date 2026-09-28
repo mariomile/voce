@@ -309,7 +309,7 @@ function HypothesisRow({ hypothesis, t, onDeleted }: { hypothesis: Hypothesis; t
   }
 
   return (
-    <li className="grid grid-cols-[148px_1fr] gap-6 border-t border-line py-5">
+    <li className="grid grid-cols-1 gap-3 border-t border-line py-5 sm:grid-cols-[148px_1fr] sm:gap-6">
       {/* The column of the verdict, as wide as the number column of the themes. */}
       <div>{hypothesis.verdict && <VerdictWord verdict={hypothesis.verdict} />}</div>
       <div>

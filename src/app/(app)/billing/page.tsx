@@ -56,7 +56,7 @@ export default async function BillingPage({ searchParams }: PageProps<"/billing"
       {backFromCheckout && !pro && <CheckoutPending />}
       {backFromCheckout && pro && <CheckoutConfirmed />}
 
-      <div className="grid max-w-[760px] grid-cols-2 gap-5">
+      <div className="grid max-w-[760px] grid-cols-1 gap-5 sm:grid-cols-2">
         <Card>
           <PlanHeading name={t("freeName")} price={t("freePrice")} period={t("freePeriod")} current={!pro} yourPlan={t("yourPlan")} />
           <CardText>

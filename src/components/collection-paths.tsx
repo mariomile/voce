@@ -15,7 +15,7 @@ export function CollectionPaths({ research, origin }: { research: Pick<Research,
     <div className="py-6">
       <h2 className="mb-4 max-w-[24ch] font-serif text-5xl leading-snug font-normal tracking-snug">{t("heading")}</h2>
       <p className="mb-10 max-w-[58ch] text-lg leading-relaxed text-ink-muted">{t("lede")}</p>
-      <div className="grid grid-cols-[1.35fr_1fr_1fr] gap-5">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-[1.35fr_1fr_1fr]">
         <Card variant="highlight" layout="media">
           <CardBody>
             <CardTitle>{t("askTitle")}</CardTitle>
