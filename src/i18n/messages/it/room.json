@@ -6,7 +6,7 @@
   "pile": {
     "running": "Analisi in corso…",
     "runningNote": "Può volerci qualche minuto. I temi compaiono qui appena è finita.",
-    "noOpenThemes": "L'analisi è finita, ma non ci sono temi aperti da mostrare. Li trovi in Temi.",
+    "noOpenThemes": "L'analisi è finita, ma non ci sono temi aperti da mostrare. Li trovi nella Research.",
     "idle": "Si accende con la prima risposta.",
     "analyze": "Analizza le risposte",
     "scanHelp": "Inquadra e rispondi dal telefono. Non serve un account.",
@@ -33,5 +33,11 @@
     "heading": "Cosa dice la sala",
     "summary": "{responses}, {themes}: {kinds}.",
     "other": "Altro"
+  },
+  "hypothesesNote": "Il verdetto delle ipotesi lo trovi nella Research.",
+  "deleted": {
+    "title": "Questa Research non c'è più.",
+    "text": "Il modulo non accetta risposte.",
+    "action": "Torna alle Research"
   }
 }

@@ -4,7 +4,7 @@ import { getLocale, getTranslations } from "next-intl/server"
 import { QrCode } from "@/components/qr-code"
 import { RoomScreen } from "@/components/room-screen"
 import type { Locale } from "@/i18n/locale"
-import { getCurrentWorkspace, getResearch, getRoomStatus, getUsage, type Usage } from "@/lib/data"
+import { countHypotheses, getCurrentWorkspace, getResearch, getRoomStatus, getUsage, type Usage } from "@/lib/data"
 import { formatMonth } from "@/lib/format"
 import { getOrigin } from "@/lib/origin"
 import "../../../landing.css"
@@ -19,14 +19,16 @@ export async function generateMetadata(): Promise<Metadata> {
 export const maxDuration = 300
 
 // Projected during a live session: the question of the Research's form, its QR code and the live
-// count, then the themes. Never the text of a feedback: the screen gets counts and theme titles only.
+// count, then the themes. Never the text of a feedback, never a verdict: the screen gets counts and theme
+// titles only, and its analysis runs the themes alone.
 // Outside the app layout: no app bar on the projector.
 export default async function RoomPage({ params }: PageProps<"/research/[id]/sala">) {
   const research = await getResearch((await params).id)
   if (!research) notFound()
   const workspace = await getCurrentWorkspace()
-  const [status, usage, origin, locale, tCommon] = await Promise.all([
+  const [status, hypotheses, usage, origin, locale, tCommon] = await Promise.all([
     getRoomStatus(research),
+    countHypotheses(research),
     getUsage(workspace.id),
     getOrigin(),
     getLocale(),
@@ -45,6 +47,7 @@ export default async function RoomPage({ params }: PageProps<"/research/[id]/sal
       qrCode={<QrCode url={`${origin}${formPath}`} className="room-qr rounded-lg p-[max(12px,1.6svh)]" />}
       initialStatus={status}
       limitNote={analysisLimitNote(usage, tCommon, locale)}
+      hasHypotheses={hypotheses > 0}
     />
   )
 }

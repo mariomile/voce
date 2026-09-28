@@ -1006,6 +1006,30 @@ describe("synthesize and the quota of the verdict", () => {
   })
 })
 
+describe("synthesize from the room", () => {
+  it("room mode reserves only themes with hypotheses: one row, one call, no verdict", async () => {
+    await addFeedback()
+    const hypotheses = await addHypotheses(["La banca si scollega"])
+    const model = fakeSynthesisModel({ themes: [bank] }, priced)
+    ai.model = model
+    expect(await synthesize(user.researchId, "room")).toMatchObject({ ok: true, themes: "done", verdict: "skipped" })
+    expect(model.doGenerateCalls).toHaveLength(1)
+    expect((await analyses()).map((a) => a.kind)).toEqual(["themes"])
+    expect(await verdictsOf(hypotheses)).toEqual([undefined])
+    expect((await getUsage(user.workspaceId)).analysesThisMonth).toBe(1)
+  })
+
+  it("room mode with the analyses used up: limit from the database and no model call", async () => {
+    await addFeedback()
+    await addHypotheses(["La banca si scollega"])
+    await insertAnalyses(3, "done")
+    const model = fakeSynthesisModel({ themes: [bank] }, priced)
+    ai.model = model
+    expect(await synthesize(user.researchId, "room")).toEqual({ ok: false, reason: "limit" })
+    expect(model.doGenerateCalls).toHaveLength(0)
+  })
+})
+
 function themeRow(theme: typeof bank | typeof phone) {
   return {
     title: theme.title,

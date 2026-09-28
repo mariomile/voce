@@ -31,6 +31,9 @@ import {
 const POLL_MS = 3000
 const LONG_QUESTION = 70
 
+// The live status, plus "deleted" once /sala/status answers 404: the Research is gone (R1).
+type ScreenStatus = { responses: number; form: RoomStatus["form"] | "deleted" }
+
 // The themes, the count when they arrived, and the pile's dots from left to right at that moment.
 type Analysis = { themes: RoomTheme[]; responses: number; order: number[] }
 type Failure = AnalysisFailure | "no_open_themes"
@@ -50,6 +53,7 @@ export function RoomScreen({
   qrCode,
   initialStatus,
   limitNote,
+  hasHypotheses,
 }: {
   researchId: string
   workspaceName: string
@@ -58,6 +62,8 @@ export function RoomScreen({
   qrCode: ReactNode
   initialStatus: RoomStatus
   limitNote?: string
+  // "Analizza le risposte" runs the themes alone: the screen says where the verdict is.
+  hasHypotheses: boolean
 }) {
   const status = useRoomStatus(initialStatus, `/research/${researchId}/sala/status`)
   // "Esci dallo schermo" and "Riaccendi il link" go back to the Raccolta of this Research.
@@ -94,9 +100,11 @@ export function RoomScreen({
   }, [analysis, layout, groups, places, status.responses])
 
   function runAnalysis() {
+    // aria-disabled, not disabled: the button keeps the focus, so the click is refused here.
+    if (pending || limitNote || status.responses === 0) return
     setScreen({ act: "pile", failure: null })
     startTransition(async () => {
-      const result = await synthesize(researchId)
+      const result = await synthesize(researchId, "room")
       if (!result.ok) return setScreen({ act: "pile", failure: result.reason })
       const themes = await roomThemes(researchId)
       const responses = responsesRef.current
@@ -143,6 +151,7 @@ export function RoomScreen({
           qrCode={qrCode}
           status={status}
           limitNote={limitNote}
+          hasHypotheses={hasHypotheses}
           failure={screen.failure}
           pending={pending}
           onAnalyze={runAnalysis}
@@ -162,6 +171,7 @@ function PileView({
   qrCode,
   status,
   limitNote,
+  hasHypotheses,
   failure,
   pending,
   onAnalyze,
@@ -172,8 +182,9 @@ function PileView({
   question: string
   shortUrl: string
   qrCode: ReactNode
-  status: RoomStatus
+  status: ScreenStatus
   limitNote?: string
+  hasHypotheses: boolean
   failure: Failure | null
   pending: boolean
   onAnalyze: () => void
@@ -213,25 +224,26 @@ function PileView({
                 type="button"
                 className="l-cta"
                 onClick={onAnalyze}
-                disabled={pending || Boolean(limitNote) || status.responses === 0}
+                aria-disabled={pending || Boolean(limitNote) || status.responses === 0 || undefined}
               >
                 {pending ? t("pile.running") : t("pile.analyze")}
               </button>
+              {/* A failure reads in ink, the only colour at 7:1 on the highlight besides on-highlight. */}
               <p
                 role="status"
-                className={cn(
-                  "room-lede max-w-[34ch] empty:hidden",
-                  failure && !pending ? "text-problem" : "text-on-highlight"
-                )}
+                className={cn("room-lede max-w-[34ch] empty:hidden", failure && !pending ? "text-ink" : "text-on-highlight")}
               >
                 {note}
               </p>
             </div>
+            {hasHypotheses && <p className="room-lede max-w-[40ch] text-on-highlight">{t("hypothesesNote")}</p>}
           </div>
         </div>
 
         <aside className="flex max-w-[min(52svh,30vw)] flex-col justify-center gap-[2svh] self-center">
-          {status.form === "open" ? (
+          {status.form === "deleted" ? (
+            <FormPanel title={t("deleted.title")} text={t("deleted.text")} href="/research" action={t("deleted.action")} />
+          ) : status.form === "open" ? (
             <>
               <p className="room-lede">{t("pile.scanHelp")}</p>
               {qrCode}
@@ -258,15 +270,20 @@ function PileView({
   )
 }
 
-// Asks the server every few seconds, one call at a time. A failed call keeps the last count.
+// Asks the server every few seconds, one call at a time. A failed call keeps the last count. A 404 means
+// the Research was deleted (or is no longer the user's): the screen says so and stops asking.
 function useRoomStatus(initial: RoomStatus, url: string) {
-  const [status, setStatus] = useState(initial)
+  const [status, setStatus] = useState<ScreenStatus>(initial)
   useEffect(() => {
     let stopped = false
     let timer: ReturnType<typeof setTimeout>
     async function poll() {
       try {
         const response = await fetch(url, { cache: "no-store" })
+        if (response.status === 404) {
+          if (!stopped) setStatus((current) => ({ ...current, form: "deleted" }))
+          return
+        }
         if (response.ok && response.headers.get("content-type")?.includes("application/json")) {
           const next: RoomStatus = await response.json()
           if (!stopped) setStatus(next)
@@ -358,7 +375,7 @@ function RoomHeader({
         {children}
         <Link
           href={exitHref}
-          className={cn("room-lede underline-offset-4 hover:underline", onPaper ? "text-ink-muted" : "text-on-highlight")}
+          className={cn("room-lede underline-offset-4 hover:underline", onPaper ? "text-ink" : "text-on-highlight")}
         >
           {t("exit")}
         </Link>
@@ -410,7 +427,7 @@ function ThemesView({
   useEffect(() => heading.current?.focus(), [])
   const themes = groups.filter((g): g is ThemeGroup => g.kind !== "other")
   const toggle =
-    "room-lede rounded-full px-[0.8em] py-[0.25em] font-extrabold text-ink-muted transition-colors hover:text-ink aria-pressed:bg-ink aria-pressed:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+    "room-lede rounded-full px-[0.8em] py-[0.25em] font-extrabold text-ink transition-colors hover:bg-veil aria-pressed:bg-ink aria-pressed:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
   return (
     <>
       <RoomHeader workspaceName={workspaceName} exitHref={collectHref} onPaper>
@@ -430,7 +447,7 @@ function ThemesView({
         <h1 ref={heading} tabIndex={-1} className="room-panel-title outline-none">
           {t("themesView.heading")}
         </h1>
-        <p className="room-lede text-ink-muted">{themesSummary(responses, themes, t, tCommon, locale)}</p>
+        <p className="room-lede text-ink">{themesSummary(responses, themes, t, tCommon, locale)}</p>
       </div>
 
       {view === "bubbles" ? (
@@ -450,7 +467,7 @@ function ThemesView({
                     }}
                   >
                     {group.kind === "other" ? (
-                      group.count > 0 && <span className="room-lede text-ink-muted">{t("themesView.other")}</span>
+                      group.count > 0 && <span className="room-lede text-ink">{t("themesView.other")}</span>
                     ) : (
                       <ThemeLabel kind={group.kind} title={group.title} count={group.count} layout="bubble" />
                     )}
@@ -512,8 +529,9 @@ function ThemeLabel({
     <>
       <span className={bubble ? "room-bubble-count" : "room-theme-count w-[1.8em] text-right"}>{formatNumber(count, locale)}</span>
       <div className={bubble ? "flex flex-col items-center gap-[0.8svh]" : "min-w-0"}>
+        {/* The dot keeps the colour of the kind; the word is ink, readable from the back of the room. */}
         <Badge variant={kind} className={cn("room-kind", !bubble && "mb-[0.6svh]")}>
-          {tCommon(`kind.${kind}`)}
+          <span className="text-ink">{tCommon(`kind.${kind}`)}</span>
         </Badge>
         <p className={bubble ? "room-bubble-title" : "room-theme-title"}>{title}</p>
       </div>

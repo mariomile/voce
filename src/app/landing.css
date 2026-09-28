@@ -320,7 +320,7 @@
   padding: 0.85em 1.4em;
 }
 
-.room .l-cta:disabled {
+.room .l-cta[aria-disabled="true"] {
   background: var(--color-ink);
   opacity: 0.4;
   cursor: not-allowed;

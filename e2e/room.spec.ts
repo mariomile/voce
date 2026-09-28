@@ -1,16 +1,19 @@
 import { expect, test } from "@playwright/test"
-import { admin, insertFeedback, signedInUser } from "./helpers"
+import { admin, createResearch, daysAgo, insertFeedback, signedInUser } from "./helpers"
 
 // The room screen of a Research: projected during a live session, the audience answers its public
 // form from their phones. It shows counts and theme titles, never the text of a feedback: each response is a
 // dot on a canvas, and the analysis sorts the dots into one bubble per theme. The analysis goes to
 // the fake Anthropic API (e2e/fake-anthropic.mts), which groups every feedback into one theme.
 
-test("the counter goes up with a public form response, then the analysis shows the themes", async ({ page, browser }) => {
+test("the room of a Research shows its form question and QR and counts only its public form responses", async ({ page, browser }) => {
   const user = await signedInUser(page, "sala")
   // Not from the public form: the analysis reads it, the counter does not count it.
   const support = "Vorrei esportare il report mensile in PDF per il commercialista."
   await insertFeedback(user, [support])
+  // A public form response of another Research of the same workspace: not this room's.
+  const other = await createResearch(user.workspaceId, "sala-altra")
+  await publicResponses(other, ["Una risposta a un'altra Research."])
 
   await page.goto(`/research/${user.researchId}/collect`)
   await page.getByRole("link", { name: "Apri lo schermo della sala" }).click()
@@ -68,4 +71,71 @@ test("the room screen says when the public form link is off, and how to turn it 
 test("the room screen of a Research without a session goes to /login", async ({ page }) => {
   await page.goto(`/research/${crypto.randomUUID()}/sala`)
   await expect(page).toHaveURL(/\/login$/)
+})
+
+// Responses as the public form saves them: channel "Modulo pubblico".
+async function publicResponses(research: { workspaceId: string; researchId: string }, texts: string[]) {
+  const { error } = await admin.from("feedback").insert(
+    texts.map((text) => ({ workspace_id: research.workspaceId, research_id: research.researchId, text, channel: "Modulo pubblico" }))
+  )
+  if (error) throw error
+}
+
+test("Analizza le risposte reserves only themes and says where the verdict is", async ({ page }) => {
+  const user = await signedInUser(page, "sala-ipotesi")
+  await publicResponses(user, ["Mi serve il PDF dei report.", "Vorrei esportare il report in PDF."])
+  const { error } = await admin
+    .from("research_hypotheses")
+    .insert({ workspace_id: user.workspaceId, research_id: user.researchId, text: "I clienti vogliono il PDF" })
+  if (error) throw error
+
+  await page.goto(`/research/${user.researchId}/sala`)
+  await expect(page.getByText("Il verdetto delle ipotesi lo trovi nella Research.")).toBeVisible()
+  await page.getByRole("button", { name: "Analizza le risposte" }).click()
+  await expect(page.getByText("I clienti chiedono l'esportazione in PDF")).toBeVisible()
+  // One themes row, no verdict: the hypothesis has none, and the screen never shows one.
+  const { data: analyses } = await admin.from("analyses").select("kind, status").eq("workspace_id", user.workspaceId)
+  expect(analyses).toEqual([{ kind: "themes", status: "done" }])
+  const { data: verdicts } = await admin.from("hypothesis_verdicts").select("hypothesis_id").eq("research_id", user.researchId)
+  expect(verdicts).toEqual([])
+})
+
+test("a Research deleted while the room is open: status 404 and R1 instead of the QR", async ({ page }) => {
+  const user = await signedInUser(page, "sala-eliminata")
+  await page.goto(`/research/${user.researchId}/sala`)
+  await expect(page.getByRole("img", { name: "QR code del modulo pubblico" })).toBeVisible()
+
+  await admin.from("research").delete().eq("id", user.researchId)
+  expect((await page.request.get(`/research/${user.researchId}/sala/status`)).status()).toBe(404)
+  await expect(page.getByText("Questa Research non c'è più.")).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByText("Il modulo non accetta risposte.")).toBeVisible()
+  await expect(page.getByRole("link", { name: "Torna alle Research" })).toHaveAttribute("href", "/research")
+  await expect(page.getByRole("img", { name: "QR code del modulo pubblico" })).toHaveCount(0)
+})
+
+test("the room button is off with the quota note", async ({ page }) => {
+  const user = await signedInUser(page, "sala-quota")
+  await publicResponses(user, ["Mi serve il PDF dei report."])
+  const { error } = await admin.from("analyses").insert(
+    [1, 2, 3].map(() => ({
+      workspace_id: user.workspaceId,
+      research_id: user.researchId,
+      kind: "themes" as const,
+      period_start: daysAgo(30),
+      feedback_count: 1,
+      status: "done" as const,
+    }))
+  )
+  if (error) throw error
+
+  await page.goto(`/research/${user.researchId}/sala`)
+  const analyze = page.getByRole("button", { name: "Analizza le risposte" })
+  await expect(analyze).toHaveAttribute("aria-disabled", "true")
+  await expect(page.getByText("Hai usato le 3 analisi di", { exact: false })).toBeVisible()
+  // Playwright will not click an aria-disabled button: the keyboard still can, and nothing starts.
+  await analyze.focus()
+  await page.keyboard.press("Enter")
+  await expect(analyze).toBeFocused()
+  const { data: analyses } = await admin.from("analyses").select("id").eq("workspace_id", user.workspaceId)
+  expect(analyses).toHaveLength(3)
 })

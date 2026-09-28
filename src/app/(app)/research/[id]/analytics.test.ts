@@ -331,6 +331,25 @@ describe("research_synthesized with the verdict", () => {
     expect(sentEvents("first_analysis_completed")).toEqual([])
   })
 
+  it("the room with hypotheses: one research_synthesized with the themes' quotes and hypothesis_count 0", async () => {
+    await fiveFeedback()
+    await twoHypotheses()
+    ai.model = fakeSynthesisModel(themes, new Error("the verdict must not be called"))
+    expect(await synthesize(user.researchId, "room")).toMatchObject({ ok: true, themes: "done", verdict: "skipped" })
+    await settle()
+    expect(sentEvents("research_synthesized")).toEqual([
+      expect.objectContaining({
+        properties: {
+          feedback_count: 5,
+          citation_count: 3,
+          hypothesis_count: 0,
+          $process_person_profile: false,
+          $geoip_disable: true,
+        },
+      }),
+    ])
+  })
+
   it("none when both parts fail", async () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => {})
     await fiveFeedback()

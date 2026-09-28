@@ -6,7 +6,7 @@
   "pile": {
     "running": "Analysis running…",
     "runningNote": "It can take a few minutes. The themes appear here as soon as it's done.",
-    "noOpenThemes": "The analysis is done, but there are no open themes to show. You'll find them in Themes.",
+    "noOpenThemes": "The analysis is done, but there are no open themes to show. You'll find them in the Research.",
     "idle": "It lights up with the first response.",
     "analyze": "Analyze the responses",
     "scanHelp": "Scan and answer from your phone. No account needed.",
@@ -33,5 +33,11 @@
     "heading": "What the room is saying",
     "summary": "{responses}, {themes}: {kinds}.",
     "other": "Other"
+  },
+  "hypothesesNote": "You'll find the verdict of the hypotheses in the Research.",
+  "deleted": {
+    "title": "This Research is gone.",
+    "text": "The form doesn't accept responses.",
+    "action": "Back to your Research"
   }
 }

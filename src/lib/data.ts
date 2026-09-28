@@ -225,6 +225,19 @@ export async function listHypotheses(research: Pick<Research, "id" | "workspaceI
 }
 
 // The feedback of a Research that entered Voce after a moment (created_at, not the date of the feedback).
+// How many hypotheses a Research has, without their text or verdicts: the room screen only says the verdict
+// is elsewhere.
+export async function countHypotheses(research: Pick<Research, "id" | "workspaceId">) {
+  const supabase = await createClient();
+  return countOf(
+    await supabase
+      .from("research_hypotheses")
+      .select("id", { count: "exact", head: true })
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id)
+  );
+}
+
 export async function countFeedbackAfter(research: Pick<Research, "id" | "workspaceId">, since: string) {
   const supabase = await createClient();
   return countOf(
