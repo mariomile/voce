@@ -350,6 +350,36 @@ describe("research_synthesized with the verdict", () => {
     ])
   })
 
+  it("one analysis left with hypotheses (S4): the themes alone, hypothesis_count 0", async () => {
+    await fiveFeedback()
+    await twoHypotheses()
+    // Free: 3 a month, 2 already done.
+    const { error } = await admin.from("analyses").insert(
+      [1, 2].map(() => ({
+        workspace_id: user.workspaceId,
+        research_id: user.researchId,
+        period_start: new Date().toISOString().slice(0, 10),
+        feedback_count: 5,
+        status: "done" as const,
+      }))
+    )
+    if (error) throw error
+    ai.model = fakeSynthesisModel(themes, new Error("the verdict must not be called"))
+    expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themes: "done", verdict: "limit" })
+    await settle()
+    expect(sentEvents("research_synthesized")).toEqual([
+      expect.objectContaining({
+        properties: {
+          feedback_count: 5,
+          citation_count: 3,
+          hypothesis_count: 0,
+          $process_person_profile: false,
+          $geoip_disable: true,
+        },
+      }),
+    ])
+  })
+
   it("none when both parts fail", async () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => {})
     await fiveFeedback()

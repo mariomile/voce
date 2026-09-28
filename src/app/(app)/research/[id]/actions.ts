@@ -27,6 +27,9 @@ export type VerdictCounts = { confirmed: number; refuted: number; toReview: numb
 
 const NO_VERDICTS: VerdictCounts = { confirmed: 0, refuted: 0, toReview: 0 }
 
+// The browser sends the mode: anything else is refused before a read or a reservation.
+const synthesizeMode = z.enum(["full", "verdict", "room"])
+
 export type SynthesizeResult =
   | {
       ok: true
@@ -52,6 +55,7 @@ export type SynthesizeResult =
 // they are closed; the themes and verdicts of before stay until the new ones are saved in full. Used by the
 // Sintesi and by the room screen.
 export async function synthesize(researchId: string, mode: "full" | "verdict" | "room" = "full"): Promise<SynthesizeResult> {
+  if (!synthesizeMode.safeParse(mode).success) return { ok: false, reason: "failed" }
   const verdictOnly = mode === "verdict"
   const supabase = await createClient()
   const { data: auth } = await supabase.auth.getClaims()

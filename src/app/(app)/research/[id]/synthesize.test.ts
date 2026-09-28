@@ -446,6 +446,14 @@ describe("synthesize", () => {
     ])
   })
 
+  it("a mode other than full, verdict and room is failed and makes no call", async () => {
+    await addFeedback()
+    const model = answer({ themes: [bank] })
+    expect(await synthesize(user.researchId, "themes" as never)).toEqual({ ok: false, reason: "failed" })
+    expect(model.doGenerateCalls).toHaveLength(0)
+    expect(await analyses()).toEqual([])
+  })
+
   it("a Research without feedback is no_feedback and makes no call", async () => {
     const model = answer({ themes: [bank] })
     expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "no_feedback" })
