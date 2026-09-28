@@ -46,14 +46,19 @@ export default async function SynthesisPage({ params, searchParams }: PageProps<
   const research = await getResearch((await params).id)
   if (!research) notFound()
   const [stats, hypotheses] = await Promise.all([getResearchStats(research), listHypotheses(research)])
-  // Hypotheses can be written before any feedback: then the ways to collect come first.
-  if (stats.feedbackCount === 0)
+  // Hypotheses can be written before any feedback: then the ways to collect come first. The Free limit
+  // counts every Research: in a full workspace a new one says so before offering ways that cannot add anything.
+  if (stats.feedbackCount === 0) {
+    const [usage, origin] = await Promise.all([getUsage(research.workspaceId), getOrigin()])
+    const full = usage.feedbackLimit !== null && usage.feedbackCount >= usage.feedbackLimit
     return (
       <>
-        <CollectionPaths research={research} origin={await getOrigin()} />
+        {full && <LimitWarning usage={usage} />}
+        <CollectionPaths research={research} origin={origin} />
         <HypothesisList researchId={research.id} hypotheses={hypotheses} />
       </>
     )
+  }
 
   const query = await searchParams
   const kind = KINDS.find((k) => k === query.type)
