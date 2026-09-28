@@ -15,6 +15,7 @@ import {
   bubbleLayout,
   bubbleTargets,
   dotOrderByX,
+  growBubble,
   pileLayout,
   roomGroups,
   type Bubble,
@@ -27,7 +28,8 @@ const LONG_QUESTION = 70
 // Share of the themes' stage taken by the bubbles; the labels sit underneath.
 const BUBBLE_BAND = 0.6
 
-type Analysis = { themes: RoomTheme[]; order: number[] }
+// The themes, the count when they arrived, and the pile's dots from left to right at that moment.
+type Analysis = { themes: RoomTheme[]; responses: number; order: number[] }
 
 // Kit: the landing's poster scale, classes l-* and room-* in src/app/landing.css.
 // Shows counts and theme titles only: no feedback text ever reaches this component.
@@ -62,21 +64,28 @@ export function RoomScreen({
 
   const pile = useMemo(() => (pileRect ? pileLayout(pileRect, status.responses) : null), [pileRect, status.responses])
   const pileRef = useRef(pile)
+  const responsesRef = useRef(status.responses)
   useEffect(() => {
     pileRef.current = pile
-  }, [pile])
+    responsesRef.current = status.responses
+  }, [pile, status.responses])
 
   const groups = useMemo(
     () => (analysis ? roomGroups(analysis.themes, status.responses) : []),
     [analysis, status.responses]
   )
-  const bubbles = useMemo(() => {
+  // The bubbles are laid out once per analysis, with the counts it found. After that only "Altro"
+  // grows, in place, with the responses that keep arriving: the other bubbles never move.
+  const frozen = useMemo(() => {
     if (!analysis || !stageRect) return null
     const band = { ...stageRect, height: stageRect.height * BUBBLE_BAND }
     const column = stageRect.width / 7.5
     const layout = bubbleLayout(
       band,
-      groups.map((g) => ({ count: g.count, minWidth: g.kind === "other" ? column * 0.55 : column })),
+      roomGroups(analysis.themes, analysis.responses).map((g) => ({
+        count: g.count,
+        minWidth: g.kind === "other" ? column * 0.55 : column,
+      })),
       Math.max(12, stageRect.width * 0.018)
     )
     // On a wide screen the row is narrower than the band is tall: bubbles and labels move up
@@ -87,7 +96,15 @@ export function RoomScreen({
       labelTop: band.height - lift + Math.max(10, stageRect.height * 0.03),
       bubbles: layout.bubbles.map((b) => ({ ...b, cy: b.cy - lift, points: b.points.map((p) => ({ x: p.x, y: p.y - lift })) })),
     }
-  }, [analysis, stageRect, groups])
+  }, [analysis, stageRect])
+  const bubbles = useMemo(() => {
+    if (!frozen) return null
+    const other = frozen.bubbles.length - 1
+    return {
+      ...frozen,
+      bubbles: frozen.bubbles.map((b, i) => (i === other ? growBubble(b, groups[other].count, frozen.spacing) : b)),
+    }
+  }, [frozen, groups])
 
   const scene = useMemo<Scene | null>(() => {
     if (analysis) {
@@ -99,13 +116,11 @@ export function RoomScreen({
       )
       return {
         mode: "bubbles",
-        dots: targets.map((t) => ({ x: t.x, y: t.y, r: bubbles.dotRadius, color: groups[t.group].kind })),
-        halos: bubbles.bubbles.map((b, i) => ({
-          x: b.cx,
-          y: b.cy,
-          r: b.radius + bubbles.dotRadius * 0.6,
-          color: groups[i].kind,
-        })),
+        dots: targets.map((t) => ({ x: t.x, y: t.y, r: bubbles.bubbles[t.group].dotRadius, color: groups[t.group].kind })),
+        // No halo for an empty "Altro".
+        halos: bubbles.bubbles.flatMap((b, i) =>
+          b.points.length ? [{ x: b.cx, y: b.cy, r: b.radius + b.dotRadius * 0.6, color: groups[i].kind }] : []
+        ),
       }
     }
     if (!pile) return null
@@ -124,7 +139,11 @@ export function RoomScreen({
       if (next.length === 0) setFailure("no_open_themes")
       else {
         setView("bubbles")
-        setAnalysis({ themes: next, order: dotOrderByX(pileRef.current?.points ?? []) })
+        setAnalysis({
+          themes: next,
+          responses: responsesRef.current,
+          order: dotOrderByX(pileRef.current?.points ?? []),
+        })
       }
     })
   }
@@ -405,7 +424,7 @@ function ThemesView({
                       }}
                     >
                       {group.kind === "other" ? (
-                        <span className="room-lede text-ink-muted">Altro</span>
+                        group.count > 0 && <span className="room-lede text-ink-muted">Altro</span>
                       ) : (
                         <>
                           <span className="room-bubble-count">{formatNumber(group.count)}</span>

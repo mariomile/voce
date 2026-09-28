@@ -3,6 +3,7 @@ import {
   bubbleLayout,
   bubbleTargets,
   dotOrderByX,
+  growBubble,
   pileLayout,
   roomGroups,
   staggerDelays,
@@ -73,6 +74,22 @@ describe("pileLayout", () => {
   it("is empty for an area with no room", () => {
     expect(pileLayout({ x: 0, y: 0, width: 0, height: 0 }, 10).points).toHaveLength(0)
   })
+
+  it("never shows fewer dots than responses, even in a cramped area", () => {
+    for (const cramped of [{ x: 0, y: 0, width: 120, height: 30 }, { x: 5, y: 5, width: 40, height: 12 }]) {
+      for (const count of [61, 500, 2400]) {
+        const { points, radius } = pileLayout(cramped, count)
+        expect(points).toHaveLength(count)
+        expect(radius).toBeGreaterThan(0)
+        for (const p of points) {
+          expect(p.x - radius).toBeGreaterThanOrEqual(cramped.x - 0.001)
+          expect(p.x + radius).toBeLessThanOrEqual(cramped.x + cramped.width + 0.001)
+          expect(p.y - radius).toBeGreaterThanOrEqual(cramped.y - 0.001)
+          expect(p.y + radius).toBeLessThanOrEqual(cramped.y + cramped.height + 0.001)
+        }
+      }
+    }
+  })
 })
 
 describe("roomGroups", () => {
@@ -86,9 +103,13 @@ describe("roomGroups", () => {
     expect(groups[2].kind).toBe("other")
   })
 
-  it("never has a negative remainder: a feedback can be in more themes, and themes read all feedback", () => {
+  it("keeps an empty last group when nothing is left: the responses that arrive later go there", () => {
     const groups = roomGroups([theme("a", 60), theme("b", 50)], 80)
-    expect(groups.map((g) => g.count)).toEqual([60, 50])
+    expect(groups.map((g) => [g.id, g.count])).toEqual([
+      ["a", 60],
+      ["b", 50],
+      ["other", 0],
+    ])
   })
 
   it("keeps each theme's count exactly", () => {
@@ -149,6 +170,49 @@ describe("bubbleLayout", () => {
 
   it("is empty for an area with no room", () => {
     expect(bubbleLayout({ x: 0, y: 0, width: 0, height: 0 }, groups, 24).bubbles.every((b) => b.points.length === 0)).toBe(true)
+  })
+})
+
+describe("growBubble", () => {
+  const area = { x: 0, y: 100, width: 1600, height: 500 }
+  const groups = [60, 45, 0].map((count) => ({ count, minWidth: 220 }))
+
+  it("grows one bubble in place: same center line, same floor, one dot more per response", () => {
+    const { bubbles, spacing, dotRadius } = bubbleLayout(area, groups, 24)
+    const other = bubbles[2]
+    const floor = other.cy + other.radius
+    let previous = other.radius
+    for (const count of [1, 3, 6]) {
+      const grown = growBubble(other, count, spacing)
+      expect(grown.points).toHaveLength(count)
+      // Within its column a grown bubble keeps the dot size of every other bubble.
+      expect(grown.dotRadius).toBeCloseTo(dotRadius, 6)
+      expect(grown.cx).toBe(other.cx)
+      expect(grown.column).toEqual(other.column)
+      expect(grown.cy + grown.radius).toBeCloseTo(floor, 6)
+      expect(grown.radius).toBeGreaterThan(previous)
+      previous = grown.radius
+      for (const p of grown.points) expect(Math.hypot(p.x - grown.cx, p.y - grown.cy) + grown.dotRadius).toBeLessThanOrEqual(grown.radius + 0.001)
+    }
+  })
+
+  it("stays inside its column: past it, only its own dots get smaller", () => {
+    const { bubbles, spacing } = bubbleLayout(area, groups, 24)
+    const other = bubbles[2]
+    const floor = other.cy + other.radius
+    const grown = growBubble(other, 400, spacing)
+    expect(grown.points).toHaveLength(400)
+    expect(grown.radius).toBeLessThanOrEqual(other.column.width / 2 + 0.001)
+    expect(grown.cy + grown.radius).toBeCloseTo(floor, 6)
+    expect(grown.dotRadius).toBeLessThan(bubbles[0].dotRadius)
+    expect(minDistance(grown.points)).toBeGreaterThanOrEqual(2 * grown.dotRadius)
+  })
+
+  it("uses the same dot spacing as the layout, so a grown bubble matches the others", () => {
+    const { bubbles, spacing } = bubbleLayout(area, groups, 24)
+    const regrown = growBubble(bubbles[0], 60, spacing)
+    expect(regrown.radius).toBeCloseTo(bubbles[0].radius, 6)
+    expect(regrown.points).toEqual(bubbles[0].points)
   })
 })
 

@@ -47,6 +47,8 @@ export function pileLayout(area: Rect, count: number): { radius: number; points:
 
   let pitch = Math.sqrt((area.width * area.height) / (ROW * places))
   while (pitch > 1 && pileCapacity(area.width, area.height, pitch) < places) pitch *= 0.97
+  // Never fewer places than responses: in a cramped area the dots get as small as they must.
+  while (pitch > 0.01 && pileCapacity(area.width, area.height, pitch) < count) pitch *= 0.97
   if (pileCapacity(area.width, area.height, pitch) === 0) return { radius: 0, points: [] }
 
   const floor = area.y + area.height
@@ -76,13 +78,14 @@ export function pileLayout(area: Rect, count: number): { radius: number; points:
 export type GroupKind = ThemeKind | "other"
 export type RoomGroup = { id: string; kind: GroupKind; title: string; count: number }
 
-// The top themes with their exact counts, then the responses left over, if any. The analysis
-// reads every feedback of the workspace and a feedback can be in up to 3 themes: the themes can
-// add up to more than the responses, and then there is nothing left over.
+// The top themes with their exact counts, then the responses left over. The analysis reads every
+// feedback of the workspace and a feedback can be in up to 3 themes: the themes can add up to more
+// than the responses, and then nothing is left over. The last group is there even when empty:
+// responses that arrive after the analysis go there.
 export function roomGroups(themes: RoomTheme[], responses: number): RoomGroup[] {
   const groups: RoomGroup[] = themes.map((t) => ({ id: t.id, kind: t.kind, title: t.title, count: t.feedbackCount }))
   const rest = responses - themes.reduce((sum, t) => sum + t.feedbackCount, 0)
-  if (rest > 0) groups.push({ id: "other", kind: "other", title: "Altro", count: rest })
+  groups.push({ id: "other", kind: "other", title: "Altro", count: Math.max(0, rest) })
   return groups
 }
 
@@ -100,7 +103,14 @@ export function sunflower(n: number, spacing: number, center: Point): Point[] {
   })
 }
 
-export type Bubble = { cx: number; cy: number; radius: number; column: { x: number; width: number }; points: Point[] }
+export type Bubble = {
+  cx: number
+  cy: number
+  radius: number
+  dotRadius: number
+  column: { x: number; width: number }
+  points: Point[]
+}
 
 // One bubble per group, in a row, resting on the floor of the area. Every dot has the same size
 // in every bubble, so a bubble's area follows its count. Each bubble sits in a column at least
@@ -109,18 +119,19 @@ export function bubbleLayout(
   area: Rect,
   groups: { count: number; minWidth: number }[],
   gap: number
-): { dotRadius: number; bubbles: Bubble[] } {
+): { dotRadius: number; spacing: number; bubbles: Bubble[] } {
   if (area.width <= 0 || area.height <= 0)
     return {
       dotRadius: 0,
-      bubbles: groups.map(() => ({ cx: area.x, cy: area.y, radius: 0, column: { x: area.x, width: 0 }, points: [] })),
+      spacing: 0,
+      bubbles: groups.map(() => ({ cx: area.x, cy: area.y, radius: 0, dotRadius: 0, column: { x: area.x, width: 0 }, points: [] })),
     }
 
   const gaps = gap * Math.max(0, groups.length - 1)
   const minTotal = groups.reduce((sum, g) => sum + g.minWidth, 0)
   const shrink = minTotal > 0 ? Math.max(0, Math.min(1, (area.width - gaps) / minTotal)) : 1
   const minWidths = groups.map((g) => g.minWidth * shrink)
-  const radiusOf = (count: number, spacing: number) => spacing * (Math.sqrt(count) + BUBBLE_DOT)
+  const radiusOf = bubbleRadius
   const widthsFor = (spacing: number) => groups.map((g, i) => Math.max(2 * radiusOf(g.count, spacing), minWidths[i]))
   const fits = (spacing: number) =>
     widthsFor(spacing).reduce((a, b) => a + b, 0) + gaps <= area.width &&
@@ -142,11 +153,33 @@ export function bubbleLayout(
     const radius = radiusOf(g.count, spacing)
     const cx = cursor + widths[i] / 2
     const cy = floor - radius
-    const bubble = { cx, cy, radius, column: { x: cursor, width: widths[i] }, points: sunflower(g.count, spacing, { x: cx, y: cy }) }
+    const bubble = {
+      cx,
+      cy,
+      radius,
+      dotRadius: spacing * BUBBLE_DOT,
+      column: { x: cursor, width: widths[i] },
+      points: sunflower(g.count, spacing, { x: cx, y: cy }),
+    }
     cursor += widths[i] + gap
     return bubble
   })
-  return { dotRadius: spacing * BUBBLE_DOT, bubbles }
+  return { dotRadius: spacing * BUBBLE_DOT, spacing, bubbles }
+}
+
+function bubbleRadius(count: number, spacing: number) {
+  return spacing * (Math.sqrt(count) + BUBBLE_DOT)
+}
+
+// The same bubble with another count: same column, same floor, same dot spacing. Only this bubble
+// changes, so the responses that arrive after the analysis grow "Altro" without moving the others.
+// It never outgrows its column: past that, its own dots get smaller.
+export function growBubble(bubble: Bubble, count: number, spacing: number): Bubble {
+  const floor = bubble.cy + bubble.radius
+  const fitting = Math.min(spacing, bubble.column.width / 2 / (Math.sqrt(count) + BUBBLE_DOT))
+  const radius = bubbleRadius(count, fitting)
+  const cy = floor - radius
+  return { ...bubble, cy, radius, dotRadius: fitting * BUBBLE_DOT, points: sunflower(count, fitting, { x: bubble.cx, y: cy }) }
 }
 
 // ---------- From the pile to the bubbles ----------
