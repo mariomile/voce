@@ -13,6 +13,9 @@ export default defineConfig({
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
   use: {
     baseURL: "http://localhost:3000",
+    // Voce follows the browser language: the suite runs as an Italian browser, like the product's
+    // first users. e2e/english.spec.ts opens its own English contexts.
+    locale: "it-IT",
     trace: "retain-on-failure",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],

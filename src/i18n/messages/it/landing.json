@@ -1,0 +1,104 @@
+{
+  "nav": {
+    "pricing": "Prezzi",
+    "login": "Accedi"
+  },
+  "hero": {
+    "title": "Chi si lamenta più forte <mark>non decide la roadmap.</mark>",
+    "lede": "Voce raggruppa i feedback dei clienti in temi con l'AI e li conta.",
+    "cta": "Crea il tuo workspace",
+    "freeNote": "Gratis fino a {feedback} feedback. Non serve una carta."
+  },
+  "example": {
+    "countLabel": "feedback, un tema solo",
+    "title": "La sincronizzazione con la banca si interrompe",
+    "priority": "Priorità alta",
+    "heading": "Parole diverse, stesso problema.",
+    "caption": "Esempio con feedback inventati: cinque canali, un tema come lo vedi in Voce.",
+    "voices": {
+      "support": {
+        "channel": "Supporto",
+        "text": "Ogni lunedì devo ricollegare la banca, altrimenti i movimenti non arrivano.",
+        "highlight": "devo ricollegare la banca"
+      },
+      "review": {
+        "channel": "Recensione",
+        "text": "Il conto si è scollegato di nuovo, terza volta questo mese.",
+        "highlight": "si è scollegato di nuovo"
+      },
+      "salesCall": {
+        "channel": "Call di vendita",
+        "text": "Perché i movimenti arrivano con giorni di ritardo?",
+        "highlight": "i movimenti arrivano con giorni di ritardo"
+      },
+      "nps": {
+        "channel": "Sondaggio NPS",
+        "text": "Mi piace, ma il collegamento con la banca salta dopo ogni weekend.",
+        "highlight": "salta dopo ogni weekend"
+      },
+      "form": {
+        "channel": "Modulo pubblico",
+        "text": "Sistemate la sincronizzazione della banca, il resto va benissimo.",
+        "highlight": "Sistemate la sincronizzazione della banca"
+      }
+    }
+  },
+  "steps": {
+    "label": "Come funziona",
+    "collect": {
+      "verb": "Raccogli.",
+      "line": "Incolla, importa un CSV o condividi un link con QR code."
+    },
+    "analyze": {
+      "verb": "Analizza.",
+      "line": "L'AI raggruppa i feedback in temi, con le citazioni dei clienti."
+    },
+    "decide": {
+      "verb": "Decidi.",
+      "line": "Temi in ordine di feedback. Tu scegli priorità e stato."
+    }
+  },
+  "ask": {
+    "heading": "Chiedi ai tuoi feedback.",
+    "lede": "Voce risponde con quanti ne parlano e fino a 5 citazioni, parola per parola.",
+    "question": "Cosa dicono i clienti dei prezzi?",
+    "countLabel": "feedback ne parlano",
+    "answer": "Per i team piccoli il piano base costa troppo.",
+    "quote1": {
+      "text": "Siamo in tre: 49 euro al mese per noi sono tanti.",
+      "highlight": "per noi sono tanti",
+      "cite": "Call di vendita"
+    },
+    "quote2": {
+      "text": "Pagherei l'anno intero se ci fosse uno sconto.",
+      "highlight": "Pagherei l'anno intero",
+      "cite": "Sondaggio NPS"
+    },
+    "caption": "Esempio di risposta, con feedback inventati."
+  },
+  "pricing": {
+    "heading": "Gratis fino a {feedback} feedback.",
+    "lede": "Poi Pro, a 19 € al mese.",
+    "free": {
+      "price": "0 €",
+      "period": "per sempre",
+      "feedback": "Fino a {count} feedback",
+      "analyses": "{count} analisi AI al mese",
+      "questions": "{count} domande ai feedback al mese",
+      "sources": "Modulo pubblico, CSV e inserimento manuale",
+      "cta": "Inizia gratis"
+    },
+    "pro": {
+      "price": "19 €",
+      "period": "al mese",
+      "feedback": "Feedback illimitati",
+      "analyses": "{count} analisi AI al mese",
+      "questions": "{count} domande ai feedback al mese",
+      "everything": "Tutto quello che c'è in Free",
+      "cta": "Prova Pro"
+    }
+  },
+  "closing": {
+    "heading": "Porta i temi alla prossima riunione di roadmap."
+  }
+}

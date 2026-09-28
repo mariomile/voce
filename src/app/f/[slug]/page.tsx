@@ -1,11 +1,14 @@
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
 import { notFound } from "next/navigation"
 import { FormUnavailable, PublicForm } from "@/components/public-form"
 import { getPublicForm } from "@/lib/data"
 
 export async function generateMetadata({ params }: PageProps<"/f/[slug]">): Promise<Metadata> {
   const form = await getPublicForm((await params).slug)
-  return { title: form ? `${form.workspaceName}: il tuo feedback` : "Voce", robots: { index: false } }
+  if (!form) return { title: "Voce", robots: { index: false } }
+  const t = await getTranslations("form.metadata")
+  return { title: t("title", { name: form.workspaceName }), robots: { index: false } }
 }
 
 // Public page: anyone with the link can write, nobody can read.

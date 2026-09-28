@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { useEffect, useRef, useState, useTransition } from "react"
 import type { AuthField, AuthState } from "@/app/(auth)/actions"
 import { Button } from "@/components/ui/button"
@@ -33,6 +34,7 @@ export function AuthForm({
   submitLabel: string
   children: (state: AuthState) => React.ReactNode
 }) {
+  const t = useTranslations("auth.signup")
   const [state, setState] = useState<AuthState>({})
   const [pending, startTransition] = useTransition()
   const formRef = useRef<HTMLFormElement>(null)
@@ -47,10 +49,9 @@ export function AuthForm({
   if (state.sentTo)
     return (
       <div role="status" className="flex flex-col gap-2">
-        <p className="text-lg font-semibold">Controlla la tua email</p>
+        <p className="text-lg font-semibold">{t("checkEmail")}</p>
         <p className="text-base text-ink-muted">
-          Ti abbiamo mandato un link a <b className="text-ink">{state.sentTo}</b>. Aprilo per confermare
-          l&apos;indirizzo ed entrare nel tuo workspace.
+          {t.rich("sentTo", { email: state.sentTo, b: (chunks) => <b className="text-ink">{chunks}</b> })}
         </p>
       </div>
     )

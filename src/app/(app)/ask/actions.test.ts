@@ -22,7 +22,15 @@ vi.mock("@/lib/supabase/admin", async (importOriginal) => {
   return { ...actual, questionUsage: vi.fn(actual.questionUsage) }
 })
 
+// The language of the interface when the question is asked. Italian unless a test says otherwise.
+const ui = vi.hoisted(() => ({ locale: "it" }))
+vi.mock("next-intl/server", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next-intl/server")>()),
+  getLocale: async () => ui.locale,
+}))
+
 const { ask } = await import("./actions")
+const { questionInstructions } = await import("@/lib/questions")
 const { getUsage } = await import("@/lib/data")
 const { questionUsage } = await import("@/lib/supabase/admin")
 
@@ -36,6 +44,7 @@ afterAll(() => deleteTestUsers([user]))
 
 beforeEach(async () => {
   session.client = user.client
+  ui.locale = "it"
   analytics.trackEvent.mockClear()
   await admin.from("questions").delete().eq("workspace_id", user.workspaceId)
   await admin.from("feedback").delete().eq("workspace_id", user.workspaceId)
@@ -180,6 +189,17 @@ describe("ask", () => {
     expect(input.prompt).toContain("Cosa dicono della banca?")
     expect(input.prompt).toContain(TEXTS[2])
     expect(input.instructions).not.toContain("banca")
+  })
+
+  it("asks the model to answer in the language of the interface", async () => {
+    await addFeedback()
+    ui.locale = "en"
+    const model = reply(bank)
+    await ask({ question: "What do they say about the bank?" })
+    const system = model.doGenerateCalls[0].prompt.filter((m) => m.role === "system")
+    expect(system.map((m) => m.content)).toEqual([questionInstructions("en")])
+    const [question] = await questions()
+    expect((await runLog(question.id)).input).toMatchObject({ instructions: questionInstructions("en") })
   })
 
   it("no verified quote is no_evidence and returns no model text", async () => {

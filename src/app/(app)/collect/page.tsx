@@ -1,3 +1,5 @@
+import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
 import Link from "next/link"
 import { CopyLinkButton } from "@/components/copy-link-button"
 import { CsvImport } from "@/components/csv-import"
@@ -12,13 +14,17 @@ import { Card, CardActions, CardBody, CardMeta, CardText, CardTitle } from "@/co
 import { channelCounts, getCurrentWorkspace, getUsage } from "@/lib/data"
 import { isoDateOf } from "@/lib/format"
 import { getOrigin } from "@/lib/origin"
+import { PUBLIC_FORM_LOCALE } from "@/i18n/locale"
 
-export const metadata = { title: "Raccolta" }
-
-// Suggested in the channel field before a workspace has its own channels.
-const COMMON_CHANNELS = ["Supporto", "Call vendita", "Email", "Slack", "Sondaggio NPS", "Recensioni"]
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("collect.metadata")
+  return { title: t("title") }
+}
 
 export default async function CollectPage() {
+  const t = await getTranslations("collect")
+  // The question the form really shows: the form is always in Italian (see pinnedLocale).
+  const tForm = await getTranslations({ locale: PUBLIC_FORM_LOCALE, namespace: "form" })
   const workspace = await getCurrentWorkspace()
   const [usage, channels, origin] = await Promise.all([
     getUsage(workspace.id),
@@ -27,31 +33,37 @@ export default async function CollectPage() {
   ])
   const limitReached = usage.feedbackLimit !== null && usage.feedbackCount >= usage.feedbackLimit
   const formPath = `/f/${workspace.formSlug}`
-  const suggestions = [...new Set([...channels.map((c) => c.name), ...COMMON_CHANNELS])]
+  // Suggested in the channel field before a workspace has its own channels.
+  const commonChannels = [
+    t("channels.support"),
+    t("channels.salesCall"),
+    t("channels.email"),
+    t("channels.slack"),
+    t("channels.npsSurvey"),
+    t("channels.reviews"),
+  ]
+  const suggestions = [...new Set([...channels.map((c) => c.name), ...commonChannels])]
 
   return (
     <Page>
       {limitReached && <LimitWarning usage={usage} />}
       <PageHeader>
         <div>
-          <PageTitle>Raccolta</PageTitle>
-          <PageLede>
-            Porta qui i feedback che hai già e chiedine di nuovi. Ognuno tiene il canale da cui arriva,
-            così poi puoi filtrarli.
-          </PageLede>
+          <PageTitle>{t("page.title")}</PageTitle>
+          <PageLede>{t("page.lede")}</PageLede>
         </div>
       </PageHeader>
 
       <section className="mb-12">
         <Card variant={workspace.formEnabled ? "highlight" : "default"} layout="media">
           <CardBody>
-            <CardTitle>Modulo pubblico</CardTitle>
+            <CardTitle>{t("publicForm.title")}</CardTitle>
             <CardText>
               {!workspace.formEnabled
-                ? "Il link è spento: chi lo apre non trova il modulo. Riaccendilo quando vuoi, oppure generane uno nuovo."
+                ? t("publicForm.disabled")
                 : limitReached
-                  ? "Il link è attivo, ma con il piano Free pieno chi lo apre trova un messaggio gentile e il feedback non entra."
-                  : "Una sola domanda, si risponde dal telefono senza account. Condividi il link o stampa il QR code."}
+                  ? t("publicForm.limitReached")
+                  : t("publicForm.active")}
             </CardText>
             <CardMeta>
               <Link href={formPath} className="hover:underline">
@@ -62,10 +74,10 @@ export default async function CollectPage() {
             <CardActions className="flex flex-wrap gap-3">
               <CopyLinkButton path={formPath} />
               <a href="/collect/qr" download className={buttonVariants({ variant: "secondary" })}>
-                Scarica il QR code
+                {t("publicForm.downloadQr")}
               </a>
               <Link href="/sala" className={buttonVariants({ variant: "secondary" })}>
-                Apri lo schermo della sala
+                {t("publicForm.openRoomScreen")}
               </Link>
             </CardActions>
           </CardBody>
@@ -75,17 +87,17 @@ export default async function CollectPage() {
         {/* Same default as get_public_form in the database. */}
         <FormQuestionField
           question={workspace.formQuestion}
-          defaultQuestion={`Cosa vuoi dire al team di ${workspace.name}?`}
+          defaultQuestion={tForm("defaultQuestion", { name: workspace.name })}
         />
       </section>
 
       <section id="csv" className="mb-12 scroll-mt-8">
-        <SectionTitle>Importa un CSV</SectionTitle>
+        <SectionTitle>{t("page.sections.csv")}</SectionTitle>
         <CsvImport />
       </section>
 
       <section id="manual" className="scroll-mt-8">
-        <SectionTitle>Incolla un feedback</SectionTitle>
+        <SectionTitle>{t("page.sections.manual")}</SectionTitle>
         <ManualFeedbackForm channels={suggestions} today={isoDateOf(new Date())} />
       </section>
     </Page>

@@ -1,8 +1,10 @@
 import { cn } from "cn"
+import { useTranslations } from "next-intl"
 import QRCode from "qrcode"
 
 // Kit: .qr-code. Drawn as one SVG path from the QR modules; the white padding is the quiet zone.
 export function QrCode({ url, size = 92, className }: { url: string; size?: number; className?: string }) {
+  const t = useTranslations("themes.qrCode")
   const { modules } = QRCode.create(url, { errorCorrectionLevel: "M" })
   const n = modules.size
   let path = ""
@@ -16,7 +18,7 @@ export function QrCode({ url, size = 92, className }: { url: string; size?: numb
         viewBox={`0 0 ${n} ${n}`}
         shapeRendering="crispEdges"
         role="img"
-        aria-label="QR code del modulo pubblico"
+        aria-label={t("alt")}
       >
         <path d={path} fill="currentColor" />
       </svg>

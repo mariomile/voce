@@ -1,6 +1,7 @@
 "use server"
 
 import { redirect } from "next/navigation"
+import { getLocale } from "next-intl/server"
 import { billingStateOf, subscriptionsOf } from "@/lib/billing"
 import { getBilling, getCurrentWorkspace } from "@/lib/data"
 import { getOrigin } from "@/lib/origin"
@@ -55,7 +56,8 @@ export async function startCheckout(): Promise<BillingActionResult> {
       customer: customerId,
       client_reference_id: workspace.id,
       line_items: [{ price: config.priceId, quantity: 1 }],
-      locale: "it",
+      // Stripe's pages speak the language of the interface.
+      locale: await getLocale(),
       success_url: `${origin}/billing?checkout=done`,
       cancel_url: `${origin}/billing`,
       integration_identifier: INTEGRATION_IDENTIFIER,
@@ -81,7 +83,7 @@ export async function openPortal(): Promise<BillingActionResult> {
     const session = await config.client.billingPortal.sessions.create({
       customer: billing.stripeCustomerId,
       return_url: `${await getOrigin()}/billing`,
-      locale: "it",
+      locale: await getLocale(),
     })
     url = session.url
   } catch (error) {

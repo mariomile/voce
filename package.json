@@ -22,6 +22,7 @@
     "cn": "^0.4.0",
     "lucide-react": "^1.48.0",
     "next": "16.3.6",
+    "next-intl": "4.14.7",
     "papaparse": "5.7.0",
     "qrcode": "^1.5.4",
     "react": "19.2.8",
@@ -44,6 +45,7 @@
     "eslint-config-next": "16.3.6",
     "tailwindcss": "^4",
     "typescript": "^5",
+    "use-intl": "4.14.7",
     "vitest": "^5.0.1"
   },
   "packageManager": "pnpm@10.17.1"

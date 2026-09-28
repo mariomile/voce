@@ -1,6 +1,7 @@
 "use server"
 
 import { NoObjectGeneratedError } from "ai"
+import { getLocale } from "next-intl/server"
 import { z } from "zod"
 import {
   ANALYSIS_MAX_FEEDBACK,
@@ -13,7 +14,7 @@ import {
 import { trackEvent } from "@/lib/analytics"
 import { getCurrentWorkspace, getUsage } from "@/lib/data"
 import { isoDateOf } from "@/lib/format"
-import { QUESTION_INSTRUCTIONS, QUESTION_MAX_LENGTH, normalizeQuestion, questionPrompt, runQuestion } from "@/lib/questions"
+import { QUESTION_MAX_LENGTH, questionInstructions, normalizeQuestion, questionPrompt, runQuestion } from "@/lib/questions"
 import { failQuestion, finishQuestion, questionUsage, startQuestion } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
 import type { Plan } from "@/lib/types"
@@ -87,13 +88,15 @@ export async function ask(input: z.input<typeof askSchema>): Promise<AskResult> 
   }))
   const feedbackInWindow = rows.count ?? feedback.length
 
+  // The answer is written in the language the PM is using right now.
+  const locale = await getLocale()
   const modelId = analysisModel()
   const start = await startQuestion({
     workspaceId: workspace.id,
     model: modelId,
     feedbackConsidered: feedback.length,
     input: {
-      instructions: QUESTION_INSTRUCTIONS,
+      instructions: questionInstructions(locale),
       prompt: questionPrompt(question, feedback),
       feedback_ids: feedback.map((f) => f.id),
     },
@@ -108,7 +111,7 @@ export async function ask(input: z.input<typeof askSchema>): Promise<AskResult> 
 
   const started = performance.now()
   try {
-    const result = await runQuestion({ model: analysisLanguageModel(), modelId, question, feedback })
+    const result = await runQuestion({ model: analysisLanguageModel(), modelId, question, feedback, locale })
     const kept = await finishQuestion(start.questionId, result.feedbackIds.length, result.quotes, {
       output: result.raw,
       issues: result.issues,

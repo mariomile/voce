@@ -1,5 +1,6 @@
 "use client"
 
+import { useLocale, useTranslations } from "next-intl"
 import { useState, useTransition } from "react"
 import { cn } from "cn"
 import { submitFeedback } from "@/app/actions"
@@ -24,6 +25,8 @@ export function PublicForm({
   workspaceName: string
   question: string
 }) {
+  const t = useTranslations("form")
+  const locale = useLocale()
   const [text, setText] = useState("")
   const [email, setEmail] = useState("")
   const [website, setWebsite] = useState("")
@@ -38,11 +41,10 @@ export function PublicForm({
       <FormShell className="bg-highlight">
         <FormBrand name={workspaceName} className="mb-24" />
         <h1 className="mb-4 font-serif text-5xl leading-display font-medium tracking-snug">
-          Ricevuto. Grazie.
+          {t("sent.title")}
         </h1>
         <p className="mb-8 text-lg leading-normal text-on-highlight">
-          Il team di {workspaceName} lo legge insieme agli altri feedback e lo usa per decidere cosa
-          migliorare.
+          {t("sent.text", { name: workspaceName })}
         </p>
         <Quote text={text.trim()} size="sm" bar maxLength={100} className="text-on-highlight" />
         <Button
@@ -53,9 +55,9 @@ export function PublicForm({
             setStatus("writing")
           }}
         >
-          Scrivi un altro feedback
+          {t("sent.another")}
         </Button>
-        <FormFoot className="mt-3 text-on-highlight">Raccolto con Voce.</FormFoot>
+        <FormFoot className="mt-3 text-on-highlight">{t("sent.footer")}</FormFoot>
       </FormShell>
     )
 
@@ -85,12 +87,7 @@ export function PublicForm({
           >
             {question}
           </h1>
-          {!compact && (
-            <p className="text-base leading-normal text-on-highlight">
-              Un problema, un&apos;idea, qualcosa che ti piace. Lo leggono le persone che costruiscono
-              il prodotto.
-            </p>
-          )}
+          {!compact && <p className="text-base leading-normal text-on-highlight">{t("intro")}</p>}
         </div>
       </div>
       <form
@@ -99,49 +96,45 @@ export function PublicForm({
         className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-5 px-6 pt-6 pb-8"
       >
         <Field>
-          <FieldLabel htmlFor="text">Il tuo feedback</FieldLabel>
+          <FieldLabel htmlFor="text">{t("feedbackLabel")}</FieldLabel>
           <Textarea
             id="text"
             variant="line"
             rows={6}
             maxLength={FEEDBACK_MAX_LENGTH}
-            placeholder="Scrivi come lo diresti a voce"
+            placeholder={t("feedbackPlaceholder")}
             value={text}
             onChange={(e) => setText(e.target.value)}
             aria-invalid={error === "invalid" || undefined}
             aria-describedby={error === "invalid" ? "text-error" : "text-count"}
           />
           {error === "invalid" ? (
-            <FieldError id="text-error">
-              Non siamo riusciti a inviarlo. Controlla il testo e riprova.
-            </FieldError>
+            <FieldError id="text-error">{t("feedbackError")}</FieldError>
           ) : (
             <FieldCount id="text-count">
-              {formatNumber(text.length)} / {formatNumber(FEEDBACK_MAX_LENGTH)}
+              {formatNumber(text.length, locale)} / {formatNumber(FEEDBACK_MAX_LENGTH, locale)}
             </FieldCount>
           )}
         </Field>
         <Field>
           <FieldLabel htmlFor="email">
-            Email <FieldOptional>facoltativa</FieldOptional>
+            {t("emailLabel")} <FieldOptional>{t("emailOptional")}</FieldOptional>
           </FieldLabel>
           <Input
             id="email"
             type="email"
             variant="line"
             autoComplete="email"
-            placeholder="nome@esempio.it"
+            placeholder={t("emailPlaceholder")}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             aria-invalid={error === "invalid_email" || undefined}
             aria-describedby={error === "invalid_email" ? "email-error" : "email-hint"}
           />
           {error === "invalid_email" ? (
-            <FieldError id="email-error">
-              Questa email sembra incompleta. Correggila o lasciala vuota.
-            </FieldError>
+            <FieldError id="email-error">{t("emailError")}</FieldError>
           ) : (
-            <FieldHint id="email-hint">Lasciala solo se vuoi essere ricontattato.</FieldHint>
+            <FieldHint id="email-hint">{t("emailHint")}</FieldHint>
           )}
         </Field>
         {/* Anti-bot: hidden from people and screen readers (the hidden attribute covers both), bots fill it in. */}
@@ -157,7 +150,7 @@ export function PublicForm({
         </div>
         {error === "rate_limited" && (
           <FieldError role="alert" className="mt-auto text-center">
-            Troppi invii in poco tempo. Riprova più tardi.
+            {t("rateLimited")}
           </FieldError>
         )}
         <Button
@@ -166,26 +159,26 @@ export function PublicForm({
           className={cn("w-full", error !== "rate_limited" && "mt-auto")}
           disabled={!text.trim() || pending}
         >
-          {pending ? "Invio…" : "Invia"}
+          {pending ? t("submitting") : t("submit")}
         </Button>
-        <FormFoot className="-mt-2">Raccolto con Voce. Non serve un account.</FormFoot>
+        <FormFoot className="-mt-2">{t("footer")}</FormFoot>
       </form>
     </div>
   )
 }
 
 export function FormUnavailable({ workspaceName }: { workspaceName: string }) {
+  const t = useTranslations("form")
   return (
     <FormShell>
       <FormBrand name={workspaceName} className="mb-24" />
       <h1 className="mb-4 font-serif text-4xl leading-heading font-medium tracking-snug">
-        Per ora questo modulo non accetta nuovi feedback.
+        {t("unavailable.title")}
       </h1>
       <p className="mb-8 text-lg leading-normal text-ink-muted">
-        Se vuoi scrivere a {workspaceName}, usa il supporto dall&apos;app o dal sito. Il tuo messaggio
-        arriva comunque alle stesse persone.
+        {t("unavailable.text", { name: workspaceName })}
       </p>
-      <FormFoot className="mt-auto">Raccolto con Voce.</FormFoot>
+      <FormFoot className="mt-auto">{t("unavailable.footer")}</FormFoot>
     </FormShell>
   )
 }

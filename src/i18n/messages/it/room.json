@@ -1,0 +1,37 @@
+{
+  "page": {
+    "title": "Schermo della sala"
+  },
+  "exit": "Esci dallo schermo",
+  "pile": {
+    "running": "Analisi in corso…",
+    "runningNote": "Può volerci qualche minuto. I temi compaiono qui appena è finita.",
+    "noOpenThemes": "L'analisi è finita, ma non ci sono temi aperti da mostrare. Li trovi in Temi.",
+    "idle": "Si accende con la prima risposta.",
+    "analyze": "Analizza le risposte",
+    "scanHelp": "Inquadra e rispondi dal telefono. Non serve un account.",
+    "formOff": {
+      "title": "Il modulo è spento.",
+      "text": "Chi inquadra il QR code non trova il modulo.",
+      "action": "Riaccendi il link in Raccolta"
+    },
+    "formFull": {
+      "title": "Il modulo è pieno.",
+      "text": "Con il piano Free entrano al massimo 100 feedback: le nuove risposte non arrivano.",
+      "action": "Passa a Pro"
+    }
+  },
+  "units": {
+    "response": "{count, plural, one {risposta} other {risposte}}",
+    "theme": "{count, plural, one {tema} other {temi}}"
+  },
+  "themesView": {
+    "modeGroupLabel": "Come mostrare i temi",
+    "bubbles": "Bolle",
+    "list": "Elenco",
+    "back": "Torna al QR code",
+    "heading": "Cosa dice la sala",
+    "summary": "{responses}, {themes}: {kinds}.",
+    "other": "Altro"
+  }
+}

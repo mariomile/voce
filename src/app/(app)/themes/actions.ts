@@ -2,10 +2,11 @@
 
 import { NoObjectGeneratedError } from "ai"
 import { revalidatePath } from "next/cache"
+import { getLocale } from "next-intl/server"
 import {
   ANALYSIS_MAX_FEEDBACK,
   ANALYSIS_WINDOW_DAYS,
-  INSTRUCTIONS,
+  analysisInstructions,
   analysisLanguageModel,
   analysisModel,
   buildPrompt,
@@ -29,6 +30,8 @@ export type AnalyzeResult =
 export async function analyze(): Promise<AnalyzeResult> {
   const workspace = await getCurrentWorkspace()
   const supabase = await createClient()
+  // Titles and summaries are written in the language the PM is using right now.
+  const locale = await getLocale()
 
   const today = isoDateOf(new Date())
   // The last 90 days, today included.
@@ -79,7 +82,7 @@ export async function analyze(): Promise<AnalyzeResult> {
     periodStart: feedback.reduce((min, f) => (f.receivedAt < min ? f.receivedAt : min), today),
     feedbackCount: feedback.length,
     input: {
-      instructions: INSTRUCTIONS,
+      instructions: analysisInstructions(locale),
       prompt: buildPrompt(feedback, existingTitles),
       feedback_ids: feedback.map((f) => f.id),
     },
@@ -89,7 +92,7 @@ export async function analyze(): Promise<AnalyzeResult> {
   const started = performance.now()
   let themeCount: number
   try {
-    const result = await runAnalysis({ model: analysisLanguageModel(), modelId, feedback, existingTitles })
+    const result = await runAnalysis({ model: analysisLanguageModel(), modelId, feedback, existingTitles, locale })
     const run = {
       output: result.raw,
       issues: result.issues,

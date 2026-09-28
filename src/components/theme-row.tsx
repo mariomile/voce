@@ -1,16 +1,20 @@
 import Link from "next/link"
 import { cn } from "cn"
+import { useLocale, useTranslations } from "next-intl"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import { Quote } from "@/components/quote"
 import { ThemeControls } from "@/components/theme-controls"
 import { Trend, TrendNote } from "@/components/trend"
 import type { ThemeSummary } from "@/lib/data"
-import { formatDate, KIND_LABELS, SENTIMENT_LABELS } from "@/lib/format"
+import { formatDate } from "@/lib/format"
 
 // Kit: .theme, three columns (number and trend, content, controls).
 // Compact from the fourth theme on: no summary, one quote.
 export function ThemeRow({ theme, compact = false }: { theme: ThemeSummary; compact?: boolean }) {
+  const t = useTranslations("themes")
+  const tCommon = useTranslations("common")
+  const locale = useLocale()
   const quotes = theme.quotes.slice(0, compact ? 1 : 2)
   return (
     <article
@@ -20,14 +24,14 @@ export function ThemeRow({ theme, compact = false }: { theme: ThemeSummary; comp
       )}
     >
       <div>
-        <Stat value={theme.feedbackCount} label={compact ? undefined : "feedback"} compact={compact} />
+        <Stat value={theme.feedbackCount} label={compact ? undefined : t("row.feedbackLabel")} compact={compact} />
         <Trend weeks={theme.trend} compact={compact} />
         {!compact && <TrendNote />}
       </div>
       <div>
         <div className="flex items-baseline gap-4">
-          <Badge variant={theme.kind}>{KIND_LABELS[theme.kind]}</Badge>
-          <span className="text-sm text-ink-muted">{SENTIMENT_LABELS[theme.sentiment]}</span>
+          <Badge variant={theme.kind}>{tCommon(`kind.${theme.kind}`)}</Badge>
+          <span className="text-sm text-ink-muted">{tCommon(`sentiment.${theme.sentiment}`)}</span>
         </div>
         <h2
           className={cn(
@@ -50,14 +54,14 @@ export function ThemeRow({ theme, compact = false }: { theme: ThemeSummary; comp
               key={q.feedbackId}
               text={q.text}
               highlight={q.highlight}
-              cite={`${q.channel}, ${formatDate(q.receivedAt)}`}
+              cite={`${q.channel}, ${formatDate(q.receivedAt, locale)}`}
               size={compact ? "sm" : "default"}
             />
           ))}
         </div>
         {!compact && (
           <Link href={`/themes/${theme.id}`} className={buttonVariants({ variant: "link" })}>
-            Leggi tutti i {theme.feedbackCount} feedback
+            {t("row.readAll", { count: theme.feedbackCount })}
           </Link>
         )}
       </div>

@@ -1,0 +1,41 @@
+{
+  "metadata": {
+    "description": "I feedback dei clienti, raggruppati per tema, con le loro parole."
+  },
+  "localeSwitch": {
+    "label": "Lingua",
+    "it": "Italiano",
+    "en": "English"
+  },
+  "kind": {
+    "problem": "Problema",
+    "opportunity": "Opportunità",
+    "praise": "Apprezzamento"
+  },
+  "kindPlural": {
+    "problem": "Problemi",
+    "opportunity": "Opportunità",
+    "praise": "Apprezzamenti"
+  },
+  "sentiment": {
+    "positive": "Tono positivo",
+    "neutral": "Tono neutro",
+    "negative": "Tono negativo",
+    "mixed": "Tono misto"
+  },
+  "priority": {
+    "high": "Alta",
+    "medium": "Media",
+    "low": "Bassa"
+  },
+  "status": {
+    "to_review": "Da valutare",
+    "roadmap": "In roadmap",
+    "done": "Fatto",
+    "discarded": "Scartato"
+  },
+  "analysisLimit": {
+    "free": "Hai usato le {limit} analisi di {month}. Con Pro diventano 100 al mese.",
+    "pro": "Hai usato le {limit} analisi di {month}."
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "page": {
+    "title": "Room screen"
+  },
+  "exit": "Exit the screen",
+  "pile": {
+    "running": "Analysis running…",
+    "runningNote": "It can take a few minutes. The themes appear here as soon as it's done.",
+    "noOpenThemes": "The analysis is done, but there are no open themes to show. You'll find them in Themes.",
+    "idle": "It lights up with the first response.",
+    "analyze": "Analyze the responses",
+    "scanHelp": "Scan and answer from your phone. No account needed.",
+    "formOff": {
+      "title": "The form is off.",
+      "text": "Anyone who scans the QR code won't find the form.",
+      "action": "Turn the link back on in Collect"
+    },
+    "formFull": {
+      "title": "The form is full.",
+      "text": "The Free plan takes up to 100 feedback: new responses no longer come in.",
+      "action": "Upgrade to Pro"
+    }
+  },
+  "units": {
+    "response": "{count, plural, one {response} other {responses}}",
+    "theme": "{count, plural, one {theme} other {themes}}"
+  },
+  "themesView": {
+    "modeGroupLabel": "How to show the themes",
+    "bubbles": "Bubbles",
+    "list": "List",
+    "back": "Back to the QR code",
+    "heading": "What the room is saying",
+    "summary": "{responses}, {themes}: {kinds}.",
+    "other": "Other"
+  }
+}

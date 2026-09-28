@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { getLocale, getTranslations } from "next-intl/server"
 import { AnalyzeButton } from "@/components/analyze-button"
 import { CopyLinkButton } from "@/components/copy-link-button"
 import { LimitWarning } from "@/components/limit-warning"
@@ -11,8 +12,9 @@ import { buttonVariants } from "@/components/ui/button"
 import { Card, CardActions, CardBody, CardMeta, CardText, CardTitle } from "@/components/ui/card"
 import { ChipCount, chipVariants, FilterBar, FilterBarSep } from "@/components/ui/chip"
 import { getCurrentWorkspace, getDashboard, getUsage, type StatusFilter, type Usage } from "@/lib/data"
+import type { Locale } from "@/i18n/locale"
 import { getOrigin } from "@/lib/origin"
-import { analysisLimitNote, formatDate, formatMonth, KIND_PLURALS } from "@/lib/format"
+import { formatDate, formatMonth } from "@/lib/format"
 import type { ThemeKind, Workspace } from "@/lib/types"
 
 const KINDS: ThemeKind[] = ["problem", "opportunity", "praise"]
@@ -30,13 +32,17 @@ export default async function ThemesPage({ searchParams }: PageProps<"/themes">)
   const showAll = params.all === "1"
 
   const workspace = await getCurrentWorkspace()
-  const [dashboard, usage] = await Promise.all([
+  const [dashboard, usage, locale, t, tCommon, tKindPlural] = await Promise.all([
     getDashboard(workspace.id, { kind, status }),
     getUsage(workspace.id),
+    getLocale(),
+    getTranslations("themes"),
+    getTranslations("common"),
+    getTranslations("common.kindPlural"),
   ])
 
   if (dashboard.feedbackCount === 0)
-    return <EmptyNoFeedback workspace={workspace} origin={await getOrigin()} />
+    return <EmptyNoFeedback workspace={workspace} origin={await getOrigin()} t={t} />
 
   const limitReached = usage.feedbackLimit !== null && usage.feedbackCount >= usage.feedbackLimit
   const { analysis } = dashboard
@@ -45,7 +51,7 @@ export default async function ThemesPage({ searchParams }: PageProps<"/themes">)
     return (
       <Page>
         {limitReached && <LimitWarning usage={usage} />}
-        <EmptyNoAnalysis dashboard={dashboard} usage={usage} />
+        <EmptyNoAnalysis dashboard={dashboard} usage={usage} locale={locale} t={t} tCommon={tCommon} />
       </Page>
     )
 
@@ -68,23 +74,28 @@ export default async function ThemesPage({ searchParams }: PageProps<"/themes">)
       {limitReached && <LimitWarning usage={usage} />}
       <PageHeader>
         <div>
-          <PageTitle>Cosa dicono i clienti di {workspace.name}</PageTitle>
+          <PageTitle>{t("page.title", { name: workspace.name })}</PageTitle>
           <PageLede>
-            <b>{analysis.feedbackCount} feedback</b> dal {formatDate(analysis.periodStart)} al{" "}
-            {formatDate(analysis.createdAt)}, raggruppati in{" "}
-            <b>{dashboard.analysisThemeCount} temi</b>.
+            {t.rich("page.lede", {
+              count: analysis.feedbackCount,
+              start: formatDate(analysis.periodStart, locale),
+              end: formatDate(analysis.createdAt, locale),
+              themes: dashboard.analysisThemeCount,
+              b: (chunks) => <b>{chunks}</b>,
+            })}
           </PageLede>
         </div>
-        <AnalyzeButton label="Nuova analisi" limitNote={analysisLimitNote(usage)} />
+        <AnalyzeButton label={t("page.newAnalysis")} limitNote={analysisLimitNote(usage, tCommon, locale)} />
       </PageHeader>
 
       <FilterBar>
         <Link href={href({ type: undefined })} aria-current={!kind} className={chipVariants()}>
-          Tutti<ChipCount>{dashboard.themeTotal}</ChipCount>
+          {t("page.filterAll")}
+          <ChipCount>{dashboard.themeTotal}</ChipCount>
         </Link>
         {KINDS.map((k) => (
           <Link key={k} href={href({ type: k })} aria-current={kind === k} className={chipVariants()}>
-            {KIND_PLURALS[k]}
+            {tKindPlural(k)}
             <ChipCount>{dashboard.kindCounts[k] ?? 0}</ChipCount>
           </Link>
         ))}
@@ -98,9 +109,9 @@ export default async function ThemesPage({ searchParams }: PageProps<"/themes">)
 
       {dashboard.themes.length === 0 && (
         <PageMore>
-          Nessun tema con questi filtri.{" "}
+          {t("page.noThemesFiltered")}{" "}
           <Link href="/themes" className={buttonVariants({ variant: "link" })}>
-            Mostra i temi aperti
+            {t("page.showOpenThemes")}
           </Link>
         </PageMore>
       )}
@@ -108,35 +119,39 @@ export default async function ThemesPage({ searchParams }: PageProps<"/themes">)
       {hidden.length > 0 && (
         <PageMore>
           <Link href={href({ all: "1" })} className={buttonVariants({ variant: "link", className: "mr-2" })}>
-            Mostra {hidden.length === 1 ? "un altro tema" : `altri ${hidden.length} temi`}
+            {t("page.showMore", { count: hidden.length })}
           </Link>
-          con {listItalian(hidden.map((t) => String(t.feedbackCount)))} feedback
+          {t("page.withFeedback", { list: localeList(hidden.map((theme) => String(theme.feedbackCount)), locale) })}
         </PageMore>
       )}
     </Page>
   )
 }
 
-function EmptyNoFeedback({ workspace, origin }: { workspace: Workspace; origin: string }) {
+function EmptyNoFeedback({
+  workspace,
+  origin,
+  t,
+}: {
+  workspace: Workspace
+  origin: string
+  t: Awaited<ReturnType<typeof getTranslations<"themes">>>
+}) {
   const formPath = `/f/${workspace.formSlug}`
   return (
     <Page>
       <div className="py-6">
         <h1 className="mb-4 max-w-[24ch] font-serif text-5xl leading-snug font-normal tracking-snug">
-          Qui leggerai cosa dicono i tuoi clienti, raggruppato per tema.
+          {t("page.emptyNoFeedback.heading")}
         </h1>
         <p className="mb-10 max-w-[58ch] text-lg leading-relaxed text-ink-muted">
-          Per cominciare servono i feedback. Parti da quelli che hai già in giro: ticket, note delle
-          call, risposte ai sondaggi. Più canali metti insieme, più i temi sono completi.
+          {t("page.emptyNoFeedback.lede")}
         </p>
         <div className="grid grid-cols-[1.35fr_1fr_1fr] gap-5">
           <Card variant="highlight" layout="media">
             <CardBody>
-              <CardTitle>Chiedi ai clienti</CardTitle>
-              <CardText>
-                Un modulo pubblico con una sola domanda, che scegli tu. Si risponde dal telefono,
-                senza account.
-              </CardText>
+              <CardTitle>{t("page.emptyNoFeedback.askTitle")}</CardTitle>
+              <CardText>{t("page.emptyNoFeedback.askText")}</CardText>
               <CardMeta>
                 <Link href={formPath} className="hover:underline">
                   {new URL(origin).host}
@@ -150,23 +165,20 @@ function EmptyNoFeedback({ workspace, origin }: { workspace: Workspace; origin: 
             <QrCode url={`${origin}${formPath}`} />
           </Card>
           <Card>
-            <CardTitle>Importa un CSV</CardTitle>
-            <CardText>
-              Serve una colonna <b>testo</b>. Canale, cliente e data sono facoltativi. Fino a 2.000
-              righe.
-            </CardText>
+            <CardTitle>{t("page.emptyNoFeedback.csvTitle")}</CardTitle>
+            <CardText>{t.rich("page.emptyNoFeedback.csvText", { b: (chunks) => <b>{chunks}</b> })}</CardText>
             <CardActions>
               <Link href="/collect#csv" className={buttonVariants({ variant: "secondary" })}>
-                Scegli il file
+                {t("page.emptyNoFeedback.chooseFile")}
               </Link>
             </CardActions>
           </Card>
           <Card>
-            <CardTitle>Incolla un feedback</CardTitle>
-            <CardText>Copiato da un&apos;email, da Slack o dalle tue note, uno alla volta.</CardText>
+            <CardTitle>{t("page.emptyNoFeedback.pasteTitle")}</CardTitle>
+            <CardText>{t("page.emptyNoFeedback.pasteText")}</CardText>
             <CardActions>
               <Link href="/collect#manual" className={buttonVariants({ variant: "secondary" })}>
-                Incolla un testo
+                {t("page.emptyNoFeedback.pasteAction")}
               </Link>
             </CardActions>
           </Card>
@@ -179,34 +191,44 @@ function EmptyNoFeedback({ workspace, origin }: { workspace: Workspace; origin: 
 function EmptyNoAnalysis({
   dashboard,
   usage,
+  locale,
+  t,
+  tCommon,
 }: {
   dashboard: Awaited<ReturnType<typeof getDashboard>>
   usage: Usage
+  locale: Locale
+  t: Awaited<ReturnType<typeof getTranslations<"themes">>>
+  tCommon: Awaited<ReturnType<typeof getTranslations<"common">>>
 }) {
-  const month = formatMonth(new Date())
+  const month = formatMonth(new Date(), locale)
   const remaining = usage.analysesLimit - usage.analysesThisMonth
   return (
     <>
       <PageHeader>
         <div>
-          <PageTitle>{dashboard.feedbackCount} feedback, ancora nessun tema</PageTitle>
-          <PageLede>
-            Letti uno per uno dicono poco. L&apos;analisi li raggruppa in problemi, opportunità e
-            apprezzamenti, con le citazioni che li rappresentano meglio.
-          </PageLede>
+          <PageTitle>{t("page.emptyNoAnalysis.title", { count: dashboard.feedbackCount })}</PageTitle>
+          <PageLede>{t("page.emptyNoAnalysis.lede")}</PageLede>
         </div>
       </PageHeader>
       <Card variant="soft" layout="row" className="mb-8">
         <div>
-          <CardTitle>Pronti per la prima analisi</CardTitle>
+          <CardTitle>{t("page.emptyNoAnalysis.readyTitle")}</CardTitle>
           <CardText>
-            {listItalian(dashboard.channels.map((c) => `${c.count} da ${c.name}`))}.{" "}
+            {localeList(
+              dashboard.channels.map((c) => t("page.emptyNoAnalysis.channelLine", { count: c.count, name: c.name })),
+              locale
+            )}
+            .{" "}
             {remaining === usage.analysesLimit
-              ? `Userai 1 delle ${usage.analysesLimit} analisi di ${month}.`
-              : `Ti restano ${remaining} analisi di ${month}.`}
+              ? t("page.emptyNoAnalysis.quotaFirst", { limit: usage.analysesLimit, month })
+              : t("page.emptyNoAnalysis.quotaRemaining", { remaining, month })}
           </CardText>
         </div>
-        <AnalyzeButton label={`Analizza ${dashboard.feedbackCount} feedback`} limitNote={analysisLimitNote(usage)} />
+        <AnalyzeButton
+          label={t("page.emptyNoAnalysis.analyzeLabel", { count: dashboard.feedbackCount })}
+          limitNote={analysisLimitNote(usage, tCommon, locale)}
+        />
       </Card>
       <div className="grid grid-cols-2 gap-x-12">
         {dashboard.recentFeedback.map((f) => (
@@ -215,7 +237,7 @@ function EmptyNoAnalysis({
             text={f.text}
             size="sm"
             maxLength={280}
-            cite={`${f.channel}, ${formatDate(f.receivedAt)}`}
+            cite={`${f.channel}, ${formatDate(f.receivedAt, locale)}`}
             className="border-t border-line py-4"
           />
         ))}
@@ -224,7 +246,20 @@ function EmptyNoAnalysis({
   )
 }
 
-// ["26", "19", "14"] → "26, 19 e 14"
-function listItalian(items: string[]) {
-  return items.length <= 1 ? items.join("") : `${items.slice(0, -1).join(", ")} e ${items.at(-1)}`
+// ["26", "19", "14"] → "26, 19 e 14" (it), "26, 19, and 14" (en)
+function localeList(items: string[], locale: Locale) {
+  return new Intl.ListFormat(locale === "it" ? "it-IT" : "en-US", { style: "long", type: "conjunction" }).format(items)
+}
+
+// undefined once analysesThisMonth < analysesLimit; otherwise the free/pro message of the month.
+function analysisLimitNote(
+  usage: Usage,
+  tCommon: Awaited<ReturnType<typeof getTranslations<"common">>>,
+  locale: Locale
+) {
+  if (usage.analysesThisMonth < usage.analysesLimit) return undefined
+  return tCommon(usage.plan === "pro" ? "analysisLimit.pro" : "analysisLimit.free", {
+    limit: usage.analysesLimit,
+    month: formatMonth(new Date(), locale),
+  })
 }
