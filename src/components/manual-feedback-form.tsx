@@ -18,6 +18,7 @@ type Failure = Extract<AddNotesResult, { ok: false }>
 // focus goes back to that field; the text always stays.
 export function ManualFeedbackForm({ researchId, channels, today }: { researchId: string; channels: string[]; today: string }) {
   const t = useTranslations("research.notes")
+  const tNotFound = useTranslations("research.notFound")
   const locale = useLocale()
   const textRef = useRef<HTMLTextAreaElement>(null)
   const channelRef = useRef<HTMLInputElement>(null)
@@ -157,6 +158,14 @@ export function ManualFeedbackForm({ researchId, channels, today }: { researchId
           {/* Only once the fields take typing again: the next notes can start as soon as it shows. */}
           {added && !pending && t("added")}
           {failure?.reason === "limit" && <span className="text-problem">{t("errors.limit")}</span>}
+          {failure?.reason === "not_found" && (
+            <span className="text-problem">
+              {tNotFound("title")} {tNotFound("text")}{" "}
+              <Link href="/research" className={buttonVariants({ variant: "link" })}>
+                {tNotFound("action")}
+              </Link>
+            </span>
+          )}
           {failure?.reason === "session" && (
             <span className="text-problem">
               {t("errors.session")}{" "}

@@ -227,8 +227,10 @@ async function verdictPart(
 ): Promise<{ outcome: "done"; verdictCount: number; verdicts: VerdictCounts; citations: number } | { outcome: "failed" }> {
   const started = performance.now()
   let saved: { quotes: number; verdicts: number }
+  let checked: { verdict: string }[]
   try {
     const result = await runVerdict({ model: analysisLanguageModel(), modelId, hypotheses, feedback, locale })
+    checked = result.verdicts
     saved = await finishVerdict(analysisId, result.verdicts, {
       output: result.raw,
       issues: result.issues,
@@ -242,9 +244,11 @@ async function verdictPart(
     return { outcome: "failed" }
   }
   // Read back once saved: the database may have turned a verdict left without quotes of its side into to_review.
+  // The verdicts are already saved and counted: if the read fails, the counts come from the checked output.
   const { data, error } = await supabase.from("hypothesis_verdicts").select("verdict").eq("analysis_id", analysisId)
-  if (error) throw error
-  const count = (word: string) => data.filter((v) => v.verdict === word).length
+  if (error) console.error(`Analysis ${analysisId}: saved verdicts not read back`)
+  const rows = error || !data ? checked : data
+  const count = (word: string) => rows.filter((v) => v.verdict === word).length
   const verdicts = { confirmed: count("confirmed"), refuted: count("refuted"), toReview: count("to_review") }
   return { outcome: "done", verdictCount: saved.verdicts, verdicts, citations: saved.quotes }
 }

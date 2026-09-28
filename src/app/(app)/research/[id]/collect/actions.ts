@@ -34,7 +34,7 @@ export type NotesField = keyof z.infer<typeof notesSchema>
 export type AddNotesResult =
   | { ok: true }
   | { ok: false; reason: "invalid"; fields: NotesField[] }
-  | { ok: false; reason: "too_long" | "future_date" | "limit" | "session" }
+  | { ok: false; reason: "too_long" | "future_date" | "limit" | "session" | "not_found" }
 
 export async function addNotes(researchId: string, input: z.input<typeof notesSchema>): Promise<AddNotesResult> {
   if (!researchIdSchema.safeParse(researchId).success) return { ok: false, reason: "invalid", fields: [] }
@@ -61,6 +61,8 @@ export async function addNotes(researchId: string, input: z.input<typeof notesSc
     received_at: parsed.data.receivedAt || today,
   })
   if (error?.message === "feedback_limit_reached") return { ok: false, reason: "limit" }
+  // The Research is gone (deleted in another tab) or belongs to another workspace: the composite key refuses it.
+  if (error?.code === "23503") return { ok: false, reason: "not_found" }
   if (error) throw error
   trackMilestone(workspace.id, { event: "first_feedback_added", properties: { source: "manual" } })
   trackCollected(researchId)

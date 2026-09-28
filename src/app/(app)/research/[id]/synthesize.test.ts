@@ -683,6 +683,47 @@ describe("synthesize with hypotheses", () => {
     expect((await getUsage(user.workspaceId)).analysesThisMonth).toBe(2)
   })
 
+  it("a database error reading the saved verdicts back still reports the synthesis and sends research_synthesized", async () => {
+    await addFeedback()
+    const hypotheses = await addHypotheses(["La banca si scollega", "Vogliono WhatsApp"])
+    ai.model = fakeSynthesisModel({ themes: [bank, phone] }, priced)
+    analytics.trackEvent.mockClear()
+    // Only the read-back after the save fails, as a dropped connection would.
+    const real = user.client as { from: (table: string) => unknown }
+    session.client = new Proxy(real, {
+      get(target, key) {
+        if (key === "from") {
+          return (table: string) =>
+            table === "hypothesis_verdicts"
+              ? { select: () => ({ eq: async () => ({ data: null, error: { message: "connection reset" } }) }) }
+              : target.from(table)
+        }
+        const value = Reflect.get(target, key)
+        return typeof value === "function" ? value.bind(target) : value
+      },
+    })
+    const log = vi.spyOn(console, "error").mockImplementation(() => {})
+    try {
+      expect(await synthesize(user.researchId)).toEqual({
+        ok: true,
+        themes: "done",
+        themeCount: 2,
+        verdict: "done",
+        verdicts: { confirmed: 1, refuted: 0, toReview: 1 },
+        previousThemesDate: null,
+      })
+    } finally {
+      session.client = user.client
+      log.mockRestore()
+    }
+    expect(analytics.trackEvent).toHaveBeenCalledWith(user.workspaceId, {
+      event: "research_synthesized",
+      properties: expect.objectContaining({ hypothesis_count: 2 }),
+    })
+    const saved = await verdictsOf(hypotheses)
+    expect(saved.map((v) => v!.verdict)).toEqual(["confirmed", "to_review"])
+  })
+
   it("without hypotheses one themes row and one call", async () => {
     await addFeedback()
     const model = fakeSynthesisModel({ themes: [bank] }, priced)

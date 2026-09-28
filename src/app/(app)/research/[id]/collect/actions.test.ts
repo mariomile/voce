@@ -295,12 +295,28 @@ describe("public form link", () => {
   })
 })
 
+describe("a Research deleted in another tab", () => {
+  it("addNotes returns not_found and saves nothing", async () => {
+    const { data: created, error } = await admin
+      .from("research")
+      .insert({ workspace_id: user.workspaceId, question: "Da eliminare?", form_slug: `tmp-${Date.now()}` })
+      .select("id")
+      .single()
+    if (error) throw error
+    await admin.from("research").delete().eq("id", created.id)
+    const valid = { text: "Note dopo l'eliminazione", channel: "", customer: "", receivedAt: "" }
+    expect(await addNotes(created.id, valid)).toEqual({ ok: false, reason: "not_found" })
+    const { count } = await admin.from("feedback").select("id", { count: "exact", head: true }).eq("research_id", created.id)
+    expect(count).toBe(0)
+  })
+})
+
 describe("the Research of another workspace", () => {
   it("cannot be written to or changed through the actions", async () => {
     const other = await createTestUser("collect-other")
     try {
       const valid = { text: "Intruso", channel: "Email", customer: "", receivedAt: "" }
-      await expect(addNotes(other.researchId, valid)).rejects.toThrow()
+      expect(await addNotes(other.researchId, valid)).toEqual({ ok: false, reason: "not_found" })
       await expect(importCsv(other.researchId, csv("testo\nIntruso"))).rejects.toThrow()
       expect(await setFormEnabled(other.researchId, false)).toEqual({ ok: false })
       expect(await regenerateFormLink(other.researchId)).toEqual({ ok: false })

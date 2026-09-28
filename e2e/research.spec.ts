@@ -211,6 +211,19 @@ test("a disabled form and a full Free workspace show FormUnavailable", async ({ 
   await expect(page.getByText("Per ora questo modulo non accetta nuovi feedback.")).toBeVisible()
 })
 
+test("notes added after the Research was deleted in another tab show the not-found message, text kept", async ({ page }) => {
+  const user = await signedInUser(page, "note-eliminata")
+  const other = await createResearch(user.workspaceId, "note-da-eliminare")
+  await page.goto(`/research/${other.researchId}/collect`)
+  const notes = page.getByLabel("Note", { exact: true })
+  await notes.fill("Note scritte mentre un'altra scheda eliminava la Research.")
+  await admin.from("research").delete().eq("id", other.researchId)
+  await page.getByRole("button", { name: "Aggiungi le note" }).click()
+  await expect(page.getByText("Non trovo questa Research.", { exact: false })).toBeVisible()
+  await expect(page.getByRole("link", { name: "Tutte le Research" }).last()).toHaveAttribute("href", "/research")
+  await expect(notes).toHaveValue("Note scritte mentre un'altra scheda eliminava la Research.")
+})
+
 test("notes pasted in the Raccolta land in this Research, as Intervista, and show in its Feedback tab", async ({ page }) => {
   const user = await signedInUser(page, "note")
   const other = await createResearch(user.workspaceId, "altra-note")
