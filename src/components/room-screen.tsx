@@ -7,7 +7,7 @@ import { roomThemes } from "@/app/sala/actions"
 import { analyze } from "@/app/(app)/themes/actions"
 import { ANALYSIS_FAILURES, type AnalysisFailure } from "@/components/analyze-button"
 import { Logo } from "@/components/logo"
-import { RoomDots, type Scene } from "@/components/room-dots"
+import { RoomDots } from "@/components/room-dots"
 import { Badge } from "@/components/ui/badge"
 import { formatNumber, KIND_LABELS, KIND_PLURALS } from "@/lib/format"
 import type { RoomStatus, RoomTheme } from "@/lib/room"
@@ -22,6 +22,7 @@ import {
   type Bubble,
   type Rect,
   type RoomGroup,
+  type Scene,
 } from "@/lib/room-viz"
 
 const POLL_MS = 3000
@@ -122,13 +123,7 @@ export function RoomScreen({
   const scene = useMemo<Scene | null>(() => {
     if (analysis) {
       if (!bubbles) return null
-      // bubbleTargets needs no more pile dots than places. The places are never fewer than the
-      // responses at analysis time, unless feedback was deleted since: then the extra dots go.
-      const total = bubbles.bubbles.reduce((sum, b) => sum + b.points.length, 0)
-      const targets = bubbleTargets(
-        analysis.order.filter((i) => i < total),
-        bubbles.bubbles
-      )
+      const targets = bubbleTargets(analysis.order, bubbles.bubbles)
       return {
         mode: "bubbles",
         dots: targets.map((t) => ({ x: t.x, y: t.y, r: bubbles.bubbles[t.group].dotRadius, color: groups[t.group].kind })),

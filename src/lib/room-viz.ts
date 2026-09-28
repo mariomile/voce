@@ -7,6 +7,12 @@ import type { ThemeKind } from "./types"
 export type Point = { x: number; y: number }
 export type Rect = { x: number; y: number; width: number; height: number }
 
+// What the canvas draws: dots and the halos behind the bubbles, all circles in the page's
+// coordinates. Dot i of one scene is dot i of the next.
+export type DotColor = GroupKind | "ink"
+export type Circle = { x: number; y: number; r: number; color: DotColor }
+export type Scene = { mode: "pile" | "bubbles"; dots: Circle[]; halos: Circle[] }
+
 // ---------- Act 1: the pile ----------
 
 // The pile is laid out for a number of places, not for the exact count: within a step a new
@@ -208,12 +214,13 @@ export function dotOrderByX(points: Point[]): number[] {
 // Where each dot goes. order lists the pile's dots (indexes 0 to n - 1) from left to right: the
 // first fill the first bubble, and so on. Places left once the pile is used up (the themes need
 // more dots, or responses arrived after the analysis) go to the next indexes, in bubble order.
-// The bubbles must have at least as many places as order has dots.
+// Dots with no place left (feedback deleted since the analysis) are dropped: one target per place.
 export function bubbleTargets(order: number[], bubbles: { points: Point[] }[]): (Point & { group: number })[] {
   const places = bubbles.flatMap((b, group) => b.points.map((p) => ({ x: p.x, y: p.y, group })))
+  const kept = order.filter((i) => i < places.length)
   const targets: (Point & { group: number })[] = new Array(places.length)
   places.forEach((place, j) => {
-    targets[j < order.length ? order[j] : j] = place
+    targets[j < kept.length ? kept[j] : j] = place
   })
   return targets
 }

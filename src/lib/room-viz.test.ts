@@ -273,6 +273,15 @@ describe("dotOrderByX and bubbleTargets", () => {
     expect(targets[3]).toEqual({ x: 4, y: 4, group: 1 })
   })
 
+  it("drops the pile's dots that have no place left: feedback deleted after the analysis", () => {
+    const bubbles = [{ points: [{ x: 1, y: 1 }] }, { points: [{ x: 2, y: 2 }] }]
+    // Four dots in the pile at analysis time, two places now.
+    const targets = bubbleTargets([3, 1, 0, 2], bubbles)
+    expect(targets).toHaveLength(2)
+    expect(targets[1]).toEqual({ x: 1, y: 1, group: 0 })
+    expect(targets[0]).toEqual({ x: 2, y: 2, group: 1 })
+  })
+
   it("gives every bubble as many dots as it has points", () => {
     const counts = [7, 4, 3]
     const bubbles = counts.map((n, g) => ({ points: Array.from({ length: n }, (_, i) => ({ x: g * 100 + i, y: 0 })) }))

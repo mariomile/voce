@@ -1,17 +1,12 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { staggerDelays } from "@/lib/room-viz"
+import { staggerDelays, type Circle, type DotColor, type Scene } from "@/lib/room-viz"
 
 // The room screen's dots, drawn on one canvas behind the text. React only hands over where each
 // dot should be (a scene); this component keeps the dots in memory and animates them frame by
 // frame, one fill per color, and stops drawing when nothing moves. Dot i of one scene is dot i of
 // the next: that is how the pile flies into the bubbles and back.
-
-export type DotColor = "ink" | "problem" | "opportunity" | "praise" | "other"
-export type SceneDot = { x: number; y: number; r: number; color: DotColor }
-export type Halo = { x: number; y: number; r: number; color: DotColor }
-export type Scene = { mode: "pile" | "bubbles"; dots: SceneDot[]; halos: Halo[] }
 
 const COLOR_VARS: Record<DotColor, string> = {
   ink: "--color-ink",
@@ -27,8 +22,8 @@ type Dot = {
   y: number
   r: number
   color: DotColor
-  from: SceneDot
-  to: SceneDot
+  from: Circle
+  to: Circle
   motion: Motion
   start: number
   duration: number
@@ -95,7 +90,7 @@ function createEngine(canvas: HTMLCanvasElement) {
   let dots: Dot[] = []
   let dying: Dot[] = []
   let ripples: Ripple[] = []
-  let halos: Halo[] = []
+  let halos: Circle[] = []
   let haloAlpha = 0
   let mode: Scene["mode"] | null = null
   let alive = false
@@ -119,7 +114,7 @@ function createEngine(canvas: HTMLCanvasElement) {
   const observer = new ResizeObserver(resize)
   observer.observe(canvas)
 
-  function animate(dot: Dot, to: SceneDot, motion: Motion, start: number, duration: number, lift = 0) {
+  function animate(dot: Dot, to: Circle, motion: Motion, start: number, duration: number, lift = 0) {
     dot.from = { x: dot.x, y: dot.y, r: dot.r, color: dot.color }
     dot.to = to
     dot.motion = motion
@@ -129,7 +124,7 @@ function createEngine(canvas: HTMLCanvasElement) {
     dot.done = false
   }
 
-  function newDot(to: SceneDot): Dot {
+  function newDot(to: Circle): Dot {
     return {
       ...to,
       from: to,
