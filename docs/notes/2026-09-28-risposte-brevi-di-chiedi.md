@@ -11,6 +11,9 @@
 - `src/lib/questions.test.ts`: il nuovo test fallisce prima della modifica (15 su 16), passa dopo (16 su 16).
 - `pnpm typecheck`, `pnpm lint`, `pnpm build`: exit 0.
 - `pnpm test`: 11 file e 94 test passati; gli altri 11 file non partono perché lo stack Supabase locale non risponde (Colima rotto). Test con database e E2E su GitHub CI.
-- Prova sul modello vero su un deployment di riserva: risultati nel PR.
+- Modello vero (Claude Sonnet 5, account A, 351 feedback), riserva `voce-feedback-qgijgpy8f-demos-1c73.vercel.app` (`dpl_2fDXMT23uGWxECTDvyh6KJaq8ZwL`, build del branch senza dominio):
+  - "Cosa chiedono i clienti sull'export?": da 89 parole in 2 frasi a 39 parole in 1 frase. 20 feedback, 5 citazioni tenute su 5, 5,9 s, 0,0578 $.
+  - "Cosa dicono i clienti della sincronizzazione con la banca?": da 87 parole in 3 frasi a 32 parole in 1 frase. 52 feedback, 5 citazioni tenute su 5, 6,7 s, 0,0587 $.
+  - Il dominio pubblico non si è mosso (`dpl_62h33qKfYE6AngEtDSzandicnp6D`). L'alias di team `voce-feedback-demos-1c73.vercel.app` era ancora sul vecchio `main` (`dpl_GNKqBoe92nDJc1rSFxsqVNppiru1`) già prima del deploy: riportato sulla produzione attuale con `vercel alias set`. Segreto di bypass temporaneo creato e revocato: 0 sul progetto.
 
 **Cosa resta.** Dopo il palco, se la modifica dal vivo e questo PR coincidono, chiudere questo PR senza merge.
