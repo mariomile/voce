@@ -3,7 +3,8 @@
 import Link from "next/link"
 import { useLocale, useTranslations } from "next-intl"
 import { useEffect, useState, useTransition } from "react"
-import { synthesize, type SynthesizeResult } from "@/app/(app)/research/[id]/actions"
+import { synthesize, type SynthesizeResult, type VerdictCounts } from "@/app/(app)/research/[id]/actions"
+import { useVerdictFailure } from "@/components/synthesis-outcome"
 import { Button, buttonVariants } from "@/components/ui/button"
 import type { Locale } from "@/i18n/locale"
 import { formatDate } from "@/lib/format"
@@ -20,8 +21,9 @@ export function failureMessage(t: FailuresT, failure: AnalysisFailure) {
 type Done = Extract<SynthesizeResult, { ok: true }>
 type AnalyzeT = ReturnType<typeof useTranslations<"research.synthesis.analyze">>
 
-// A synthesis with at least one part done. Themes done: the announcement, with S6 when the verdict failed.
-// Themes not done (so the verdict is): S5, with the day of the themes still shown.
+// A synthesis with at least one part done. Themes done: the announcement, with the verdicts when they came
+// (a failed verdict is S6, shown in the Ipotesi section). Themes not done (so the verdict is): S5, with the day
+// of the themes still shown.
 export function resultMessage(t: AnalyzeT, result: Done, locale: Locale) {
   if (result.themes !== "done") {
     const text = result.previousThemesDate
@@ -30,8 +32,19 @@ export function resultMessage(t: AnalyzeT, result: Done, locale: Locale) {
     return { text, problem: true }
   }
   const announcement = t("announcement", { count: result.themeCount })
-  if (result.verdict === "failed") return { text: `${announcement} ${t("verdictFailed")}`, problem: true }
-  return { text: announcement, problem: false }
+  if (result.verdict !== "done") return { text: announcement, problem: false }
+  return { text: `${announcement} ${verdictsMessage(t, result.verdicts)}`, problem: false }
+}
+
+// "2 verdetti: 1 confermata, 1 da rivedere.": only the words that occur.
+export function verdictsMessage(t: AnalyzeT, verdicts: VerdictCounts) {
+  const parts = [
+    verdicts.confirmed && t("confirmedCount", { count: verdicts.confirmed }),
+    verdicts.refuted && t("refutedCount", { count: verdicts.refuted }),
+    verdicts.toReview && t("toReviewCount", { count: verdicts.toReview }),
+  ].filter(Boolean)
+  const count = verdicts.confirmed + verdicts.refuted + verdicts.toReview
+  return t("announcementVerdicts", { count, parts: parts.join(", ") })
 }
 
 // After 2 minutes the wait gets its own note: the analysis goes on even if the PM leaves.
@@ -60,6 +73,7 @@ export function AnalyzeButton({
   const [outcome, setOutcome] = useState<Done | { ok: false; reason: AnalysisFailure | "network" } | null>(null)
   const [slow, setSlow] = useState(false)
   const [pending, startTransition] = useTransition()
+  const verdictFailure = useVerdictFailure()
 
   useEffect(() => {
     if (!pending) return
@@ -71,9 +85,11 @@ export function AnalyzeButton({
     if (pending || limitNote) return
     setOutcome(null)
     setSlow(false)
+    verdictFailure.setFailed(false)
     startTransition(async () => {
       const result = await synthesize(researchId).catch(() => ({ ok: false as const, reason: "network" as const }))
       setOutcome(result)
+      if (result.ok && result.verdict === "failed") verdictFailure.setFailed(true)
     })
   }
 

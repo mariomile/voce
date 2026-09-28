@@ -47,8 +47,24 @@ export type ThemeSummary = Theme & {
 // A row of /research: the Research with its number of feedback.
 export type ResearchSummary = Pick<Research, "id" | "question" | "formEnabled"> & { feedbackCount: number };
 
-// A hypothesis of the PM in the Sintesi, in the order it was written. hasVerdict: editing its text removes one.
-export type Hypothesis = { id: string; text: string; hasVerdict: boolean };
+// The last verdict of a hypothesis, as the Sintesi shows it. supporting and contradicting count the verified
+// links that still exist; feedbackRead is what the model read; arrivedAfter, the feedback read that entered
+// Voce after the hypothesis was written; arrivedAfterVerdict, the feedback of the Research that entered Voce
+// after the verdict analysis started.
+export type Verdict = {
+  verdict: "confirmed" | "refuted" | "to_review";
+  reasoning: string;
+  feedbackRead: number;
+  arrivedAfter: number;
+  supporting: number;
+  contradicting: number;
+  quotesFor: Quote[];
+  quotesAgainst: Quote[];
+  arrivedAfterVerdict: number;
+};
+
+// A hypothesis of the PM in the Sintesi, in the order it was written, with its verdict or none yet.
+export type Hypothesis = { id: string; text: string; writtenAt: string; verdict: Verdict | null };
 
 // The numbers in the header of a Research.
 export type ResearchStats = {
@@ -155,18 +171,70 @@ export async function listHypotheses(research: Pick<Research, "id" | "workspaceI
   const [hypotheses, verdicts] = await Promise.all([
     supabase
       .from("research_hypotheses")
-      .select("id, text")
+      .select("id, text, written_at")
       .eq("workspace_id", research.workspaceId)
       .eq("research_id", research.id)
       .order("position"),
     supabase
       .from("hypothesis_verdicts")
-      .select("hypothesis_id")
+      .select("hypothesis_id, verdict, reasoning, feedback_read, arrived_after, analyses (created_at)")
       .eq("workspace_id", research.workspaceId)
       .eq("research_id", research.id),
   ]);
-  const withVerdict = new Set(unwrap(verdicts).map((v) => v.hypothesis_id));
-  return unwrap(hypotheses).map((h) => ({ id: h.id, text: h.text, hasVerdict: withVerdict.has(h.id) }));
+  const verdictRows = unwrap(verdicts);
+  const hypothesisIds = verdictRows.map((v) => v.hypothesis_id);
+  // Every verdict of a click shares one analysis: usually a single count.
+  const startedAt = [...new Set(verdictRows.map((v) => v.analyses.created_at))];
+  const [links, quotes, arrived] = await Promise.all([
+    supabase.from("verdict_feedback").select("hypothesis_id, stance").eq("workspace_id", research.workspaceId).in("hypothesis_id", hypothesisIds),
+    supabase
+      .from("verdict_feedback")
+      .select(`hypothesis_id, stance, highlight, feedback (${FEEDBACK_COLUMNS})`)
+      .eq("workspace_id", research.workspaceId)
+      .in("hypothesis_id", hypothesisIds)
+      .not("quote_rank", "is", null)
+      .order("quote_rank"),
+    Promise.all(startedAt.map(async (since) => [since, await countFeedbackAfter(research, since)] as const)),
+  ]);
+  const linkRows = unwrap(links);
+  const quoteRows = unwrap(quotes);
+  const arrivedAfter = new Map(arrived);
+  const toVerdict = (row: (typeof verdictRows)[number]): Verdict => {
+    const quotesOf = (stance: "for" | "against") =>
+      quoteRows
+        .filter((q) => q.hypothesis_id === row.hypothesis_id && q.stance === stance)
+        .map((q) => toQuote(toFeedback(q.feedback), q.highlight));
+    const linksOf = (stance: "for" | "against") =>
+      linkRows.filter((l) => l.hypothesis_id === row.hypothesis_id && l.stance === stance).length;
+    return {
+      verdict: row.verdict,
+      reasoning: row.reasoning,
+      feedbackRead: row.feedback_read,
+      arrivedAfter: row.arrived_after,
+      supporting: linksOf("for"),
+      contradicting: linksOf("against"),
+      quotesFor: quotesOf("for"),
+      quotesAgainst: quotesOf("against"),
+      arrivedAfterVerdict: arrivedAfter.get(row.analyses.created_at) ?? 0,
+    };
+  };
+  return unwrap(hypotheses).map((h) => {
+    const row = verdictRows.find((v) => v.hypothesis_id === h.id);
+    return { id: h.id, text: h.text, writtenAt: h.written_at, verdict: row ? toVerdict(row) : null };
+  });
+}
+
+// The feedback of a Research that entered Voce after a moment (created_at, not the date of the feedback).
+async function countFeedbackAfter(research: Pick<Research, "id" | "workspaceId">, since: string) {
+  const supabase = await createClient();
+  return countOf(
+    await supabase
+      .from("feedback")
+      .select("id", { count: "exact", head: true })
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id)
+      .gt("created_at", since)
+  );
 }
 
 export const getUsage = cache(async (workspaceId: string, now = new Date()): Promise<Usage> => {

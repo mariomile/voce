@@ -23,6 +23,10 @@ import { createClient } from "@/lib/supabase/server"
 import { buildVerdictPrompt, runVerdict, verdictInstructions, type VerdictFeedback, type VerdictHypothesis } from "@/lib/verdict"
 import type { Locale } from "@/i18n/locale"
 
+export type VerdictCounts = { confirmed: number; refuted: number; toReview: number }
+
+const NO_VERDICTS: VerdictCounts = { confirmed: 0, refuted: 0, toReview: 0 }
+
 export type SynthesizeResult =
   | {
       ok: true
@@ -31,7 +35,8 @@ export type SynthesizeResult =
       themes: "done" | "failed" | "no_themes"
       themeCount: number
       verdict: "done" | "failed" | "skipped"
-      verdictCount: number
+      // The verdicts saved by this run, per word: what the end of the analysis announces.
+      verdicts: VerdictCounts
       previousThemesDate: string | null
     }
   | { ok: false; reason: "no_feedback" | "busy" | "limit" | "no_themes" | "failed" | "session" | "not_found" }
@@ -124,7 +129,7 @@ export async function synthesize(researchId: string): Promise<SynthesizeResult> 
   const [themes, verdict] = await Promise.all([
     themesPart(start.analyses.themes!, { modelId, feedback, existingTitles, locale }),
     start.analyses.verdict
-      ? verdictPart(start.analyses.verdict, { modelId, feedback, hypotheses, locale })
+      ? verdictPart(start.analyses.verdict, { modelId, feedback, hypotheses, locale, supabase })
       : ({ outcome: "skipped" } as const),
   ])
   if (themes.outcome !== "done" && verdict.outcome !== "done") {
@@ -133,6 +138,7 @@ export async function synthesize(researchId: string): Promise<SynthesizeResult> 
 
   const themeCount = themes.outcome === "done" ? themes.themeCount : 0
   const verdictCount = verdict.outcome === "done" ? verdict.verdictCount : 0
+  const verdicts = verdict.outcome === "done" ? verdict.verdicts : NO_VERDICTS
   if (themes.outcome === "done") {
     trackMilestone(research.workspaceId, {
       event: "first_analysis_completed",
@@ -153,7 +159,7 @@ export async function synthesize(researchId: string): Promise<SynthesizeResult> 
     themes: themes.outcome,
     themeCount,
     verdict: verdict.outcome,
-    verdictCount,
+    verdicts,
     previousThemesDate: latest.data ? isoDateOf(new Date(latest.data.created_at)) : null,
   }
 }
@@ -192,12 +198,19 @@ async function themesPart(
 // previous verdict.
 async function verdictPart(
   analysisId: string,
-  { modelId, feedback, locale, hypotheses }: PartInput & { hypotheses: VerdictHypothesis[] }
-): Promise<{ outcome: "done"; verdictCount: number; citations: number } | { outcome: "failed" }> {
+  {
+    modelId,
+    feedback,
+    locale,
+    hypotheses,
+    supabase,
+  }: PartInput & { hypotheses: VerdictHypothesis[]; supabase: Awaited<ReturnType<typeof createClient>> }
+): Promise<{ outcome: "done"; verdictCount: number; verdicts: VerdictCounts; citations: number } | { outcome: "failed" }> {
   const started = performance.now()
+  let saved: { quotes: number; verdicts: number }
   try {
     const result = await runVerdict({ model: analysisLanguageModel(), modelId, hypotheses, feedback, locale })
-    const saved = await finishVerdict(analysisId, result.verdicts, {
+    saved = await finishVerdict(analysisId, result.verdicts, {
       output: result.raw,
       issues: result.issues,
       input_tokens: result.inputTokens,
@@ -205,11 +218,16 @@ async function verdictPart(
       duration_ms: result.durationMs,
       cost_usd: result.costUsd,
     })
-    return { outcome: "done", verdictCount: saved.verdicts, citations: saved.quotes }
   } catch (error) {
     await failPart(analysisId, error, modelId, started)
     return { outcome: "failed" }
   }
+  // Read back once saved: the database may have turned a verdict left without quotes of its side into to_review.
+  const { data, error } = await supabase.from("hypothesis_verdicts").select("verdict").eq("analysis_id", analysisId)
+  if (error) throw error
+  const count = (word: string) => data.filter((v) => v.verdict === word).length
+  const verdicts = { confirmed: count("confirmed"), refuted: count("refuted"), toReview: count("to_review") }
+  return { outcome: "done", verdictCount: saved.verdicts, verdicts, citations: saved.quotes }
 }
 
 async function failPart(analysisId: string, error: unknown, modelId: string, started: number) {

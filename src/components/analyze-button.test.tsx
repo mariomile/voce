@@ -40,14 +40,14 @@ describe("AnalyzeButton", () => {
 
 describe("resultMessage", () => {
   const t = translator("research.synthesis.analyze") as Parameters<typeof resultMessage>[0]
-  const done = { ok: true as const, themes: "done" as const, themeCount: 4, verdict: "skipped" as const, verdictCount: 0, previousThemesDate: null }
+  const done = { ok: true as const, themes: "done" as const, themeCount: 4, verdict: "skipped" as const, verdicts: { confirmed: 0, refuted: 0, toReview: 0 }, previousThemesDate: null }
 
   it("themes done: the announcement with the themes", () => {
     expect(resultMessage(t, done, "it")).toEqual({ text: "Analisi finita: 4 temi.", problem: false })
   })
 
   it("themes fail and verdict succeeds: S5 with the day of the themes that stay", () => {
-    const result = { ...done, themes: "failed" as const, themeCount: 0, verdict: "done" as const, verdictCount: 2, previousThemesDate: "2026-10-08" }
+    const result = { ...done, themes: "failed" as const, themeCount: 0, verdict: "done" as const, verdicts: { confirmed: 1, refuted: 0, toReview: 1 }, previousThemesDate: "2026-10-08" }
     expect(resultMessage(t, result, "it")).toEqual({
       text: "I temi non sono stati aggiornati e non contano nel limite del mese: restano quelli del 8 ottobre. Il verdetto delle ipotesi è pronto qui sotto.",
       problem: true,
@@ -57,10 +57,17 @@ describe("resultMessage", () => {
     )
   })
 
-  it("verdict fails and themes succeed: the announcement and S6", () => {
-    expect(resultMessage(t, { ...done, verdict: "failed" as const }, "it")).toEqual({
-      text: "Analisi finita: 4 temi. Il verdetto non è arrivato e non conta nel limite del mese: le ipotesi mostrano ancora il verdetto precedente. Riprova con «Solo il verdetto».",
-      problem: true,
+  it("themes and verdicts done: the announcement with the verdicts per word, only the words that occur", () => {
+    expect(resultMessage(t, { ...done, verdict: "done" as const, verdicts: { confirmed: 1, refuted: 0, toReview: 1 } }, "it")).toEqual({
+      text: "Analisi finita: 4 temi. 2 verdetti: 1 confermata, 1 da rivedere.",
+      problem: false,
     })
+    expect(resultMessage(t, { ...done, verdict: "done" as const, verdicts: { confirmed: 0, refuted: 3, toReview: 0 } }, "it").text).toBe(
+      "Analisi finita: 4 temi. 3 verdetti: 3 smentite."
+    )
+  })
+
+  it("verdict fails and themes succeed: the announcement only, S6 goes to the Ipotesi section", () => {
+    expect(resultMessage(t, { ...done, verdict: "failed" as const }, "it")).toEqual({ text: "Analisi finita: 4 temi.", problem: false })
   })
 })

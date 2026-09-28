@@ -42,7 +42,7 @@ const { synthesize } = await import("./actions")
 const { analysisInstructions } = await import("@/lib/analysis")
 const { verdictInstructions } = await import("@/lib/verdict")
 const { deleteFeedback } = await import("@/app/(app)/research/[id]/feedback/actions")
-const { getDashboard, getUsage } = await import("@/lib/data")
+const { getDashboard, getUsage, listHypotheses } = await import("@/lib/data")
 
 let user: TestUser
 
@@ -650,7 +650,7 @@ describe("synthesize with hypotheses", () => {
       themes: "done",
       themeCount: 2,
       verdict: "done",
-      verdictCount: 2,
+      verdicts: { confirmed: 1, refuted: 0, toReview: 1 },
       previousThemesDate: null,
     })
     expect(model.doGenerateCalls).toHaveLength(2)
@@ -679,7 +679,7 @@ describe("synthesize with hypotheses", () => {
     await addFeedback()
     const model = fakeSynthesisModel({ themes: [bank] }, priced)
     ai.model = model
-    expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themes: "done", verdict: "skipped", verdictCount: 0 })
+    expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themes: "done", verdict: "skipped", verdicts: { confirmed: 0, refuted: 0, toReview: 0 } })
     expect(model.doGenerateCalls).toHaveLength(1)
     expect((await analyses()).map((a) => a.kind)).toEqual(["themes"])
   })
@@ -698,6 +698,28 @@ describe("synthesize with hypotheses", () => {
     expect([b!.feedback_read, b!.arrived_after]).toEqual([5, 2])
   })
 
+  it("a hypothesis written after 29 of 37 feedback reads 8 arrived after", async () => {
+    const texts = Array.from({ length: 37 }, (_, i) => `Feedback numero ${i + 1}.`)
+    const ids = await addFeedback(texts)
+    const writtenAt = new Date(Date.now() - 60 * 60 * 1000)
+    const [hypothesis] = await addHypotheses(["La banca si scollega"], writtenAt.toISOString())
+    const at = (ms: number) => new Date(writtenAt.getTime() + ms).toISOString()
+    await admin.from("feedback").update({ created_at: at(-60 * 60 * 1000) }).in("id", ids.slice(0, 29))
+    await admin.from("feedback").update({ created_at: at(60 * 1000) }).in("id", ids.slice(29))
+    ai.model = fakeSynthesisModel(
+      { themes: [bank] },
+      {
+        hypotheses: [
+          { hypothesis: 1, verdict: "confirmed", reasoning: "Ne parlano.", supporting: [1], contradicting: [], quotes: [{ feedback: 1, stance: "for", text: "Feedback numero" }] },
+        ],
+      }
+    )
+    await synthesize(user.researchId)
+    const [listed] = await listHypotheses(research())
+    expect(listed.id).toBe(hypothesis)
+    expect(listed.verdict).toMatchObject({ verdict: "confirmed", feedbackRead: 37, arrivedAfter: 8, supporting: 1, arrivedAfterVerdict: 0 })
+  })
+
   it("themes fail and verdict succeeds: S5 and usage 1", async () => {
     await addFeedback()
     const hypotheses = await addHypotheses(["La banca si scollega", "Vogliono WhatsApp"])
@@ -708,7 +730,7 @@ describe("synthesize with hypotheses", () => {
       themes: "failed",
       themeCount: 0,
       verdict: "done",
-      verdictCount: 2,
+      verdicts: { confirmed: 1, refuted: 0, toReview: 1 },
       previousThemesDate: null,
     })
     log.mockRestore()
@@ -742,7 +764,7 @@ describe("synthesize with hypotheses", () => {
 
     const log = vi.spyOn(console, "error").mockImplementation(() => {})
     ai.model = fakeSynthesisModel({ themes: [bank] }, new Error("Anthropic API down"))
-    expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themes: "done", themeCount: 1, verdict: "failed", verdictCount: 0 })
+    expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themes: "done", themeCount: 1, verdict: "failed", verdicts: { confirmed: 0, refuted: 0, toReview: 0 } })
     log.mockRestore()
     const { themes, verdict } = await byKind()
     expect(themes.map((a) => a.status)).toEqual(["done", "done"])

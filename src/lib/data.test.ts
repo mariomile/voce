@@ -88,34 +88,80 @@ describe("the Research of the seed", () => {
 })
 
 describe("listHypotheses", () => {
-  it("lists the hypotheses of the Research by position, with whether each has a verdict", async () => {
+  it("lists the hypotheses of the Research by position, each with its verdict or none", async () => {
     const user = await createTestUser("hypotheses-list")
     try {
       const rows = await admin
         .from("research_hypotheses")
         .insert([1, 2].map((n) => ({ workspace_id: user.workspaceId, research_id: user.researchId, text: `Ipotesi ${n}` })))
-        .select("id, text")
+        .select("id, text, written_at")
+      const first = rows.data!.find((h) => h.text === "Ipotesi 1")!
       const second = rows.data!.find((h) => h.text === "Ipotesi 2")!
       const analysis = await admin
         .from("analyses")
-        .insert({ workspace_id: user.workspaceId, research_id: user.researchId, kind: "verdict", period_start: "2026-10-01", feedback_count: 1, status: "done" })
-        .select("id")
+        .insert({ workspace_id: user.workspaceId, research_id: user.researchId, kind: "verdict", period_start: "2026-10-01", feedback_count: 5, status: "done" })
+        .select("id, created_at")
         .single()
+      const texts = ["Siamo in due, pagare a testa non ha senso.", "Costa troppo per utente.", "Il prezzo va bene, mi manca l'export.", "Uno che non si cita.", "Un altro a favore."]
+      const feedback = await admin
+        .from("feedback")
+        .insert(texts.map((text, i) => ({
+          workspace_id: user.workspaceId,
+          research_id: user.researchId,
+          text,
+          channel: i === 2 ? "Modulo pubblico" : "Intervista",
+          customer: "Anna Rossi",
+          received_at: `2026-10-0${i + 1}`,
+        })))
+        .select("id, text")
+      const id = (text: string) => feedback.data!.find((f) => f.text === text)!.id
       await admin.from("hypothesis_verdicts").insert({
         hypothesis_id: second.id,
         workspace_id: user.workspaceId,
         research_id: user.researchId,
         analysis_id: analysis.data!.id,
-        verdict: "to_review",
-        reasoning: "Nessuno ne parla.",
-        feedback_read: 1,
-        arrived_after: 0,
+        verdict: "confirmed",
+        reasoning: "Chi ha 2-3 persone trova il costo per utente sproporzionato.",
+        feedback_read: 37,
+        arrived_after: 29,
       })
+      await admin.from("verdict_feedback").insert([
+        { hypothesis_id: second.id, workspace_id: user.workspaceId, feedback_id: id(texts[1]), stance: "for", quote_rank: 2, highlight: "per utente" },
+        { hypothesis_id: second.id, workspace_id: user.workspaceId, feedback_id: id(texts[0]), stance: "for", quote_rank: 1, highlight: "pagare a testa non ha senso" },
+        { hypothesis_id: second.id, workspace_id: user.workspaceId, feedback_id: id(texts[4]), stance: "for" },
+        { hypothesis_id: second.id, workspace_id: user.workspaceId, feedback_id: id(texts[2]), stance: "against", quote_rank: 1, highlight: "mi manca l'export" },
+      ])
+      // Two feedback entered Voce after the verdict analysis started, one before.
+      const after = new Date(Date.parse(analysis.data!.created_at) + 60_000).toISOString()
+      const before = new Date(Date.parse(analysis.data!.created_at) - 60_000).toISOString()
+      await admin.from("feedback").update({ created_at: after }).in("id", [id(texts[3]), id(texts[4])])
+      await admin.from("feedback").update({ created_at: before }).in("id", [id(texts[0]), id(texts[1]), id(texts[2])])
+
       session.client = user.client
       const list = await listHypotheses({ id: user.researchId, workspaceId: user.workspaceId })
-      expect(list.map(({ text, hasVerdict }) => ({ text, hasVerdict }))).toEqual([
-        { text: "Ipotesi 1", hasVerdict: false },
-        { text: "Ipotesi 2", hasVerdict: true },
+      expect(list).toEqual([
+        { id: first.id, text: "Ipotesi 1", writtenAt: first.written_at, verdict: null },
+        {
+          id: second.id,
+          text: "Ipotesi 2",
+          writtenAt: second.written_at,
+          verdict: {
+            verdict: "confirmed",
+            reasoning: "Chi ha 2-3 persone trova il costo per utente sproporzionato.",
+            feedbackRead: 37,
+            arrivedAfter: 29,
+            supporting: 3,
+            contradicting: 1,
+            quotesFor: [
+              { feedbackId: id(texts[0]), text: texts[0], highlight: "pagare a testa non ha senso", channel: "Intervista", receivedAt: "2026-10-01" },
+              { feedbackId: id(texts[1]), text: texts[1], highlight: "per utente", channel: "Intervista", receivedAt: "2026-10-02" },
+            ],
+            quotesAgainst: [
+              { feedbackId: id(texts[2]), text: texts[2], highlight: "mi manca l'export", channel: "Modulo pubblico", receivedAt: "2026-10-03" },
+            ],
+            arrivedAfterVerdict: 2,
+          },
+        },
       ])
     } finally {
       await deleteTestUsers([user])

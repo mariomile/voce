@@ -1,6 +1,6 @@
 "use client"
 
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 import Link from "next/link"
 import { useEffect, useRef, useState, useTransition } from "react"
 import {
@@ -12,7 +12,11 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Field, FieldError, FieldHint, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import type { Hypothesis } from "@/lib/data"
+import { Quote } from "@/components/quote"
+import { useVerdictFailure } from "@/components/synthesis-outcome"
+import type { Locale } from "@/i18n/locale"
+import type { Hypothesis, Quote as VerdictQuote, Verdict } from "@/lib/data"
+import { formatDate } from "@/lib/format"
 import { MAX_HYPOTHESES } from "@/lib/plans"
 
 type Failure = Extract<HypothesisResult, { ok: false }>["reason"]
@@ -24,9 +28,11 @@ const unreachable = { ok: false as const, reason: "failed" as const }
 // The Ipotesi section of the Sintesi: up to 5 sentences of the PM, each with Modifica and Elimina
 // (confirmed in the row), then the field for a new one. Empty, it is one line and a secondary button,
 // in the same place, so the page does not move when the first hypothesis is written. The text of a
-// hypothesis is the PM's and shows as text. The verdict arrives in a later part.
+// hypothesis is the PM's and shows as text; so does the reasoning of its verdict.
 export function HypothesisList({ researchId, hypotheses }: { researchId: string; hypotheses: Hypothesis[] }) {
   const t = useTranslations("research.hypotheses")
+  const tAnalyze = useTranslations("research.synthesis.analyze")
+  const { failed: verdictFailed } = useVerdictFailure()
   const heading = useRef<HTMLHeadingElement>(null)
   const write = useRef<HTMLButtonElement>(null)
   const [open, setOpen] = useState(false)
@@ -99,6 +105,10 @@ export function HypothesisList({ researchId, hypotheses }: { researchId: string;
         ))}
       <p role="status" className="mt-2 text-sm text-ink-muted empty:hidden">
         {announcement}
+      </p>
+      {/* S6: the verdict of the last click failed; the verdicts above are the previous ones. */}
+      <p role="status" className="mt-2 max-w-[64ch] text-sm text-problem empty:hidden">
+        {verdictFailed && tAnalyze("verdictFailed")}
       </p>
     </section>
   )
@@ -206,14 +216,18 @@ function HypothesisRow({ hypothesis, t, onDeleted }: { hypothesis: Hypothesis; t
   return (
     <li className="grid grid-cols-[148px_1fr] gap-6 border-t border-line py-5">
       {/* The column of the verdict, as wide as the number column of the themes. */}
-      <div />
+      <div>{hypothesis.verdict && <VerdictWord verdict={hypothesis.verdict} />}</div>
       <div>
         {mode === "edit" ? (
           <EditHypothesis hypothesis={hypothesis} t={t} onClose={() => close("edit")} />
         ) : (
           <>
             <h3 className="max-w-[64ch] text-lg leading-snug font-semibold">{hypothesis.text}</h3>
-            {!hypothesis.hasVerdict && <p className="mt-1 text-base text-ink-muted">{t("noVerdict")}</p>}
+            {hypothesis.verdict ? (
+              <VerdictDetail verdict={hypothesis.verdict} writtenAt={hypothesis.writtenAt} />
+            ) : (
+              <p className="mt-1 text-base text-ink-muted">{t("noVerdict")}</p>
+            )}
             {mode === "confirm" ? (
               <ConfirmDelete hypothesis={hypothesis} t={t} onCancel={() => close("delete")} onDeleted={onDeleted} />
             ) : (
@@ -252,7 +266,7 @@ function EditHypothesis({ hypothesis, t, onClose }: { hypothesis: Hypothesis; t:
   const [pending, startTransition] = useTransition()
   const fieldError = failure === "invalid" ? t("errors.empty") : failure === "too_long" ? t("errors.tooLong") : null
   const id = `hypothesis-${hypothesis.id}`
-  const describedBy = [hypothesis.hasVerdict && `${id}-warning`, fieldError && `${id}-error`].filter(Boolean).join(" ")
+  const describedBy = [hypothesis.verdict && `${id}-warning`, fieldError && `${id}-error`].filter(Boolean).join(" ")
 
   function submit(event: React.FormEvent) {
     event.preventDefault()
@@ -268,7 +282,7 @@ function EditHypothesis({ hypothesis, t, onClose }: { hypothesis: Hypothesis; t:
 
   return (
     <form noValidate onSubmit={submit}>
-      {hypothesis.hasVerdict && (
+      {hypothesis.verdict && (
         <p id={`${id}-warning`} className="mb-2 max-w-[64ch] text-base text-ink-muted">
           {t("editWarning")}
         </p>
@@ -306,6 +320,73 @@ function EditHypothesis({ hypothesis, t, onClose }: { hypothesis: Hypothesis; t:
         </div>
       </div>
     </form>
+  )
+}
+
+// A verdict without any verified link has nothing to show but that: "Da rivedere", whatever the model said.
+const hasLinks = (verdict: Verdict) => verdict.supporting + verdict.contradicting > 0
+
+// The word carries the meaning; the sign is decorative. Both in ink: the colors belong to the kinds of theme.
+const WORDS = {
+  confirmed: { sign: "✓", key: "confirmed" },
+  refuted: { sign: "✕", key: "refuted" },
+  to_review: { sign: "?", key: "toReview" },
+} as const
+
+function VerdictWord({ verdict }: { verdict: Verdict }) {
+  const t = useTranslations("research.verdict")
+  const word = WORDS[hasLinks(verdict) ? verdict.verdict : "to_review"]
+  return (
+    <>
+      <p className="text-2xl leading-tight font-bold">
+        <span aria-hidden="true">{word.sign}</span> {t(word.key)}
+      </p>
+      {hasLinks(verdict) && (
+        <p className="mt-1 text-[13px] text-ink-muted">
+          {t("counts", { supporting: verdict.supporting, contradicting: verdict.contradicting, read: verdict.feedbackRead })}
+        </p>
+      )}
+    </>
+  )
+}
+
+// The reasoning of Voce (muted, as text), the verified quotes for and against with channel and date, and
+// how many of the feedback read arrived after the hypothesis, and after the verdict.
+function VerdictDetail({ verdict, writtenAt }: { verdict: Verdict; writtenAt: string }) {
+  const t = useTranslations("research.verdict")
+  const locale = useLocale() as Locale
+  const date = formatDate(writtenAt, locale)
+  return (
+    <div className="mt-1 max-w-[64ch] text-base text-ink-muted">
+      <p>{hasLinks(verdict) ? verdict.reasoning : t("noEvidence", { read: verdict.feedbackRead })}</p>
+      <VerdictQuotes title={t("inFavour")} quotes={verdict.quotesFor} locale={locale} />
+      <VerdictQuotes title={t("against")} quotes={verdict.quotesAgainst} locale={locale} />
+      <p className="mt-3">
+        {verdict.arrivedAfter > 0
+          ? t("writtenAfter", { date, read: verdict.feedbackRead, count: verdict.arrivedAfter })
+          : t("writtenBefore", { date, read: verdict.feedbackRead })}
+      </p>
+      {verdict.arrivedAfterVerdict > 0 && <p>{t("arrivedAfterVerdict", { count: verdict.arrivedAfterVerdict })}</p>}
+    </div>
+  )
+}
+
+function VerdictQuotes({ title, quotes, locale }: { title: string; quotes: VerdictQuote[]; locale: Locale }) {
+  if (quotes.length === 0) return null
+  return (
+    <div className="mt-4">
+      <p className="text-sm font-semibold text-ink">{title}</p>
+      {quotes.map((q) => (
+        <Quote
+          key={q.feedbackId}
+          text={q.text}
+          highlight={q.highlight}
+          size="sm"
+          cite={`${q.channel}, ${formatDate(q.receivedAt, locale)}`}
+          className="mt-2 text-ink"
+        />
+      ))}
+    </div>
   )
 }
 

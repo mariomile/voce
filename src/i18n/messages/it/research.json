@@ -87,6 +87,10 @@
       "runningNote": "Può volerci qualche minuto. Temi e verdetti compaiono qui appena è finita.",
       "slowNote": "Ci vuole più del solito. Temi e verdetti compaiono qui: puoi lasciare la pagina e tornare.",
       "announcement": "Analisi finita: {count, plural, one {1 tema} other {# temi}}.",
+      "announcementVerdicts": "{count, plural, one {1 verdetto} other {# verdetti}}: {parts}.",
+      "confirmedCount": "{count, plural, one {# confermata} other {# confermate}}",
+      "refutedCount": "{count, plural, one {# smentita} other {# smentite}}",
+      "toReviewCount": "{count} da rivedere",
       "network": "Non riesco a raggiungere Voce. Se l'analisi era già partita, il risultato compare qui quando è finita: ricarica la pagina tra qualche minuto.",
       "sessionLink": "Accedi",
       "lowFeedbackNote": "Con meno di 5 feedback i temi dicono poco: puoi analizzarli lo stesso.",
@@ -136,5 +140,17 @@
       "sessionLink": "Accedi",
       "busy": "C'è un'analisi in corso su questa Research: le ipotesi si cambiano quando è finita."
     }
+  },
+  "verdict": {
+    "confirmed": "Confermata",
+    "refuted": "Smentita",
+    "toReview": "Da rivedere",
+    "counts": "{supporting} a favore · {contradicting} contro · su {read} letti",
+    "inFavour": "A favore",
+    "against": "Contro",
+    "noEvidence": "Nessuno dei {read} feedback letti ne parla.",
+    "writtenAfter": "Scritta il {date}. Dei {read} feedback letti, {count, plural, one {1 è arrivato dopo} other {# sono arrivati dopo}}.",
+    "writtenBefore": "Scritta il {date}. Tutti i {read} feedback letti erano già arrivati quando l'hai scritta: il verdetto li rilegge, non la mette alla prova con feedback nuovi.",
+    "arrivedAfterVerdict": "Dopo questo verdetto {count, plural, one {è arrivato 1 feedback} other {sono arrivati # feedback}}."
   }
 }

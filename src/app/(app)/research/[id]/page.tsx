@@ -8,6 +8,7 @@ import { LimitWarning } from "@/components/limit-warning"
 import { PageLede, PageMore } from "@/components/page"
 import { Quote } from "@/components/quote"
 import { StatusMenu } from "@/components/status-menu"
+import { SynthesisOutcome } from "@/components/synthesis-outcome"
 import { ThemeRow } from "@/components/theme-row"
 import { buttonVariants } from "@/components/ui/button"
 import { Card, CardText, CardTitle } from "@/components/ui/card"
@@ -94,47 +95,48 @@ export default async function SynthesisPage({ params, searchParams }: PageProps<
   }
 
   // One tree for both states, with the button in the same place: when the first analysis lands, the
-  // page refreshes and the button keeps its focus and announces the result.
+  // page refreshes and the button keeps its focus and announces the result. The button comes before the
+  // hypotheses, as in the design: its click starts their verdict too.
   return (
-    <>
+    <SynthesisOutcome>
       {limitReached && <LimitWarning usage={usage} />}
+      <div className="mb-10 flex justify-end">
+        <AnalyzeButton
+          researchId={research.id}
+          count={perimeter}
+          total={stats.feedbackCount}
+          notes={notes}
+          limitNote={analysisLimitNote(usage, tCommon, locale)}
+        />
+      </div>
       <HypothesisList researchId={research.id} hypotheses={hypotheses} />
       <section aria-labelledby="synthesis-title">
-        <div className="mb-6 flex items-end justify-between gap-10">
-          <div>
-            <h2 id="synthesis-title" className="mb-2 text-4xl leading-tight font-bold tracking-tight">
-              {analysis
-                ? tSynthesis("themesTitle")
-                : t("page.emptyNoAnalysis.title", { count: dashboard.feedbackCount })}
-            </h2>
-            <PageLede>
-              {analysis
-                ? tSynthesis.rich("lede", {
-                    count: analysis.feedbackCount,
-                    start: formatDate(analysis.periodStart, locale),
-                    end: formatDate(analysis.createdAt, locale),
-                    themes: dashboard.analysisThemeCount,
-                    b: (chunks) => <b>{chunks}</b>,
-                  })
-                : t("page.emptyNoAnalysis.lede")}
-            </PageLede>
-            {dashboard.changes && (
-              <p className="mt-1 text-base text-ink-muted">
-                {tSynthesis("changes.line", {
-                  date: formatDate(dashboard.changes.since, locale),
-                  feedback: dashboard.changes.newFeedback,
-                  themes: dashboard.changes.newThemes,
-                })}
-              </p>
-            )}
-          </div>
-          <AnalyzeButton
-            researchId={research.id}
-            count={perimeter}
-            total={stats.feedbackCount}
-            notes={notes}
-            limitNote={analysisLimitNote(usage, tCommon, locale)}
-          />
+        <div className="mb-6">
+          <h2 id="synthesis-title" className="mb-2 text-4xl leading-tight font-bold tracking-tight">
+            {analysis
+              ? tSynthesis("themesTitle")
+              : t("page.emptyNoAnalysis.title", { count: dashboard.feedbackCount })}
+          </h2>
+          <PageLede>
+            {analysis
+              ? tSynthesis.rich("lede", {
+                  count: analysis.feedbackCount,
+                  start: formatDate(analysis.periodStart, locale),
+                  end: formatDate(analysis.createdAt, locale),
+                  themes: dashboard.analysisThemeCount,
+                  b: (chunks) => <b>{chunks}</b>,
+                })
+              : t("page.emptyNoAnalysis.lede")}
+          </PageLede>
+          {dashboard.changes && (
+            <p className="mt-1 text-base text-ink-muted">
+              {tSynthesis("changes.line", {
+                date: formatDate(dashboard.changes.since, locale),
+                feedback: dashboard.changes.newFeedback,
+                themes: dashboard.changes.newThemes,
+              })}
+            </p>
+          )}
         </div>
 
         {!analysis && (
@@ -207,7 +209,7 @@ export default async function SynthesisPage({ params, searchParams }: PageProps<
           </>
         )}
       </section>
-    </>
+    </SynthesisOutcome>
   )
 }
 

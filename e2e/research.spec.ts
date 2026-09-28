@@ -321,7 +321,7 @@ test("with a hypothesis one click saves the themes and a verdict with a verified
   expect(verdict!.verdict_feedback).toEqual([{ stance: "for", quote_rank: 1, highlight: "Vorrei il report in PDF." }])
 })
 
-test("a verdict that fails while the themes succeed says so (S6), and counts once", async ({ page }) => {
+test("a verdict that fails while the themes succeed says so (S6) in the Ipotesi section, and counts once", async ({ page }) => {
   const user = await signedInUser(page, "verdetto-fallito")
   await insertFeedback(user, ["Vorrei il report in PDF.", "Mi serve il PDF del report."])
   const { error } = await admin
@@ -330,9 +330,9 @@ test("a verdict that fails while the themes succeed says so (S6), and counts onc
   if (error) throw error
   await page.goto(`/research/${user.researchId}`)
   await page.getByRole("button", { name: "Analizza 2 feedback" }).click()
-  await expect(page.getByRole("status").filter({ hasText: "Analisi finita: 1 tema." })).toContainText(
-    "Il verdetto non è arrivato e non conta nel limite del mese"
-  )
+  await expect(page.getByRole("status").filter({ hasText: "Analisi finita: 1 tema." })).not.toContainText("Il verdetto")
+  const hypotheses = page.getByRole("region", { name: "Ipotesi" })
+  await expect(hypotheses.getByRole("status").filter({ hasText: "Il verdetto non è arrivato e non conta nel limite del mese" })).toBeVisible()
   const { data: analyses } = await admin.from("analyses").select("kind, status").eq("workspace_id", user.workspaceId)
   expect(analyses!.map((a) => `${a.kind} ${a.status}`).sort()).toEqual(["themes done", "verdict failed"])
 })

@@ -86,6 +86,19 @@ describe("the ask files", () => {
   })
 })
 
+describe("the Research files", () => {
+  it("no dangerouslySetInnerHTML under src/app/(app)/research, nor in the hypotheses and their verdicts", () => {
+    const files = [
+      ...readdirSync("src/app/(app)/research", { recursive: true, encoding: "utf8" })
+        .filter((f) => f.endsWith(".ts") || f.endsWith(".tsx"))
+        .map((f) => `src/app/(app)/research/${f}`),
+      "src/components/hypothesis-list.tsx",
+    ]
+    expect(files.length).toBeGreaterThanOrEqual(20)
+    for (const file of files) expect(readFileSync(file, "utf8"), file).not.toContain("dangerouslySetInnerHTML")
+  })
+})
+
 describe("Chiedi in a Research", () => {
   it("no catalog has ask.nothingToAsk.titleOld or bodyOld, and no ask string names the 90 days", () => {
     for (const locale of ["it", "en"]) {

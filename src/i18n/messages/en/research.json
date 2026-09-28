@@ -87,6 +87,10 @@
       "runningNote": "It can take a few minutes. Themes and verdicts show up here as soon as it's done.",
       "slowNote": "This is taking longer than usual. Themes and verdicts will show up here: you can leave the page and come back.",
       "announcement": "Analysis done: {count, plural, one {1 theme} other {# themes}}.",
+      "announcementVerdicts": "{count, plural, one {1 verdict} other {# verdicts}}: {parts}.",
+      "confirmedCount": "{count} confirmed",
+      "refutedCount": "{count} refuted",
+      "toReviewCount": "{count} to review",
       "network": "I can't reach Voce. If the analysis had already started, the result shows up here when it's done: reload the page in a few minutes.",
       "sessionLink": "Sign in",
       "lowFeedbackNote": "With fewer than 5 feedback the themes say little: you can analyze them anyway.",
@@ -136,5 +140,17 @@
       "sessionLink": "Sign in",
       "busy": "An analysis of this Research is running: you can change the hypotheses once it's done."
     }
+  },
+  "verdict": {
+    "confirmed": "Confirmed",
+    "refuted": "Refuted",
+    "toReview": "To review",
+    "counts": "{supporting} for · {contradicting} against · of {read} read",
+    "inFavour": "For",
+    "against": "Against",
+    "noEvidence": "None of the {read} feedback read mentions it.",
+    "writtenAfter": "Written on {date}. Of the {read} feedback read, {count, plural, one {1 arrived after} other {# arrived after}}.",
+    "writtenBefore": "Written on {date}. All {read} feedback read had already arrived when you wrote it: the verdict rereads them, it doesn't test it against new feedback.",
+    "arrivedAfterVerdict": "{count, plural, one {1 feedback has arrived} other {# feedback have arrived}} since this verdict."
   }
 }
