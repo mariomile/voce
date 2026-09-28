@@ -12,6 +12,7 @@ import {
   staggerDelays,
   sunflower,
   themesLayout,
+  themesScene,
   type Point,
 } from "./room-viz"
 import type { RoomTheme } from "./room"
@@ -297,6 +298,49 @@ describe("themesLayout", () => {
         expect(gap).toBeGreaterThanOrEqual(Math.max(12, size.width * 0.018) - 0.001)
       }
     }
+  })
+})
+
+describe("themesScene", () => {
+  const stage = { x: 64, y: 240, width: 1790, height: 700 }
+  const themes = [theme("a", 40), theme("b", 25, "opportunity"), theme("c", 15, "praise")]
+  const layout = themesLayout(stage, roomGroups(themes, 90))
+  const order = Array.from({ length: 90 }, (_, i) => i)
+  const byColor = (dots: { color: string }[]) =>
+    dots.reduce<Record<string, number>>((acc, d) => ({ ...acc, [d.color]: (acc[d.color] ?? 0) + 1 }), {})
+
+  it("gives one dot per group member, in the color of its group", () => {
+    const scene = themesScene(layout, roomGroups(themes, 90), order)
+    expect(scene.mode).toBe("bubbles")
+    expect(byColor(scene.dots)).toEqual({ problem: 40, opportunity: 25, praise: 15, other: 10 })
+    expect(scene.halos.map((h) => h.color)).toEqual(["problem", "opportunity", "praise", "other"])
+  })
+
+  it("grows only \"Altro\" with the responses that arrive later: the theme dots stay put", () => {
+    const before = themesScene(layout, roomGroups(themes, 90), order)
+    const after = themesScene(layout, roomGroups(themes, 120), order)
+    expect(byColor(after.dots)).toEqual({ problem: 40, opportunity: 25, praise: 15, other: 40 })
+    const themed = (dots: typeof before.dots) => dots.filter((d) => d.color !== "other")
+    expect(themed(after.dots)).toEqual(themed(before.dots))
+    expect(after.halos.slice(0, 3)).toEqual(before.halos.slice(0, 3))
+    expect(after.halos[3].x).toBe(before.halos[3].x)
+  })
+
+  it("draws no halo around an empty \"Altro\"", () => {
+    const full = themesLayout(stage, roomGroups(themes, 80))
+    expect(themesScene(full, roomGroups(themes, 80), order.slice(0, 80)).halos.map((h) => h.color)).toEqual([
+      "problem",
+      "opportunity",
+      "praise",
+    ])
+    expect(themesScene(full, roomGroups(themes, 83), order.slice(0, 80)).halos.at(-1)?.color).toBe("other")
+  })
+
+  it("wraps each bubble's dots in its halo", () => {
+    const scene = themesScene(layout, roomGroups(themes, 90), order)
+    for (const halo of scene.halos)
+      for (const d of scene.dots.filter((d) => d.color === halo.color))
+        expect(Math.hypot(d.x - halo.x, d.y - halo.y) + d.r).toBeLessThan(halo.r)
   })
 })
 

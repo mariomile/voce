@@ -230,6 +230,25 @@ export function themesLayout(stage: Rect, groups: RoomGroup[]): ThemesLayout {
   }
 }
 
+// How far a bubble's halo reaches past its dots, as a share of the dot radius.
+const HALO_PAD = 0.6
+
+// The dots and halos of the themes act. The theme bubbles stay as the analysis laid them out;
+// "Altro" grows in place with the live count. order is the pile's dots from left to right at
+// analysis time (see bubbleTargets). An empty "Altro" has no halo.
+export function themesScene(layout: ThemesLayout, groups: RoomGroup[], order: number[]): Scene {
+  const bubbles = layout.bubbles.map((b, i) =>
+    groups[i].kind === "other" ? growBubble(b, groups[i].count, layout.spacing) : b
+  )
+  return {
+    mode: "bubbles",
+    dots: bubbleTargets(order, bubbles).map((t) => ({ x: t.x, y: t.y, r: bubbles[t.group].dotRadius, color: groups[t.group].kind })),
+    halos: bubbles.flatMap((b, i) =>
+      b.points.length ? [{ x: b.cx, y: b.cy, r: b.radius + b.dotRadius * HALO_PAD, color: groups[i].kind }] : []
+    ),
+  }
+}
+
 // ---------- From the pile to the bubbles ----------
 
 // Dot indexes from left to right: the order in which they fill the bubbles.
