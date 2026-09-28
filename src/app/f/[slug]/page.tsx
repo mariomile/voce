@@ -17,12 +17,5 @@ export default async function PublicFormPage({ params }: PageProps<"/f/[slug]">)
   const form = await getPublicForm(slug)
   if (!form) notFound()
   if (!form.accepting) return <FormUnavailable workspaceName={form.workspaceName} />
-  // Without a question of its own, the database answers with the Italian default: the respondent
-  // reads it in their language. A question written by the team stays as written.
-  const t = await getTranslations("form")
-  const question =
-    form.question === `Cosa vuoi dire al team di ${form.workspaceName}?`
-      ? t("defaultQuestion", { name: form.workspaceName })
-      : form.question
-  return <PublicForm slug={slug} workspaceName={form.workspaceName} question={question} />
+  return <PublicForm slug={slug} workspaceName={form.workspaceName} question={form.question} />
 }

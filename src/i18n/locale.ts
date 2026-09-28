@@ -27,3 +27,11 @@ export function resolveLocale({ cookie, acceptLanguage }: { cookie: string | und
   if (isLocale(cookie)) return cookie
   return localeFromAcceptLanguage(acceptLanguage) ?? DEFAULT_LOCALE
 }
+
+// Pages whose language does not follow the visitor. The public form speaks Italian: workspaces have
+// no language of their own yet, and the form must read the same for everyone who scans the QR code.
+export const PUBLIC_FORM_LOCALE: Locale = DEFAULT_LOCALE
+
+export function pinnedLocale(pathname: string): Locale | undefined {
+  return pathname.startsWith("/f/") ? PUBLIC_FORM_LOCALE : undefined
+}

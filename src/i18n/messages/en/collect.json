@@ -42,8 +42,7 @@
     "save": "Save the question",
     "saving": "Saving…",
     "saved": "Saved. The form shows it right away.",
-    "failed": "That didn't work. Try again shortly.",
-    "defaultQuestion": "What do you want to tell {name}'s team?"
+    "failed": "That didn't work. Try again shortly."
   },
   "copyLink": {
     "copy": "Copy the link",

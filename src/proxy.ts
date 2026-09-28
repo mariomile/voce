@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
-import { LOCALE_COOKIE } from "@/i18n/locale"
+import { LOCALE_COOKIE, pinnedLocale } from "@/i18n/locale"
 
 const APP_PATHS = ["/themes", "/ask", "/feedback", "/collect", "/billing", "/sala"]
 const AUTH_PATHS = ["/login", "/signup"]
@@ -8,8 +8,10 @@ const AUTH_PATHS = ["/login", "/signup"]
 // Refreshes the Supabase session on every request and keeps signed-out users out of the app.
 // Pages still read data under RLS: this is a redirect, not the security boundary.
 export async function proxy(request: NextRequest) {
-  // The public form speaks the respondent's browser language, whatever the switch said on this device.
-  if (request.nextUrl.pathname.startsWith("/f/")) request.cookies.delete(LOCALE_COOKIE)
+  // Some pages have a fixed language (the public form: Italian). Set here, before anything renders,
+  // it covers the page, its metadata, the root layout and the form's server action alike.
+  const pinned = pinnedLocale(request.nextUrl.pathname)
+  if (pinned) request.cookies.set(LOCALE_COOKIE, pinned)
   let response = NextResponse.next({ request })
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

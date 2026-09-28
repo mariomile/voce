@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { localeFromAcceptLanguage, resolveLocale } from "./locale"
+import { localeFromAcceptLanguage, pinnedLocale, resolveLocale } from "./locale"
 
 describe("localeFromAcceptLanguage", () => {
   it.each([
@@ -35,5 +35,16 @@ describe("resolveLocale", () => {
   it("ignores a cookie with an unsupported value", () => {
     expect(resolveLocale({ cookie: "fr", acceptLanguage: "en" })).toBe("en")
     expect(resolveLocale({ cookie: "fr", acceptLanguage: null })).toBe("it")
+  })
+})
+
+describe("pinnedLocale", () => {
+  it("pins the public form to Italian, whatever the browser or the switch say", () => {
+    expect(pinnedLocale("/f/phc26")).toBe("it")
+  })
+
+  it("leaves every other page to the cookie and the browser", () => {
+    for (const path of ["/", "/login", "/themes", "/sala", "/collect", "/f", "/features"])
+      expect(pinnedLocale(path)).toBeUndefined()
   })
 })

@@ -1,7 +1,6 @@
 {
   "page": {
-    "title": "Room screen",
-    "defaultQuestion": "What do you want to tell {name}'s team?"
+    "title": "Room screen"
   },
   "exit": "Exit the screen",
   "pile": {

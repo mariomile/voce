@@ -1,5 +1,7 @@
 {
-  "metadata": { "title": "Raccolta" },
+  "metadata": {
+    "title": "Raccolta"
+  },
   "page": {
     "title": "Raccolta",
     "lede": "Porta qui i feedback che hai già e chiedine di nuovi. Ognuno tiene il canale da cui arriva, così poi puoi filtrarli.",
@@ -40,8 +42,7 @@
     "save": "Salva la domanda",
     "saving": "Salvo…",
     "saved": "Salvata. Il modulo la mostra da subito.",
-    "failed": "Non è andata. Riprova tra poco.",
-    "defaultQuestion": "Cosa vuoi dire al team di {name}?"
+    "failed": "Non è andata. Riprova tra poco."
   },
   "copyLink": {
     "copy": "Copia il link",

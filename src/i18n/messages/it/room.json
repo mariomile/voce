@@ -1,7 +1,6 @@
 {
   "page": {
-    "title": "Schermo della sala",
-    "defaultQuestion": "Cosa vuoi dire al team di {name}?"
+    "title": "Schermo della sala"
   },
   "exit": "Esci dallo schermo",
   "pile": {

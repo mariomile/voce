@@ -14,6 +14,7 @@ import { Card, CardActions, CardBody, CardMeta, CardText, CardTitle } from "@/co
 import { channelCounts, getCurrentWorkspace, getUsage } from "@/lib/data"
 import { isoDateOf } from "@/lib/format"
 import { getOrigin } from "@/lib/origin"
+import { PUBLIC_FORM_LOCALE } from "@/i18n/locale"
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("collect.metadata")
@@ -22,6 +23,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function CollectPage() {
   const t = await getTranslations("collect")
+  // The question the form really shows: the form is always in Italian (see pinnedLocale).
+  const tForm = await getTranslations({ locale: PUBLIC_FORM_LOCALE, namespace: "form" })
   const workspace = await getCurrentWorkspace()
   const [usage, channels, origin] = await Promise.all([
     getUsage(workspace.id),
@@ -84,7 +87,7 @@ export default async function CollectPage() {
         {/* Same default as get_public_form in the database. */}
         <FormQuestionField
           question={workspace.formQuestion}
-          defaultQuestion={t("formQuestion.defaultQuestion", { name: workspace.name })}
+          defaultQuestion={tForm("defaultQuestion", { name: workspace.name })}
         />
       </section>
 

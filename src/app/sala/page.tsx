@@ -7,6 +7,7 @@ import { getCurrentWorkspace, getRoomStatus, getUsage, type Usage } from "@/lib/
 import { formatMonth } from "@/lib/format"
 import { getOrigin } from "@/lib/origin"
 import "../landing.css"
+import { PUBLIC_FORM_LOCALE } from "@/i18n/locale"
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("room")
@@ -20,20 +21,21 @@ export const maxDuration = 300
 // Never the text of a feedback: the screen gets counts and theme titles only.
 export default async function RoomPage() {
   const workspace = await getCurrentWorkspace()
-  const [status, usage, origin, locale, t, tCommon] = await Promise.all([
+  const [status, usage, origin, locale, tCommon] = await Promise.all([
     getRoomStatus(workspace),
     getUsage(workspace.id),
     getOrigin(),
     getLocale(),
-    getTranslations("room"),
     getTranslations("common"),
   ])
+  // The question the form really shows: the form is always in Italian (see pinnedLocale).
+  const tForm = await getTranslations({ locale: PUBLIC_FORM_LOCALE, namespace: "form" })
   const formPath = `/f/${workspace.formSlug}`
   return (
     <RoomScreen
       workspaceName={workspace.name}
       // Same default as get_public_form in the database.
-      question={workspace.formQuestion ?? t("page.defaultQuestion", { name: workspace.name })}
+      question={workspace.formQuestion ?? tForm("defaultQuestion", { name: workspace.name })}
       shortUrl={`${new URL(origin).host}${formPath}`}
       qrCode={<QrCode url={`${origin}${formPath}`} className="room-qr rounded-lg p-[max(12px,1.6svh)]" />}
       initialStatus={status}
