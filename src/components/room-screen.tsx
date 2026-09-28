@@ -9,14 +9,15 @@ import { ANALYSIS_FAILURES, type AnalysisFailure } from "@/components/analyze-bu
 import { Logo } from "@/components/logo"
 import { RoomDots, type Scene } from "@/components/room-dots"
 import { Badge } from "@/components/ui/badge"
-import { formatNumber, KIND_LABELS } from "@/lib/format"
+import { formatNumber, KIND_LABELS, KIND_PLURALS } from "@/lib/format"
 import type { RoomStatus, RoomTheme } from "@/lib/room"
 import {
   bubbleLayout,
   bubbleTargets,
   dotOrderByX,
   growBubble,
-  pileLayout,
+  pilePlaces,
+  pileStep,
   roomGroups,
   type Bubble,
   type Rect,
@@ -62,27 +63,39 @@ export function RoomScreen({
   const pileRect = useRelativeRect(pileArea, main)
   const stageRect = useRelativeRect(stage, main)
 
-  const pile = useMemo(() => (pileRect ? pileLayout(pileRect, status.responses) : null), [pileRect, status.responses])
-  const pileRef = useRef(pile)
+  // The whole step is laid out once; a new response only takes the next place.
+  const step = pileStep(status.responses)
+  const places = useMemo(() => (pileRect ? pilePlaces(pileRect, step) : null), [pileRect, step])
+  const pileDots = useMemo(
+    () => places?.points.map((p) => ({ ...p, r: places.radius, color: "ink" as const })) ?? null,
+    [places]
+  )
+  const placesRef = useRef(places)
   const responsesRef = useRef(status.responses)
   useEffect(() => {
-    pileRef.current = pile
+    placesRef.current = places
     responsesRef.current = status.responses
-  }, [pile, status.responses])
+  }, [places, status.responses])
 
-  const groups = useMemo(
-    () => (analysis ? roomGroups(analysis.themes, status.responses) : []),
-    [analysis, status.responses]
-  )
+  // The groups as the analysis found them; only "Altro", the last, follows the live count.
+  const analysisGroups = useMemo(() => (analysis ? roomGroups(analysis.themes, analysis.responses) : []), [analysis])
+  const groups = useMemo(() => {
+    const themed = analysisGroups.slice(0, -1)
+    const other = analysisGroups.at(-1)
+    if (!other) return []
+    const covered = themed.reduce((sum, g) => sum + g.count, 0)
+    return [...themed, { ...other, count: Math.max(0, status.responses - covered) }]
+  }, [analysisGroups, status.responses])
   // The bubbles are laid out once per analysis, with the counts it found. After that only "Altro"
   // grows, in place, with the responses that keep arriving: the other bubbles never move.
   const frozen = useMemo(() => {
-    if (!analysis || !stageRect) return null
+    if (!analysisGroups.length || !stageRect) return null
     const band = { ...stageRect, height: stageRect.height * BUBBLE_BAND }
-    const column = stageRect.width / 7.5
+    // Theme columns take about three quarters of the width; "Altro" needs about half a column.
+    const column = stageRect.width / (analysisGroups.length + 1.5)
     const layout = bubbleLayout(
       band,
-      roomGroups(analysis.themes, analysis.responses).map((g) => ({
+      analysisGroups.map((g) => ({
         count: g.count,
         minWidth: g.kind === "other" ? column * 0.55 : column,
       })),
@@ -96,7 +109,7 @@ export function RoomScreen({
       labelTop: band.height - lift + Math.max(10, stageRect.height * 0.03),
       bubbles: layout.bubbles.map((b) => ({ ...b, cy: b.cy - lift, points: b.points.map((p) => ({ x: p.x, y: p.y - lift })) })),
     }
-  }, [analysis, stageRect])
+  }, [analysisGroups, stageRect])
   const bubbles = useMemo(() => {
     if (!frozen) return null
     const other = frozen.bubbles.length - 1
@@ -109,6 +122,8 @@ export function RoomScreen({
   const scene = useMemo<Scene | null>(() => {
     if (analysis) {
       if (!bubbles) return null
+      // bubbleTargets needs no more pile dots than places. The places are never fewer than the
+      // responses at analysis time, unless feedback was deleted since: then the extra dots go.
       const total = bubbles.bubbles.reduce((sum, b) => sum + b.points.length, 0)
       const targets = bubbleTargets(
         analysis.order.filter((i) => i < total),
@@ -123,9 +138,9 @@ export function RoomScreen({
         ),
       }
     }
-    if (!pile) return null
-    return { mode: "pile", dots: pile.points.map((p) => ({ ...p, r: pile.radius, color: "ink" })), halos: [] }
-  }, [analysis, bubbles, groups, pile])
+    if (!pileDots) return null
+    return { mode: "pile", dots: pileDots.slice(0, status.responses), halos: [] }
+  }, [analysis, bubbles, groups, pileDots, status.responses])
 
   function runAnalysis() {
     setFailure(null)
@@ -142,7 +157,7 @@ export function RoomScreen({
         setAnalysis({
           themes: next,
           responses: responsesRef.current,
-          order: dotOrderByX(pileRef.current?.points ?? []),
+          order: dotOrderByX(placesRef.current?.points.slice(0, responsesRef.current) ?? []),
         })
       }
     })
@@ -293,12 +308,22 @@ function useRelativeRect(element: HTMLElement | null, root: HTMLElement | null) 
     )
   }, [element, root])
   useEffect(() => {
-    // The observer also reports the first size, right after observe().
+    // The observer also reports the first size, right after observe(). Several reports in one
+    // frame (a window being dragged) make one measure.
     if (!element || !root) return
-    const observer = new ResizeObserver(measure)
+    let frame = 0
+    const observer = new ResizeObserver(() => {
+      if (!frame) frame = requestAnimationFrame(() => {
+        frame = 0
+        measure()
+      })
+    })
     observer.observe(element)
     observer.observe(root)
-    return () => observer.disconnect()
+    return () => {
+      observer.disconnect()
+      cancelAnimationFrame(frame)
+    }
   }, [element, root, measure])
   return rect
 }
@@ -426,13 +451,7 @@ function ThemesView({
                       {group.kind === "other" ? (
                         group.count > 0 && <span className="room-lede text-ink-muted">Altro</span>
                       ) : (
-                        <>
-                          <span className="room-bubble-count">{formatNumber(group.count)}</span>
-                          <Badge variant={group.kind} className="room-kind">
-                            {KIND_LABELS[group.kind]}
-                          </Badge>
-                          <p className="room-bubble-title">{group.title}</p>
-                        </>
+                        <ThemeLabel kind={group.kind} title={group.title} count={group.count} layout="bubble" />
                       )}
                     </li>
                   )
@@ -448,13 +467,7 @@ function ThemesView({
               key={theme.id}
               className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-[2.4vw] border-b border-line py-[1.6svh] last:border-b-0"
             >
-              <span className="room-theme-count w-[1.8em] text-right">{formatNumber(theme.feedbackCount)}</span>
-              <div className="min-w-0">
-                <Badge variant={theme.kind} className="room-kind mb-[0.6svh]">
-                  {KIND_LABELS[theme.kind]}
-                </Badge>
-                <p className="room-theme-title">{theme.title}</p>
-              </div>
+              <ThemeLabel kind={theme.kind} title={theme.title} count={theme.feedbackCount} layout="row" />
             </li>
           ))}
         </ol>
@@ -463,18 +476,38 @@ function ThemesView({
   )
 }
 
-const KIND_COUNTS: Record<RoomTheme["kind"], [string, string]> = {
-  problem: ["problema", "problemi"],
-  opportunity: ["opportunità", "opportunità"],
-  praise: ["apprezzamento", "apprezzamenti"],
-}
-
 // "230 risposte, 5 temi: 2 problemi, 2 opportunità, 1 apprezzamento." What the bubbles say, in words.
 function themesSummary(responses: number, themes: RoomTheme[]) {
   const plural = (n: number, [one, many]: [string, string]) => `${formatNumber(n)} ${n === 1 ? one : many}`
-  const kinds = (Object.keys(KIND_COUNTS) as RoomTheme["kind"][])
+  const kinds = (Object.keys(KIND_LABELS) as RoomTheme["kind"][])
     .map((kind) => [kind, themes.filter((t) => t.kind === kind).length] as const)
     .filter(([, n]) => n > 0)
-    .map(([kind, n]) => plural(n, KIND_COUNTS[kind]))
+    .map(([kind, n]) => plural(n, [KIND_LABELS[kind].toLowerCase(), KIND_PLURALS[kind].toLowerCase()]))
   return `${plural(responses, ["risposta", "risposte"])}, ${plural(themes.length, ["tema", "temi"])}: ${kinds.join(", ")}.`
+}
+
+// Count, kind and title of a theme: under its bubble, or as a row of the list.
+function ThemeLabel({
+  kind,
+  title,
+  count,
+  layout,
+}: {
+  kind: RoomTheme["kind"]
+  title: string
+  count: number
+  layout: "bubble" | "row"
+}) {
+  const bubble = layout === "bubble"
+  return (
+    <>
+      <span className={bubble ? "room-bubble-count" : "room-theme-count w-[1.8em] text-right"}>{formatNumber(count)}</span>
+      <div className={bubble ? "flex flex-col items-center gap-[0.8svh]" : "min-w-0"}>
+        <Badge variant={kind} className={cn("room-kind", !bubble && "mb-[0.6svh]")}>
+          {KIND_LABELS[kind]}
+        </Badge>
+        <p className={bubble ? "room-bubble-title" : "room-theme-title"}>{title}</p>
+      </div>
+    </>
+  )
 }

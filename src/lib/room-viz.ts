@@ -38,18 +38,20 @@ function jitter(row: number, col: number) {
   return n - Math.floor(n)
 }
 
-// Places on a hexagonal grid inside the area, filled from the floor up and from the top of the
-// heap out, each nudged a little so the heap looks poured, not printed.
-export function pileLayout(area: Rect, count: number): { radius: number; points: Point[] } {
-  const step = PILE_STEPS.find((s) => s >= count) ?? Math.ceil(count / 1000) * 1000
-  const places = Math.ceil(step * PILE_ROOM)
-  if (area.width <= 0 || area.height <= 0 || count === 0) return { radius: 0, points: [] }
+// The step a count belongs to: the pile is laid out for the whole step at once.
+export function pileStep(count: number) {
+  return PILE_STEPS.find((s) => s >= count) ?? Math.ceil(count / 1000) * 1000
+}
 
-  let pitch = Math.sqrt((area.width * area.height) / (ROW * places))
-  while (pitch > 1 && pileCapacity(area.width, area.height, pitch) < places) pitch *= 0.97
-  // Never fewer places than responses: in a cramped area the dots get as small as they must.
-  while (pitch > 0.01 && pileCapacity(area.width, area.height, pitch) < count) pitch *= 0.97
-  if (pileCapacity(area.width, area.height, pitch) === 0) return { radius: 0, points: [] }
+// All the places of a step on a hexagonal grid inside the area, in the order they fill: from the
+// floor up and from the top of the heap out, each nudged a little so the heap looks poured, not
+// printed. There are always at least as many places as the step: in a cramped area the dots get
+// as small as they must.
+export function pilePlaces(area: Rect, step: number): { radius: number; points: Point[] } {
+  if (area.width <= 0 || area.height <= 0) return { radius: 0, points: [] }
+  const places = Math.ceil(step * PILE_ROOM)
+  const pitch = fitSpacing(0, Math.max(area.width, area.height), (p) => p > 0 && pileCapacity(area.width, area.height, p) >= places)
+  if (pitch <= 0) return { radius: 0, points: [] }
 
   const floor = area.y + area.height
   const middle = area.x + area.width * PILE_ORIGIN
@@ -70,7 +72,26 @@ export function pileLayout(area: Rect, count: number): { radius: number; points:
     }
   }
   slots.sort((a, b) => a.score - b.score)
-  return { radius: pitch * PILE_DOT, points: slots.slice(0, count).map(({ x, y }) => ({ x, y })) }
+  return { radius: pitch * PILE_DOT, points: slots.map(({ x, y }) => ({ x, y })) }
+}
+
+// The pile for a count: the first places of its step, so a new response takes the next place and
+// nothing else moves.
+export function pileLayout(area: Rect, count: number): { radius: number; points: Point[] } {
+  if (count === 0) return { radius: 0, points: [] }
+  const { radius, points } = pilePlaces(area, pileStep(count))
+  return { radius, points: points.slice(0, count) }
+}
+
+// The largest value between low and high for which fits holds, by bisection. fits(low) is assumed.
+export function fitSpacing(low: number, high: number, fits: (value: number) => boolean) {
+  if (fits(high)) return high
+  for (let i = 0; i < 40; i++) {
+    const mid = (low + high) / 2
+    if (fits(mid)) low = mid
+    else high = mid
+  }
+  return low
 }
 
 // ---------- Act 2: the bubbles ----------
@@ -131,26 +152,18 @@ export function bubbleLayout(
   const minTotal = groups.reduce((sum, g) => sum + g.minWidth, 0)
   const shrink = minTotal > 0 ? Math.max(0, Math.min(1, (area.width - gaps) / minTotal)) : 1
   const minWidths = groups.map((g) => g.minWidth * shrink)
-  const radiusOf = bubbleRadius
-  const widthsFor = (spacing: number) => groups.map((g, i) => Math.max(2 * radiusOf(g.count, spacing), minWidths[i]))
+  const widthsFor = (spacing: number) => groups.map((g, i) => Math.max(2 * bubbleRadius(g.count, spacing), minWidths[i]))
   const fits = (spacing: number) =>
     widthsFor(spacing).reduce((a, b) => a + b, 0) + gaps <= area.width &&
-    groups.every((g) => 2 * radiusOf(g.count, spacing) <= area.height)
+    groups.every((g) => 2 * bubbleRadius(g.count, spacing) <= area.height)
 
-  let low = 0
-  let high = area.height
-  for (let i = 0; i < 40; i++) {
-    const mid = (low + high) / 2
-    if (fits(mid)) low = mid
-    else high = mid
-  }
-  const spacing = low
+  const spacing = fitSpacing(0, area.height, fits)
   const widths = widthsFor(spacing)
   const total = widths.reduce((a, b) => a + b, 0) + gaps
   const floor = area.y + area.height
   let cursor = area.x + (area.width - total) / 2
   const bubbles = groups.map((g, i) => {
-    const radius = radiusOf(g.count, spacing)
+    const radius = bubbleRadius(g.count, spacing)
     const cx = cursor + widths[i] / 2
     const cy = floor - radius
     const bubble = {

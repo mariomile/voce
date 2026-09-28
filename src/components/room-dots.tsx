@@ -68,6 +68,10 @@ export function RoomDots({ scene, alive, hidden }: { scene: Scene | null; alive:
     engine.current?.setAlive(alive)
   }, [alive])
 
+  useEffect(() => {
+    engine.current?.setHidden(hidden)
+  }, [hidden])
+
   return (
     <canvas
       ref={canvasRef}
@@ -95,6 +99,8 @@ function createEngine(canvas: HTMLCanvasElement) {
   let haloAlpha = 0
   let mode: Scene["mode"] | null = null
   let alive = false
+  // Behind the list view: the dots keep moving to their places, nothing is drawn.
+  let hidden = false
   let aliveLevel = 0
   let frame = 0
   let width = 0
@@ -198,6 +204,11 @@ function createEngine(canvas: HTMLCanvasElement) {
     kick()
   }
 
+  function setHidden(next: boolean) {
+    hidden = next
+    if (!hidden) draw(performance.now())
+  }
+
   function setAlive(next: boolean) {
     alive = next && !reduced.matches
     kick()
@@ -249,7 +260,15 @@ function createEngine(canvas: HTMLCanvasElement) {
   }
 
   const buckets = new Map<DotColor, Dot[]>()
+  function bucket(dot: Dot) {
+    if (dot.r <= 0.1) return
+    let list = buckets.get(dot.color)
+    if (!list) buckets.set(dot.color, (list = []))
+    list.push(dot)
+  }
+
   function draw(now: number) {
+    if (hidden) return
     ctx.clearRect(0, 0, width, height)
 
     if (haloAlpha > 0.001) {
@@ -264,12 +283,8 @@ function createEngine(canvas: HTMLCanvasElement) {
     }
 
     for (const list of buckets.values()) list.length = 0
-    for (const dot of [...dots, ...dying]) {
-      if (dot.r <= 0.1) continue
-      let list = buckets.get(dot.color)
-      if (!list) buckets.set(dot.color, (list = []))
-      list.push(dot)
-    }
+    for (const dot of dots) bucket(dot)
+    for (const dot of dying) bucket(dot)
 
     // While the analysis runs the pile breathes: a slow wave rolls through it.
     const wave = now / 1000
@@ -337,5 +352,5 @@ function createEngine(canvas: HTMLCanvasElement) {
     cancelAnimationFrame(frame)
   }
 
-  return { setScene, setAlive, destroy }
+  return { setScene, setAlive, setHidden, destroy }
 }

@@ -3,8 +3,11 @@ import {
   bubbleLayout,
   bubbleTargets,
   dotOrderByX,
+  fitSpacing,
   growBubble,
   pileLayout,
+  pilePlaces,
+  pileStep,
   roomGroups,
   staggerDelays,
   sunflower,
@@ -89,6 +92,32 @@ describe("pileLayout", () => {
         }
       }
     }
+  })
+})
+
+describe("pileStep and pilePlaces", () => {
+  const area = { x: 100, y: 200, width: 900, height: 300 }
+
+  it("rounds a count up to its step", () => {
+    expect([0, 1, 60, 61, 250, 251, 2000, 2001, 3500].map(pileStep)).toEqual([60, 60, 60, 120, 250, 500, 2000, 3000, 4000])
+  })
+
+  it("lays out a whole step once: the pile of any count in the step is its first places", () => {
+    const places = pilePlaces(area, pileStep(41))
+    expect(places.points.length).toBeGreaterThanOrEqual(60)
+    for (const count of [1, 41, 60]) {
+      const pile = pileLayout(area, count)
+      expect(pile.radius).toBe(places.radius)
+      expect(pile.points).toEqual(places.points.slice(0, count))
+    }
+  })
+})
+
+describe("fitSpacing", () => {
+  it("finds the largest value that still fits, between the bounds", () => {
+    expect(fitSpacing(0, 100, (s) => s <= 37.5)).toBeCloseTo(37.5, 6)
+    expect(fitSpacing(0, 10, () => true)).toBeCloseTo(10, 6)
+    expect(fitSpacing(0, 10, (s) => s === 0)).toBeCloseTo(0, 6)
   })
 })
 
