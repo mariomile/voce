@@ -75,6 +75,37 @@ describe("analytics.md", () => {
   })
 })
 
+describe("analytics.md: the Research events", () => {
+  const doc = readFileSync("docs/analytics.md", "utf8")
+  const row = (event: string) => doc.split("\n").find((line) => line.startsWith(`| \`${event}\``))
+
+  it("documents first_research_collected and research_synthesized with properties, timing and the HogQL query of the metric", () => {
+    const collected = row("first_research_collected")
+    expect(collected).toBeDefined()
+    expect(collected).toMatch(/5 feedback/)
+    expect(collected).toMatch(/una volta per workspace/i)
+    expect(collected).toMatch(/nessuna/)
+
+    const synthesized = row("research_synthesized")
+    expect(synthesized).toBeDefined()
+    for (const property of ["`feedback_count`", "`citation_count`", "`hypothesis_count`"]) expect(synthesized).toContain(property)
+    expect(synthesized).toMatch(/almeno una parte/)
+    expect(doc).toMatch(/`research_synthesized`[^\n]*non passa da `analytics_milestones`/)
+
+    const query = doc.match(/```sql\n([\s\S]*?)```/)?.[1] ?? ""
+    expect(query).toContain("event = 'first_research_collected'")
+    expect(query).toContain("e.event = 'research_synthesized'")
+    expect(query).toContain("toInt(e.properties.feedback_count) >= 5")
+    expect(query).toContain("toInt(e.properties.citation_count) >= 1")
+    expect(query).toContain("interval 14 day")
+  })
+
+  it("first_analysis_completed is the first themes analysis in any Research, and the milestones table accepts five events", () => {
+    expect(row("first_analysis_completed")).toMatch(/analisi dei temi[^|]*qualunque Research/)
+    expect(doc).toMatch(/cinque eventi/)
+  })
+})
+
 describe("the ask files", () => {
   it("never use dangerouslySetInnerHTML", () => {
     const files = [

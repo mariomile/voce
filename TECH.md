@@ -1,6 +1,6 @@
 # TECH.md — Voce
 
-**Verified:** 2026-09-26 @ 89b2a73
+**Verified:** 2026-09-28 @ cad928f (branch `feat/research`, chiusura della Research)
 
 ## Stack
 | Layer | Choice | Why | Decision |
@@ -35,10 +35,13 @@
 - Il tetto di costo AI arriva al doppio della quota, perché le analisi fallite non consumano quota. `docs/review.md` B5
 - Più account Free moltiplicano le analisi gratuite. `docs/review.md` B6
 - Le scritture sullo stesso workspace passano una alla volta. `docs/review.md` M3
-- Le server action di `/research`, `/research/new`, `/research/[id]` (Sintesi: ipotesi e analisi) e `/research/[id]/ask` (Chiedi) senza sessione passano il proxy apposta (POST con intestazione `next-action`), perché la action risponda `session` e la pagina mostri E8, RC4 o E-SESS. Le altre server action senza sessione vengono ancora mandate a `/login`. `src/proxy.ts`
+- Le server action di `/research`, `/research/new`, `/research/[id]` (Sintesi: ipotesi e analisi), `/research/[id]/ask` (Chiedi) e `/research/[id]/collect` (Raccolta: note, CSV, eliminazione della Research) senza sessione passano il proxy apposta (POST con intestazione `next-action`), perché la action risponda `session` e la pagina mostri E8, RC4 o E-SESS; i controlli del link del modulo senza sessione falliscono con il loro errore. Le altre server action senza sessione (Feedback, Piano, sala) vengono ancora mandate a `/login`. Una action nuova su una di quelle pagine deve controllare la sessione da sé. `src/proxy.ts`
 - Lo stack Supabase locale è condiviso tra i worktree: un `supabase db reset` da un altro worktree toglie le migrazioni che lì non ci sono (per esempio `questions`) e i test di questo falliscono finché non si rilancia il reset qui. `05-build-plan.md` di chiedi-ai-feedback, P3
 - `supabase config push` spingerebbe `site_url = localhost` in produzione: per l'Auth remota si usa la Management API. Runbook di produzione PHC26.
 - `vercel rollback` mette `autoAssignCustomDomains` a false sul progetto: il deployment di produzione successivo (anche da un merge) non prende il dominio finché non si riattiva (PATCH `/v9/projects/voce-feedback`). Provato il 2026-09-27. `06-release.md` di chiedi-ai-feedback
 - Le variabili d'ambiente di Vercel entrano nel deployment quando lo si costruisce: dopo aver aggiunto una variabile (per esempio `POSTHOG_KEY`) vanno ricostruiti i deployment che devono usarla. Le variabili oggi esistono solo in Production: un'anteprima non ha Supabase.
 - Vercel non esegue migrazioni: le migrazioni additive vanno applicate in produzione prima del codice che le usa (`supabase db push --linked`), come per `20260927120000_questions.sql`.
+- `20261001090000_research.sql` non è additiva: toglie le colonne del modulo da `workspaces` e rende obbligatorio `feedback.research_id`. Migrazione e codice della Research vanno in produzione insieme, e la migrazione non si annulla; la data è di Mario, non prima del 2026-10-01. `docs/prima-dei-clienti-reali.md`
+- I test in `supabase/migration-tests/` (dati di prima della Research, poi la migrazione) non girano con `supabase test db`: li lancia `supabase/migration-tests/run.sh`: in CI un passo apposta di `.github/workflows/ci.yml`, in questo worktree `voce-research-db.sh migration-test` sullo stack isolato.
+- `src/lib/data.test.ts` legge il seed: cambiare `supabase/seed.sql` (Research, feedback, analisi di Fatturino) vuol dire riallineare quei test.
 - `hypothesis_verdicts.analysis_id` punta ad `analyses` senza cascata: chi cancella righe di `analyses` (fixture dei test) cancella prima le ipotesi, altrimenti la cancellazione fallisce in silenzio nei `beforeEach`. Le ipotesi di una Research non si toccano durante una sua analisi (`analysis_running`, al massimo 10 minuti). `src/app/(app)/research/[id]/synthesize.test.ts`
