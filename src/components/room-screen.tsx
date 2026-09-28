@@ -12,23 +12,21 @@ import { Badge } from "@/components/ui/badge"
 import { formatNumber, KIND_LABELS, KIND_PLURALS } from "@/lib/format"
 import type { RoomStatus, RoomTheme } from "@/lib/room"
 import {
-  bubbleLayout,
   bubbleTargets,
   dotOrderByX,
   growBubble,
   pilePlaces,
   pileStep,
   roomGroups,
-  type Bubble,
+  themesLayout,
   type Rect,
+  type Label,
   type RoomGroup,
   type Scene,
 } from "@/lib/room-viz"
 
 const POLL_MS = 3000
 const LONG_QUESTION = 70
-// Share of the themes' stage taken by the bubbles; the labels sit underneath.
-const BUBBLE_BAND = 0.6
 
 // The themes, the count when they arrived, and the pile's dots from left to right at that moment.
 type Analysis = { themes: RoomTheme[]; responses: number; order: number[] }
@@ -89,28 +87,10 @@ export function RoomScreen({
   }, [analysisGroups, status.responses])
   // The bubbles are laid out once per analysis, with the counts it found. After that only "Altro"
   // grows, in place, with the responses that keep arriving: the other bubbles never move.
-  const frozen = useMemo(() => {
-    if (!analysisGroups.length || !stageRect) return null
-    const band = { ...stageRect, height: stageRect.height * BUBBLE_BAND }
-    // Theme columns take about three quarters of the width; "Altro" needs about half a column.
-    const column = stageRect.width / (analysisGroups.length + 1.5)
-    const layout = bubbleLayout(
-      band,
-      analysisGroups.map((g) => ({
-        count: g.count,
-        minWidth: g.kind === "other" ? column * 0.55 : column,
-      })),
-      Math.max(12, stageRect.width * 0.018)
-    )
-    // On a wide screen the row is narrower than the band is tall: bubbles and labels move up
-    // together, so the whole row sits in the middle of the stage.
-    const lift = (band.height - Math.max(0, ...layout.bubbles.map((b) => 2 * b.radius))) / 2
-    return {
-      ...layout,
-      labelTop: band.height - lift + Math.max(10, stageRect.height * 0.03),
-      bubbles: layout.bubbles.map((b) => ({ ...b, cy: b.cy - lift, points: b.points.map((p) => ({ x: p.x, y: p.y - lift })) })),
-    }
-  }, [analysisGroups, stageRect])
+  const frozen = useMemo(
+    () => (analysisGroups.length && stageRect ? themesLayout(stageRect, analysisGroups) : null),
+    [analysisGroups, stageRect]
+  )
   const bubbles = useMemo(() => {
     if (!frozen) return null
     const other = frozen.bubbles.length - 1
@@ -185,8 +165,7 @@ export function RoomScreen({
           workspaceName={workspaceName}
           themes={analysis.themes}
           groups={groups}
-          bubbles={bubbles}
-          stageRect={stageRect}
+          labels={frozen?.labels ?? null}
           responses={status.responses}
           view={view}
           onView={setView}
@@ -380,8 +359,7 @@ function ThemesView({
   workspaceName,
   themes,
   groups,
-  bubbles,
-  stageRect,
+  labels,
   responses,
   view,
   onView,
@@ -391,8 +369,7 @@ function ThemesView({
   workspaceName: string
   themes: RoomTheme[]
   groups: RoomGroup[]
-  bubbles: { bubbles: Bubble[]; labelTop: number } | null
-  stageRect: Rect | null
+  labels: Label[] | null
   responses: number
   view: "bubbles" | "list"
   onView: (view: "bubbles" | "list") => void
@@ -428,18 +405,18 @@ function ThemesView({
       {view === "bubbles" ? (
         <div className="l-wrap flex flex-1 flex-col pb-[3svh]">
           <div ref={stageRef} className="relative min-h-0 flex-1">
-            {bubbles && stageRect && (
+            {labels && (
               <ol className="contents">
                 {groups.map((group, i) => {
-                  const bubble = bubbles.bubbles[i]
+                  const label = labels[i]
                   return (
                     <li
                       key={group.id}
                       className="room-bubble-label absolute flex flex-col items-center gap-[0.8svh] text-center"
                       style={{
-                        left: bubble.column.x - stageRect.x,
-                        width: bubble.column.width,
-                        top: bubbles.labelTop,
+                        left: label.x,
+                        width: label.width,
+                        top: label.top,
                         animationDelay: `${1200 + i * 90}ms`,
                       }}
                     >

@@ -201,6 +201,35 @@ export function growBubble(bubble: Bubble, count: number, spacing: number): Bubb
   return { ...bubble, cy, radius, dotRadius: fitting * BUBBLE_DOT, points: sunflower(count, fitting, { x: bubble.cx, y: cy }) }
 }
 
+// Share of the themes' stage taken by the bubbles; the labels sit underneath.
+const BUBBLE_BAND = 0.6
+// Theme columns take about three quarters of the width; "Altro" needs about half a column.
+const OTHER_COLUMN = 0.55
+
+export type Label = { x: number; width: number; top: number }
+export type ThemesLayout = { spacing: number; bubbles: Bubble[]; labels: Label[] }
+
+// The bubbles of an analysis, laid out once with the counts it found, and a label box under each.
+// The bubbles are in the stage's coordinates; the labels are relative to the stage, for elements
+// placed inside it. On a wide screen the row is narrower than the band is tall: bubbles and labels
+// move up together, so the whole row sits in the middle of the band.
+export function themesLayout(stage: Rect, groups: RoomGroup[]): ThemesLayout {
+  const band = { ...stage, height: stage.height * BUBBLE_BAND }
+  const column = stage.width / (groups.length + 1.5)
+  const { spacing, bubbles } = bubbleLayout(
+    band,
+    groups.map((g) => ({ count: g.count, minWidth: g.kind === "other" ? column * OTHER_COLUMN : column })),
+    Math.max(12, stage.width * 0.018)
+  )
+  const lift = (band.height - Math.max(0, ...bubbles.map((b) => 2 * b.radius))) / 2
+  const top = band.height - lift + Math.max(10, stage.height * 0.03)
+  return {
+    spacing,
+    bubbles: bubbles.map((b) => ({ ...b, cy: b.cy - lift, points: b.points.map((p) => ({ x: p.x, y: p.y - lift })) })),
+    labels: bubbles.map((b) => ({ x: b.column.x - stage.x, width: b.column.width, top })),
+  }
+}
+
 // ---------- From the pile to the bubbles ----------
 
 // Dot indexes from left to right: the order in which they fill the bubbles.

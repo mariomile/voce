@@ -11,6 +11,7 @@ import {
   roomGroups,
   staggerDelays,
   sunflower,
+  themesLayout,
   type Point,
 } from "./room-viz"
 import type { RoomTheme } from "./room"
@@ -242,6 +243,60 @@ describe("growBubble", () => {
     const regrown = growBubble(bubbles[0], 60, spacing)
     expect(regrown.radius).toBeCloseTo(bubbles[0].radius, 6)
     expect(regrown.points).toEqual(bubbles[0].points)
+  })
+})
+
+describe("themesLayout", () => {
+  const stage = { x: 64, y: 240, width: 1790, height: 700 }
+  const groups = roomGroups([theme("a", 78), theme("b", 55, "opportunity"), theme("c", 41), theme("d", 30, "praise"), theme("e", 18, "opportunity")], 230)
+
+  it("gives one bubble and one label per group, the bubbles with the group's count", () => {
+    const layout = themesLayout(stage, groups)
+    expect(layout.bubbles.map((b) => b.points.length)).toEqual(groups.map((g) => g.count))
+    expect(layout.labels).toHaveLength(groups.length)
+  })
+
+  it("centers the row of bubbles in the top of the stage, all on one floor", () => {
+    for (const size of [stage, { x: 0, y: 100, width: 800, height: 900 }, { x: 10, y: 10, width: 1200, height: 300 }]) {
+      const { bubbles } = themesLayout(size, groups)
+      const floor = bubbles[0].cy + bubbles[0].radius
+      for (const b of bubbles) expect(b.cy + b.radius).toBeCloseTo(floor, 6)
+      const top = Math.min(...bubbles.map((b) => b.cy - b.radius))
+      const band = size.height * 0.6
+      expect(top - size.y).toBeGreaterThanOrEqual(-0.001)
+      expect(top - size.y).toBeCloseTo(size.y + band - floor, 6)
+    }
+  })
+
+  it("puts each label under its bubble, in the stage's own coordinates", () => {
+    const { bubbles, labels } = themesLayout(stage, groups)
+    const floor = bubbles[0].cy + bubbles[0].radius - stage.y
+    labels.forEach((label, i) => {
+      expect(label.x).toBeCloseTo(bubbles[i].column.x - stage.x, 6)
+      expect(label.width).toBeCloseTo(bubbles[i].column.width, 6)
+      expect(label.x).toBeGreaterThanOrEqual(-0.001)
+      expect(label.x + label.width).toBeLessThanOrEqual(stage.width + 0.001)
+      expect(label.top).toBeGreaterThanOrEqual(floor + 10)
+      expect(label.top).toBeLessThan(stage.height)
+    })
+  })
+
+  it("gives an empty \"Altro\" about half the narrowest column of a theme", () => {
+    const small = roomGroups([theme("a", 8), theme("b", 5), theme("c", 4)], 17)
+    const { labels } = themesLayout(stage, small)
+    const themeColumn = stage.width / (small.length + 1.5)
+    for (const label of labels.slice(0, 3)) expect(label.width).toBeGreaterThanOrEqual(themeColumn - 0.001)
+    expect(labels[3].width).toBeCloseTo(themeColumn * 0.55, 6)
+  })
+
+  it("keeps the columns at least 12 pixels apart, more on a wide stage", () => {
+    for (const size of [stage, { x: 0, y: 0, width: 420, height: 400 }]) {
+      const { labels } = themesLayout(size, groups)
+      for (let i = 1; i < labels.length; i++) {
+        const gap = labels[i].x - (labels[i - 1].x + labels[i - 1].width)
+        expect(gap).toBeGreaterThanOrEqual(Math.max(12, size.width * 0.018) - 0.001)
+      }
+    }
   })
 })
 
