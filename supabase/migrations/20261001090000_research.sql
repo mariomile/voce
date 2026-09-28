@@ -543,7 +543,7 @@ create policy "Members delete their hypotheses" on public.research_hypotheses
 grant select, delete on public.research_hypotheses to authenticated;
 grant insert (workspace_id, research_id, text), update (text) on public.research_hypotheses to authenticated;
 
--- ===== Verdicts: written only by the database (finish_verdict, in a later part) =====
+-- ===== Verdicts: written only by the database (finish_verdict) =====
 
 create type public.hypothesis_verdict as enum ('confirmed', 'refuted', 'to_review');
 create type public.verdict_stance as enum ('for', 'against');
@@ -597,6 +597,22 @@ grant select on public.hypothesis_verdicts, public.verdict_feedback to authentic
 
 -- ===== Hypothesis triggers =====
 
+-- True while an analysis of the Research runs: its verdict was asked on the hypotheses as they were, so
+-- they stay as they are until it is saved (a changed text would get the verdict of the sentence before).
+-- A run older than 10 minutes no longer locks: start_analysis closes it as stale, and the server has
+-- given up on it long before.
+create function private.analysis_running(research uuid)
+returns boolean
+language sql stable security definer set search_path = ''
+as $$
+  select exists (
+    select 1 from public.analyses a
+    where a.research_id = analysis_running.research and a.status = 'running' and a.created_at > now() - interval '10 minutes'
+  )
+$$;
+
+revoke all on function private.analysis_running(uuid) from public, anon, authenticated;
+
 -- Locks the Research, so two tabs adding at once are counted one at a time: at most 5, then the position.
 create function private.before_hypothesis_insert()
 returns trigger
@@ -604,6 +620,9 @@ language plpgsql security definer set search_path = ''
 as $$
 begin
   perform 1 from public.research r where r.id = new.research_id for no key update;
+  if private.analysis_running(new.research_id) then
+    raise exception 'analysis_running';
+  end if;
   if (select count(*) from public.research_hypotheses h where h.research_id = new.research_id) >= 5 then
     raise exception 'max_hypotheses';
   end if;
@@ -625,6 +644,9 @@ returns trigger
 language plpgsql security definer set search_path = ''
 as $$
 begin
+  if private.analysis_running(old.research_id) then
+    raise exception 'analysis_running';
+  end if;
   if new.text is distinct from old.text then
     new.written_at := now();
     delete from public.hypothesis_verdicts v where v.hypothesis_id = old.id;
@@ -636,6 +658,136 @@ $$;
 create trigger before_hypothesis_text_update
   before update of text on public.research_hypotheses
   for each row execute function private.before_hypothesis_text_update();
+
+-- Deleting the Research itself still works during an analysis: the Research row is already gone when its
+-- hypotheses go in cascade, and the analysis then fails with research_deleted.
+create function private.before_hypothesis_delete()
+returns trigger
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  if exists (select 1 from public.research r where r.id = old.research_id) and private.analysis_running(old.research_id) then
+    raise exception 'analysis_running';
+  end if;
+  return old;
+end
+$$;
+
+create trigger before_hypothesis_delete
+  before delete on public.research_hypotheses
+  for each row execute function private.before_hypothesis_delete();
+
+-- ===== Save the verdict of a Research =====
+
+-- verdicts: [{hypothesis_id, text, verdict, reasoning, feedback_read, arrived_after, links: [{feedback_id, stance}],
+-- quotes: [{feedback_id, stance, text}]}], already checked by the server against the texts it sent; text is
+-- the hypothesis as the model read it. On a verdict row still running: fails with research_deleted when its
+-- Research is gone; skips hypotheses that are not of its Research or whose text changed since (edited just
+-- before the lock), and feedback deleted meanwhile; checks every quote again against the saved text, and
+-- saves a confirmed (refuted) left without quotes for (against) as to_review. Each hypothesis saved gets its
+-- verdict replaced, links included; the others keep theirs. Returns the verified quotes and the verdicts it
+-- saved. One transaction.
+create function public.finish_verdict(analysis uuid, verdicts jsonb, run jsonb)
+returns table (quotes_saved integer, verdicts_saved integer)
+language plpgsql volatile security definer set search_path = ''
+as $$
+declare
+  ws uuid;
+  res uuid;
+  item jsonb;
+  hyp uuid;
+  saved integer := 0;
+begin
+  select a.workspace_id, a.research_id into ws, res from public.analyses a
+  where a.id = analysis and a.status = 'running' and a.kind = 'verdict';
+  if ws is null then
+    raise exception 'analysis_not_running' using errcode = '22023';
+  end if;
+  -- Deleting the Research empties research_id and keeps the row: nothing to save the verdicts on.
+  if res is null then
+    raise exception 'research_deleted' using errcode = '22023';
+  end if;
+  perform 1 from public.workspaces w where w.id = ws for no key update;
+
+  for item in select v.value from jsonb_array_elements(finish_verdict.verdicts) v loop
+    select h.id into hyp from public.research_hypotheses h
+    where h.workspace_id = ws and h.research_id = res and h.id = (item ->> 'hypothesis_id')::uuid
+      and h.text = item ->> 'text';
+    continue when hyp is null;
+    saved := saved + 1;
+
+    delete from public.hypothesis_verdicts v where v.hypothesis_id = hyp;
+    insert into public.hypothesis_verdicts (hypothesis_id, workspace_id, research_id, analysis_id, verdict, reasoning,
+      feedback_read, arrived_after)
+    values (hyp, ws, res, analysis, (item ->> 'verdict')::public.hypothesis_verdict, item ->> 'reasoning',
+      (item ->> 'feedback_read')::integer, (item ->> 'arrived_after')::integer);
+
+    insert into public.verdict_feedback (hypothesis_id, feedback_id, workspace_id, stance, quote_rank, highlight)
+    select hyp, kept.id, ws, l.stance, null, q.text
+    from (
+      select distinct on ((x.value ->> 'feedback_id')::uuid) (x.value ->> 'feedback_id')::uuid as feedback_id,
+        (x.value ->> 'stance')::public.verdict_stance as stance
+      from jsonb_array_elements(item -> 'links') x
+    ) l
+    -- Only feedback that still exist. The lock waits for a delete in progress, then skips the row it removed.
+    join public.feedback kept on kept.workspace_id = ws and kept.id = l.feedback_id
+    left join lateral (
+      select qq.value ->> 'text' as text from jsonb_array_elements(item -> 'quotes') qq
+      where (qq.value ->> 'feedback_id')::uuid = l.feedback_id and (qq.value ->> 'stance')::public.verdict_stance = l.stance
+      limit 1
+    ) q on true
+    for key share of kept;
+
+    -- Rank the quotes kept per side, 1 up, in the order the server sent them.
+    update public.verdict_feedback f set quote_rank = r.rank
+    from (
+      select vf.feedback_id, row_number() over (partition by vf.stance order by qq.ordinality)::smallint as rank
+      from public.verdict_feedback vf
+      join jsonb_array_elements(item -> 'quotes') with ordinality qq
+        on (qq.value ->> 'feedback_id')::uuid = vf.feedback_id and (qq.value ->> 'stance')::public.verdict_stance = vf.stance
+      where vf.hypothesis_id = hyp and vf.highlight is not null
+    ) r
+    where f.hypothesis_id = hyp and f.feedback_id = r.feedback_id;
+
+    -- Confirmed needs a quote for, refuted a quote against, once deleted feedback are gone.
+    update public.hypothesis_verdicts v set verdict = 'to_review'
+    where v.hypothesis_id = hyp and v.verdict <> 'to_review' and not exists (
+      select 1 from public.verdict_feedback f
+      where f.hypothesis_id = hyp and f.highlight is not null
+        and f.stance = (case v.verdict when 'confirmed' then 'for' else 'against' end)::public.verdict_stance
+    );
+  end loop;
+
+  -- The server checked the quotes against the texts it sent. Check again against the saved texts.
+  if exists (
+    select 1 from public.verdict_feedback vf
+    join public.hypothesis_verdicts v on v.hypothesis_id = vf.hypothesis_id
+    join public.feedback f on f.workspace_id = vf.workspace_id and f.id = vf.feedback_id
+    where v.analysis_id = analysis and vf.highlight is not null
+      and (vf.highlight = '' or strpos(f.text, vf.highlight) = 0)
+  ) then
+    raise exception 'quote_not_in_feedback' using errcode = '22023';
+  end if;
+
+  update public.analyses set status = 'done' where id = analysis;
+  update public.analysis_runs set
+    output = run -> 'output',
+    issues = run -> 'issues',
+    input_tokens = (run ->> 'input_tokens')::integer,
+    output_tokens = (run ->> 'output_tokens')::integer,
+    duration_ms = (run ->> 'duration_ms')::integer,
+    cost_usd = (run ->> 'cost_usd')::numeric,
+    finished_at = now()
+  where analysis_id = analysis;
+  return query
+    select count(*)::integer, saved from public.verdict_feedback vf
+    join public.hypothesis_verdicts v on v.hypothesis_id = vf.hypothesis_id
+    where v.analysis_id = analysis and vf.highlight is not null;
+end
+$$;
+
+revoke all on function public.finish_verdict(uuid, jsonb, jsonb) from public, anon, authenticated;
+grant execute on function public.finish_verdict(uuid, jsonb, jsonb) to service_role;
 
 -- ===== Questions of a Research (Chiedi) =====
 

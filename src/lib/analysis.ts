@@ -127,7 +127,7 @@ const outputSchema = z.object({
 export type RawOutput = z.infer<typeof outputSchema>
 
 // "<" is encoded, so no feedback text can close the data block and speak outside it.
-function asData(value: unknown) {
+export function asData(value: unknown) {
   return JSON.stringify(value).replaceAll("<", "\\u003c")
 }
 

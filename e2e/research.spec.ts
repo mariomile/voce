@@ -297,6 +297,46 @@ test("the analyze button keeps the focus through the analysis and announces the 
   await expect(page.getByRole("button", { name: "Analizza 2 feedback" })).toBeFocused()
 })
 
+test("with a hypothesis one click saves the themes and a verdict with a verified quote", async ({ page }) => {
+  const user = await signedInUser(page, "verdetto")
+  await insertFeedback(user, ["Vorrei il report in PDF.", "Mi serve il PDF del report."])
+  const { data: hypothesis, error } = await admin
+    .from("research_hypotheses")
+    .insert({ workspace_id: user.workspaceId, research_id: user.researchId, text: "I clienti vogliono il PDF" })
+    .select("id")
+    .single()
+  if (error) throw error
+  await page.goto(`/research/${user.researchId}`)
+  await page.getByRole("button", { name: "Analizza 2 feedback" }).click()
+  await expect(page.getByRole("status").filter({ hasText: "Analisi finita: 1 tema." })).toBeVisible()
+
+  const { data: analyses } = await admin.from("analyses").select("kind, status").eq("workspace_id", user.workspaceId)
+  expect(analyses!.map((a) => `${a.kind} ${a.status}`).sort()).toEqual(["themes done", "verdict done"])
+  const { data: verdict } = await admin
+    .from("hypothesis_verdicts")
+    .select("verdict, feedback_read, verdict_feedback (stance, quote_rank, highlight)")
+    .eq("hypothesis_id", hypothesis.id)
+    .single()
+  expect(verdict).toMatchObject({ verdict: "confirmed", feedback_read: 2 })
+  expect(verdict!.verdict_feedback).toEqual([{ stance: "for", quote_rank: 1, highlight: "Vorrei il report in PDF." }])
+})
+
+test("a verdict that fails while the themes succeed says so (S6), and counts once", async ({ page }) => {
+  const user = await signedInUser(page, "verdetto-fallito")
+  await insertFeedback(user, ["Vorrei il report in PDF.", "Mi serve il PDF del report."])
+  const { error } = await admin
+    .from("research_hypotheses")
+    .insert({ workspace_id: user.workspaceId, research_id: user.researchId, text: "FUORI_SCHEMA" })
+  if (error) throw error
+  await page.goto(`/research/${user.researchId}`)
+  await page.getByRole("button", { name: "Analizza 2 feedback" }).click()
+  await expect(page.getByRole("status").filter({ hasText: "Analisi finita: 1 tema." })).toContainText(
+    "Il verdetto non è arrivato e non conta nel limite del mese"
+  )
+  const { data: analyses } = await admin.from("analyses").select("kind, status").eq("workspace_id", user.workspaceId)
+  expect(analyses!.map((a) => `${a.kind} ${a.status}`).sort()).toEqual(["themes done", "verdict failed"])
+})
+
 test("hypotheses: write, edit and delete from the keyboard, with the focus where the design puts it", async ({ page }) => {
   const user = await signedInUser(page, "ipotesi")
   await insertFeedback(user, ["Il prezzo per utente è troppo alto per noi."])

@@ -322,7 +322,7 @@ function ConfirmDelete({
   onCancel: () => void
   onDeleted: () => void
 }) {
-  const [failure, setFailure] = useState<"failed" | "session" | null>(null)
+  const [failure, setFailure] = useState<"busy" | "failed" | "session" | null>(null)
   const [pending, startTransition] = useTransition()
 
   function confirm() {
@@ -356,7 +356,8 @@ function ConfirmDelete({
   )
 }
 
-function FailureNote({ failure, t, message }: { failure: Failure | null; t: T; message: string }) {
+// What went wrong with a save or a delete. busy: an analysis of the Research is running (H7).
+export function FailureNote({ failure, t, message }: { failure: Failure | null; t: T; message: string }) {
   return (
     <p role="status" className="text-sm empty:hidden">
       {failure === "failed" && <span className="text-problem">{message}</span>}
@@ -369,6 +370,7 @@ function FailureNote({ failure, t, message }: { failure: Failure | null; t: T; m
         </span>
       )}
       {failure === "max_reached" && <span className="text-problem">{t("maxReached")}</span>}
+      {failure === "busy" && <span className="text-problem">{t("errors.busy")}</span>}
     </p>
   )
 }

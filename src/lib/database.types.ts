@@ -795,6 +795,13 @@ export type Database = {
         }
         Returns: Json
       }
+      finish_verdict: {
+        Args: { analysis: string; run: Json; verdicts: Json }
+        Returns: {
+          quotes_saved: number
+          verdicts_saved: number
+        }[]
+      }
       get_public_form: {
         Args: { slug: string }
         Returns: {

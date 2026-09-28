@@ -93,7 +93,10 @@
       "cost": {
         "one": "You'll use 1 of your {limit} analyses for {month}.",
         "left": "You have {remaining} analyses left for {month}."
-      }
+      },
+      "themesFailed": "The themes were not updated and don't count toward this month's limit: the ones from {date} stay. The hypothesis verdict is ready below.",
+      "themesFailedFirst": "The themes didn't come through and don't count toward this month's limit. The hypothesis verdict is ready below.",
+      "verdictFailed": "The verdict didn't come through and doesn't count toward this month's limit: the hypotheses still show the previous verdict. Try again with “Verdict only”."
     },
     "changes": {
       "line": "Since the analysis of {date}: {feedback, plural, one {1 more feedback} other {# more feedback}}, {themes, plural, one {1 new theme} other {# new themes}}.",
@@ -130,7 +133,8 @@
       "failed": "I couldn't save the hypothesis. Try again shortly: your text is still here.",
       "deleteFailed": "I couldn't delete the hypothesis. Try again shortly.",
       "session": "Your session has expired. Sign in again to continue: copy the text you wrote first, it won't stay here.",
-      "sessionLink": "Sign in"
+      "sessionLink": "Sign in",
+      "busy": "An analysis of this Research is running: you can change the hypotheses once it's done."
     }
   }
 }

@@ -100,7 +100,7 @@ describe("roomThemes", () => {
         },
       ],
     } satisfies RawOutput)
-    expect(await synthesize(owner.researchId)).toEqual({ ok: true, themeCount: 1 })
+    expect(await synthesize(owner.researchId)).toMatchObject({ ok: true, themeCount: 1 })
     const themes = await roomThemes(owner.researchId)
     expect(themes).toEqual([{ id: expect.any(String), kind: "problem", title: "La banca si scollega", feedbackCount: 2 }])
     expect(JSON.stringify(themes)).not.toContain("scollega.")

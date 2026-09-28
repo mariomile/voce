@@ -2,7 +2,7 @@ import { MockLanguageModelV4 } from "ai/test"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import type { RawOutput } from "@/lib/analysis"
 import { isoDateOf } from "@/lib/format"
-import { fakeModel } from "@/test/fake-model"
+import { fakeModel, fakeSynthesisModel } from "@/test/fake-model"
 import { admin, anon, createTestUser, deleteTestUsers, type TestUser } from "@/test/supabase"
 
 // The synthesis of a Research runs for real against the local database, as a fresh test user.
@@ -40,6 +40,7 @@ vi.mock("next-intl/server", async (importOriginal) => ({
 
 const { synthesize } = await import("./actions")
 const { analysisInstructions } = await import("@/lib/analysis")
+const { verdictInstructions } = await import("@/lib/verdict")
 const { deleteFeedback } = await import("@/app/(app)/research/[id]/feedback/actions")
 const { getDashboard, getUsage } = await import("@/lib/data")
 
@@ -55,6 +56,8 @@ beforeEach(async () => {
   session.client = user.client
   ui.locale = "it"
   calls.options = []
+  // Hypotheses first: their verdicts point to the analyses.
+  await admin.from("research_hypotheses").delete().eq("workspace_id", user.workspaceId)
   await admin.from("analyses").delete().eq("workspace_id", user.workspaceId)
   await admin.from("feedback").delete().eq("workspace_id", user.workspaceId)
   await admin.from("subscriptions").update({ plan: "free" }).eq("workspace_id", user.workspaceId)
@@ -164,7 +167,7 @@ describe("synthesize", () => {
     const ids = await addFeedback()
     const model = answer({ themes: [bank, phone] })
 
-    expect(await synthesize(user.researchId)).toEqual({ ok: true, themeCount: expect.any(Number) })
+    expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themeCount: expect.any(Number) })
 
     const [analysis] = await analyses()
     expect(analysis).toMatchObject({ status: "done", feedback_count: 5, period_start: daysAgo(4), research_id: user.researchId, kind: "themes" })
@@ -228,7 +231,7 @@ describe("synthesize", () => {
 
     // The model saw the existing titles and reused one, with different case and spaces.
     const model = answer({ themes: [{ ...bank, title: "  la banca SI scollega " }, { ...phone, title: "Un tema nuovo" }] })
-    expect(await synthesize(user.researchId)).toEqual({ ok: true, themeCount: expect.any(Number) })
+    expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themeCount: expect.any(Number) })
     expect(JSON.stringify(model.doGenerateCalls[0].prompt)).toContain("Fatture dal telefono veloci")
 
     const [, second] = await analyses()
@@ -252,7 +255,7 @@ describe("synthesize", () => {
         { ...phone, feedback: [3] },
       ],
     })
-    expect(await synthesize(user.researchId)).toEqual({ ok: true, themeCount: expect.any(Number) })
+    expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themeCount: expect.any(Number) })
     const [analysis] = await analyses()
     const themes = await themesOf(analysis.id)
     expect(themes).toHaveLength(1)
@@ -309,7 +312,7 @@ describe("synthesize", () => {
     await insertAnalyses(2, "failed")
     await insertAnalyses(3, "done", new Date(Date.now() - 40 * 24 * 60 * 60 * 1000))
     answer({ themes: [bank] })
-    expect(await synthesize(user.researchId)).toEqual({ ok: true, themeCount: expect.any(Number) })
+    expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themeCount: expect.any(Number) })
 
     const model = answer({ themes: [bank] })
     expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "limit" })
@@ -352,7 +355,7 @@ describe("synthesize", () => {
     await admin.from("subscriptions").update({ plan: "pro" }).eq("workspace_id", user.workspaceId)
     await insertAnalyses(99, "done")
     answer({ themes: [bank] })
-    expect(await synthesize(user.researchId)).toEqual({ ok: true, themeCount: expect.any(Number) })
+    expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themeCount: expect.any(Number) })
     expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "limit" })
 
     await admin.from("subscriptions").update({ plan: "free" }).eq("workspace_id", user.workspaceId)
@@ -368,7 +371,7 @@ describe("synthesize", () => {
 
     await admin.from("analyses").delete().eq("workspace_id", user.workspaceId)
     await insertAnalyses(1, "running", new Date(Date.now() - 11 * 60 * 1000))
-    expect(await synthesize(user.researchId)).toEqual({ ok: true, themeCount: expect.any(Number) })
+    expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themeCount: expect.any(Number) })
     expect((await analyses()).map((a) => a.status)).toEqual(["failed", "done"])
   })
 
@@ -379,7 +382,7 @@ describe("synthesize", () => {
     expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "failed" })
     expect(analytics.trackMilestone).not.toHaveBeenCalled()
     answer({ themes: [bank, phone] })
-    expect(await synthesize(user.researchId)).toEqual({ ok: true, themeCount: expect.any(Number) })
+    expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themeCount: expect.any(Number) })
     expect(analytics.trackMilestone).toHaveBeenCalledExactlyOnceWith(user.workspaceId, {
       event: "first_analysis_completed",
       properties: { feedback_count: 5, theme_count: 2 },
@@ -403,7 +406,7 @@ describe("synthesize", () => {
     expect(await Promise.race(clicks)).toEqual({ ok: false, reason: "busy" })
     release()
     const results = await Promise.all(clicks)
-    expect(results).toContainEqual({ ok: true, themeCount: 1 })
+    expect(results).toContainEqual(expect.objectContaining({ ok: true, themeCount: 1 }))
     expect(results).toContainEqual({ ok: false, reason: "busy" })
     expect((await analyses()).map((a) => a.status)).toEqual(["done"])
   })
@@ -427,7 +430,7 @@ describe("synthesize", () => {
     await modelCalled
     expect(await deleteFeedback(ids[0])).toEqual({ ok: true })
     release()
-    expect(await running).toEqual({ ok: true, themeCount: expect.any(Number) })
+    expect(await running).toMatchObject({ ok: true, themeCount: expect.any(Number) })
 
     const [analysis] = await analyses()
     expect(analysis.status).toBe("done")
@@ -462,7 +465,7 @@ describe("synthesize", () => {
     await admin.from("feedback").insert(rows)
     await addFeedback(["Il più vecchio"], 400)
     const model = answer({ themes: [bank] })
-    expect(await synthesize(user.researchId)).toEqual({ ok: true, themeCount: 1 })
+    expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themeCount: 1 })
 
     const [analysis] = await analyses()
     expect(analysis).toMatchObject({ feedback_count: 500, period_start: daysAgo(149), research_id: user.researchId, kind: "themes" })
@@ -521,7 +524,7 @@ describe("synthesize", () => {
       await synthesize(user.researchId)
       // A later analysis of the other Research, with its own titles.
       answer({ themes: [{ ...phone, title: "Tema dell'altra Research", feedback: [1, 2], quotes: [] }] })
-      expect(await synthesize(other.data!)).toEqual({ ok: true, themeCount: 1 })
+      expect(await synthesize(other.data!)).toMatchObject({ ok: true, themeCount: 1 })
 
       const model = answer({ themes: [bank] })
       await synthesize(user.researchId)
@@ -581,6 +584,322 @@ describe("synthesize", () => {
     const model = answer({ themes: [bank] })
     expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "session" })
     expect(model.doGenerateCalls).toHaveLength(0)
+  })
+})
+
+// ===== The verdict: a second call when the Research has hypotheses =====
+
+const MARKER = "ZZMARCATOREZZ"
+
+async function addHypotheses(texts: string[], writtenAt?: string) {
+  const ids: string[] = []
+  for (const text of texts) {
+    const { data, error } = await admin
+      .from("research_hypotheses")
+      .insert({ workspace_id: user.workspaceId, research_id: user.researchId, text })
+      .select("id")
+      .single()
+    if (error) throw error
+    ids.push(data.id)
+  }
+  if (writtenAt) await admin.from("research_hypotheses").update({ written_at: writtenAt }).in("id", ids)
+  return ids
+}
+
+// Hypothesis 1 confirmed by feedback 1 and 2, against feedback 3; hypothesis 2 without evidence.
+const priced = {
+  hypotheses: [
+    {
+      hypothesis: 1,
+      verdict: "confirmed",
+      reasoning: "La banca si scollega spesso.",
+      supporting: [1, 2],
+      contradicting: [3],
+      quotes: [
+        { feedback: 2, stance: "for", text: "ricollegare la banca" },
+        { feedback: 1, stance: "for", text: "si scollega" },
+        { feedback: 3, stance: "against", text: "Adoro" },
+      ],
+    },
+    { hypothesis: 2, verdict: "to_review", reasoning: "Nessuno ne parla.", supporting: [], contradicting: [], quotes: [] },
+  ],
+}
+
+async function verdictsOf(hypothesisIds: string[]) {
+  const { data } = await admin
+    .from("hypothesis_verdicts")
+    .select("hypothesis_id, analysis_id, verdict, reasoning, feedback_read, arrived_after, verdict_feedback (feedback_id, stance, quote_rank, highlight)")
+    .in("hypothesis_id", hypothesisIds)
+  return hypothesisIds.map((id) => data!.find((v) => v.hypothesis_id === id))
+}
+
+async function byKind() {
+  const all = await analyses()
+  return { themes: all.filter((a) => a.kind === "themes"), verdict: all.filter((a) => a.kind === "verdict") }
+}
+
+describe("synthesize with hypotheses", () => {
+  it("with hypotheses one click reserves themes and verdict together and calls the model twice", async () => {
+    const ids = await addFeedback()
+    const hypotheses = await addHypotheses(["La banca si scollega", "Vogliono WhatsApp"])
+    const model = fakeSynthesisModel({ themes: [bank, phone] }, priced)
+    ai.model = model
+
+    expect(await synthesize(user.researchId)).toEqual({
+      ok: true,
+      themes: "done",
+      themeCount: 2,
+      verdict: "done",
+      verdictCount: 2,
+      previousThemesDate: null,
+    })
+    expect(model.doGenerateCalls).toHaveLength(2)
+
+    const { data: rows } = await admin.from("analyses").select("kind, status, created_at, feedback_count, research_id").eq("workspace_id", user.workspaceId)
+    expect(rows!.map((r) => [r.kind, r.status, r.feedback_count, r.research_id]).sort()).toEqual([
+      ["themes", "done", 5, user.researchId],
+      ["verdict", "done", 5, user.researchId],
+    ])
+    // Reserved in the same transaction.
+    expect(rows![0].created_at).toBe(rows![1].created_at)
+
+    const { verdict } = await byKind()
+    const [first, second] = await verdictsOf(hypotheses)
+    expect(first).toMatchObject({ analysis_id: verdict[0].id, verdict: "confirmed", reasoning: "La banca si scollega spesso.", feedback_read: 5, arrived_after: 0 })
+    expect(first!.verdict_feedback.sort((a, b) => a.stance.localeCompare(b.stance) || (a.quote_rank ?? 9) - (b.quote_rank ?? 9))).toEqual([
+      { feedback_id: ids[2], stance: "against", quote_rank: 1, highlight: "Adoro" },
+      { feedback_id: ids[1], stance: "for", quote_rank: 1, highlight: "ricollegare la banca" },
+      { feedback_id: ids[0], stance: "for", quote_rank: 2, highlight: "si scollega" },
+    ])
+    expect(second).toMatchObject({ verdict: "to_review", verdict_feedback: [] })
+    expect((await getUsage(user.workspaceId)).analysesThisMonth).toBe(2)
+  })
+
+  it("without hypotheses one themes row and one call", async () => {
+    await addFeedback()
+    const model = fakeSynthesisModel({ themes: [bank] }, priced)
+    ai.model = model
+    expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themes: "done", verdict: "skipped", verdictCount: 0 })
+    expect(model.doGenerateCalls).toHaveLength(1)
+    expect((await analyses()).map((a) => a.kind)).toEqual(["themes"])
+  })
+
+  it("counts the feedback that entered Voce after each hypothesis was written", async () => {
+    const ids = await addFeedback()
+    const [older] = await addHypotheses(["La banca si scollega"], "2020-01-01T00:00:00Z")
+    // Two feedback entered Voce after the second hypothesis: created_at, not the date of the feedback.
+    await admin.from("feedback").update({ created_at: "2020-01-01T00:00:00Z" }).in("id", ids.slice(0, 3))
+    const [newer] = await addHypotheses(["Vogliono WhatsApp"])
+    await admin.from("feedback").update({ created_at: new Date(Date.now() + 60_000).toISOString() }).in("id", ids.slice(3))
+    ai.model = fakeSynthesisModel({ themes: [bank] }, priced)
+    await synthesize(user.researchId)
+    const [a, b] = await verdictsOf([older, newer])
+    expect([a!.feedback_read, a!.arrived_after]).toEqual([5, 2])
+    expect([b!.feedback_read, b!.arrived_after]).toEqual([5, 2])
+  })
+
+  it("themes fail and verdict succeeds: S5 and usage 1", async () => {
+    await addFeedback()
+    const hypotheses = await addHypotheses(["La banca si scollega", "Vogliono WhatsApp"])
+    ai.model = fakeSynthesisModel(new Error("Anthropic API down"), priced)
+    const log = vi.spyOn(console, "error").mockImplementation(() => {})
+    expect(await synthesize(user.researchId)).toEqual({
+      ok: true,
+      themes: "failed",
+      themeCount: 0,
+      verdict: "done",
+      verdictCount: 2,
+      previousThemesDate: null,
+    })
+    log.mockRestore()
+    const { themes, verdict } = await byKind()
+    expect([themes[0].status, verdict[0].status]).toEqual(["failed", "done"])
+    expect((await getUsage(user.workspaceId)).analysesThisMonth).toBe(1)
+    expect((await verdictsOf(hypotheses)).map((v) => v?.verdict)).toEqual(["confirmed", "to_review"])
+  })
+
+  it("themes fail after an earlier analysis: the earlier themes stay and their date comes back", async () => {
+    await addFeedback()
+    answer({ themes: [bank] })
+    await synthesize(user.researchId)
+    const [earlier] = await analyses()
+    await addHypotheses(["La banca si scollega", "Vogliono WhatsApp"])
+    ai.model = fakeSynthesisModel({ themes: [] }, priced)
+    const result = await synthesize(user.researchId)
+    expect(result).toMatchObject({ ok: true, themes: "no_themes", verdict: "done" })
+    const { data } = await admin.from("analyses").select("created_at").eq("id", earlier.id).single()
+    expect(result).toMatchObject({ previousThemesDate: isoDateOf(new Date(data!.created_at)) })
+    expect((await getDashboard(research(), { status: "all" })).analysis?.id).toBe(earlier.id)
+  })
+
+  it("verdict fails and themes succeed: S6 and usage 1, the previous verdict stays", async () => {
+    await addFeedback()
+    await admin.from("subscriptions").update({ plan: "pro" }).eq("workspace_id", user.workspaceId)
+    const hypotheses = await addHypotheses(["La banca si scollega", "Vogliono WhatsApp"])
+    ai.model = fakeSynthesisModel({ themes: [bank] }, priced)
+    await synthesize(user.researchId)
+    const before = await verdictsOf(hypotheses)
+
+    const log = vi.spyOn(console, "error").mockImplementation(() => {})
+    ai.model = fakeSynthesisModel({ themes: [bank] }, new Error("Anthropic API down"))
+    expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themes: "done", themeCount: 1, verdict: "failed", verdictCount: 0 })
+    log.mockRestore()
+    const { themes, verdict } = await byKind()
+    expect(themes.map((a) => a.status)).toEqual(["done", "done"])
+    expect(verdict.map((a) => a.status)).toEqual(["done", "failed"])
+    expect((await getUsage(user.workspaceId)).analysesThisMonth).toBe(3)
+    expect(await verdictsOf(hypotheses)).toEqual(before)
+    const log2 = await runLog(verdict[1].id)
+    expect(log2.error).toContain("Anthropic API down")
+    expect(log2.finished_at).not.toBeNull()
+  })
+
+  it("both fail: S7 and usage 0", async () => {
+    await addFeedback()
+    await addHypotheses(["La banca si scollega"])
+    const log = vi.spyOn(console, "error").mockImplementation(() => {})
+    ai.model = fakeSynthesisModel(new Error("down"), "non è JSON")
+    expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "failed" })
+    log.mockRestore()
+    expect((await analyses()).map((a) => a.status)).toEqual(["failed", "failed"])
+    expect((await getUsage(user.workspaceId)).analysesThisMonth).toBe(0)
+  })
+
+  it("no themes and a failed verdict: nothing done, no_themes", async () => {
+    await addFeedback()
+    await addHypotheses(["La banca si scollega"])
+    const log = vi.spyOn(console, "error").mockImplementation(() => {})
+    ai.model = fakeSynthesisModel({ themes: [] }, new Error("down"))
+    expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "no_themes" })
+    log.mockRestore()
+    expect((await getUsage(user.workspaceId)).analysesThisMonth).toBe(0)
+  })
+
+  it("a verdict out of schema fails the verdict part and keeps the raw text", async () => {
+    await addFeedback()
+    await addHypotheses(["La banca si scollega"])
+    const log = vi.spyOn(console, "error").mockImplementation(() => {})
+    const wrong = { hypotheses: [{ ...priced.hypotheses[0], quotes: [{ feedback: 1, stance: "neutral", text: "si scollega" }] }] }
+    ai.model = fakeSynthesisModel({ themes: [bank] }, wrong)
+    expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themes: "done", verdict: "failed" })
+    log.mockRestore()
+    const { verdict } = await byKind()
+    const logged = await runLog(verdict[0].id)
+    expect(logged.error).toContain("NoObjectGeneratedError")
+    expect(logged.output).toBe(JSON.stringify(wrong))
+  })
+
+  it("an invented quote is dropped, and the confirmed left without quotes is saved to_review", async () => {
+    await addFeedback()
+    const [hypothesis] = await addHypotheses(["La banca si scollega"])
+    const invented = {
+      hypotheses: [{ ...priced.hypotheses[0], contradicting: [], quotes: [{ feedback: 1, stance: "for", text: "La banca è la migliore del mercato" }] }],
+    }
+    ai.model = fakeSynthesisModel({ themes: [bank] }, invented)
+    await synthesize(user.researchId)
+    const [saved] = await verdictsOf([hypothesis])
+    expect(saved).toMatchObject({ verdict: "to_review" })
+    expect(saved!.verdict_feedback.every((l) => l.highlight === null)).toBe(true)
+    const { verdict } = await byKind()
+    expect((await runLog(verdict[0].id)).issues).toEqual([
+      { hypothesis: 1, problem: "quote_not_in_feedback", detail: 1 },
+      { hypothesis: 1, problem: "verdict_without_quotes" },
+    ])
+  })
+
+  it("both calls start together with a 240,000 ms timeout and 16,000 output tokens", async () => {
+    await addFeedback()
+    await addHypotheses(["La banca si scollega"])
+    const inner = fakeSynthesisModel({ themes: [bank] }, priced)
+    let started = 0
+    let bothStarted = () => {}
+    const together = new Promise<void>((resolve) => (bothStarted = resolve))
+    ai.model = new MockLanguageModelV4({
+      doGenerate: async (options) => {
+        if (++started === 2) bothStarted()
+        // Neither call answers until the other has started: in sequence this would never finish.
+        await together
+        return inner.doGenerate(options)
+      },
+    })
+    expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themes: "done", verdict: "done" })
+    expect(calls.options).toHaveLength(2)
+    for (const options of calls.options) expect(options).toMatchObject({ timeout: 240_000, maxOutputTokens: 16_000 })
+  })
+
+  it("every analyses row has its analysis_runs row: the verdict with model, instructions, prompt, feedback and hypothesis ids in order", async () => {
+    const ids = await addFeedback()
+    const hypotheses = await addHypotheses(["La banca si scollega", "Vogliono WhatsApp"])
+    ui.locale = "en"
+    ai.model = fakeSynthesisModel({ themes: [bank] }, priced, { input: 100_000, output: 10_000 })
+    await synthesize(user.researchId)
+    const { verdict, themes } = await byKind()
+    expect((await runLog(themes[0].id)).input).toMatchObject({ instructions: analysisInstructions("en") })
+    const logged = await runLog(verdict[0].id)
+    expect(logged).toMatchObject({
+      workspace_id: user.workspaceId,
+      model: "claude-sonnet-5",
+      input_tokens: 100_000,
+      output_tokens: 10_000,
+      cost_usd: 0.3,
+      error: null,
+      output: priced,
+      issues: [],
+    })
+    expect(logged.duration_ms).toBeGreaterThanOrEqual(0)
+    expect(logged.finished_at).not.toBeNull()
+    const input = logged.input as { instructions: string; prompt: string; feedback_ids: string[]; hypothesis_ids: string[] }
+    expect(input.instructions).toBe(verdictInstructions("en"))
+    expect(input.feedback_ids).toEqual(ids)
+    expect(input.hypothesis_ids).toEqual(hypotheses)
+    expect(input.prompt).toContain('<hypotheses_data>[{"n":1,"text":"La banca si scollega"},{"n":2,"text":"Vogliono WhatsApp"}]</hypotheses_data>')
+    expect(input.prompt).toContain("Il commercialista vorrebbe un accesso suo.")
+  })
+
+  it("a verdict model error logs only the error name and the analysis id, never the marker", async () => {
+    await addFeedback([...TEXTS.slice(0, 4), `Feedback con ${MARKER}`])
+    await addHypotheses([`Ipotesi con ${MARKER}`])
+    const log = vi.spyOn(console, "error").mockImplementation(() => {})
+    ai.model = fakeSynthesisModel({ themes: [bank] }, new Error(`Invalid request near ${MARKER}`))
+    await synthesize(user.researchId)
+    const { verdict } = await byKind()
+    const logged = log.mock.calls.map((args) => args.map(String).join(" "))
+    log.mockRestore()
+    expect(logged.some((line) => line.includes(verdict[0].id))).toBe(true)
+    expect(logged.every((line) => !line.includes(MARKER))).toBe(true)
+  })
+
+  it("Free with 2 analyses used and hypotheses: the request of 2 is limit, no call", async () => {
+    await addFeedback()
+    await addHypotheses(["La banca si scollega"])
+    await insertAnalyses(2, "done")
+    const model = fakeSynthesisModel({ themes: [bank] }, priced)
+    ai.model = model
+    expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "limit" })
+    expect(model.doGenerateCalls).toHaveLength(0)
+  })
+
+  it("the hypotheses stay locked while the verdict runs", async () => {
+    await addFeedback()
+    const [hypothesis] = await addHypotheses(["La banca si scollega"])
+    const inner = fakeSynthesisModel({ themes: [bank] }, priced)
+    let release = () => {}
+    const held = new Promise<void>((resolve) => (release = resolve))
+    let called = () => {}
+    const modelCalled = new Promise<void>((resolve) => (called = resolve))
+    ai.model = new MockLanguageModelV4({
+      doGenerate: async (options) => {
+        called()
+        await held
+        return inner.doGenerate(options)
+      },
+    })
+    const running = synthesize(user.researchId)
+    await modelCalled
+    const { error } = await user.client.from("research_hypotheses").update({ text: "Cambiata" }).eq("id", hypothesis)
+    expect(error?.message).toBe("analysis_running")
+    release()
+    expect(await running).toMatchObject({ ok: true, verdict: "done" })
   })
 })
 

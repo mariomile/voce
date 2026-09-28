@@ -1,10 +1,12 @@
 "use client"
 
 import Link from "next/link"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 import { useEffect, useState, useTransition } from "react"
 import { synthesize, type SynthesizeResult } from "@/app/(app)/research/[id]/actions"
 import { Button, buttonVariants } from "@/components/ui/button"
+import type { Locale } from "@/i18n/locale"
+import { formatDate } from "@/lib/format"
 
 export type AnalysisFailure = Extract<SynthesizeResult, { ok: false }>["reason"]
 
@@ -13,6 +15,23 @@ export type AnalysisFailure = Extract<SynthesizeResult, { ok: false }>["reason"]
 export type FailuresT = ReturnType<typeof useTranslations<"themes.analyzeButton.failures">>
 export function failureMessage(t: FailuresT, failure: AnalysisFailure) {
   return t(failure)
+}
+
+type Done = Extract<SynthesizeResult, { ok: true }>
+type AnalyzeT = ReturnType<typeof useTranslations<"research.synthesis.analyze">>
+
+// A synthesis with at least one part done. Themes done: the announcement, with S6 when the verdict failed.
+// Themes not done (so the verdict is): S5, with the day of the themes still shown.
+export function resultMessage(t: AnalyzeT, result: Done, locale: Locale) {
+  if (result.themes !== "done") {
+    const text = result.previousThemesDate
+      ? t("themesFailed", { date: formatDate(result.previousThemesDate, locale) })
+      : t("themesFailedFirst")
+    return { text, problem: true }
+  }
+  const announcement = t("announcement", { count: result.themeCount })
+  if (result.verdict === "failed") return { text: `${announcement} ${t("verdictFailed")}`, problem: true }
+  return { text: announcement, problem: false }
 }
 
 // After 2 minutes the wait gets its own note: the analysis goes on even if the PM leaves.
@@ -37,9 +56,8 @@ export function AnalyzeButton({
 }) {
   const t = useTranslations("research.synthesis.analyze")
   const tFailures = useTranslations("themes.analyzeButton.failures")
-  const [outcome, setOutcome] = useState<
-    { ok: true; themeCount: number } | { ok: false; reason: AnalysisFailure | "network" } | null
-  >(null)
+  const locale = useLocale()
+  const [outcome, setOutcome] = useState<Done | { ok: false; reason: AnalysisFailure | "network" } | null>(null)
   const [slow, setSlow] = useState(false)
   const [pending, startTransition] = useTransition()
 
@@ -74,7 +92,10 @@ export function AnalyzeButton({
       </span>
     )
   else if (failure) status = <span className="text-problem">{failureMessage(tFailures, failure)}</span>
-  else if (outcome?.ok) status = t("announcement", { count: outcome.themeCount })
+  else if (outcome?.ok) {
+    const message = resultMessage(t, outcome, locale)
+    status = message.problem ? <span className="text-problem">{message.text}</span> : message.text
+  }
 
   return (
     <div className="flex max-w-[36ch] flex-col items-end gap-2 text-right">

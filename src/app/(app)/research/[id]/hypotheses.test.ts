@@ -146,3 +146,24 @@ describe("deleteHypothesis", () => {
     expect(await texts()).toEqual(["Ipotesi 1"])
   })
 })
+
+describe("during an analysis of the Research", () => {
+  it("analysis_running becomes busy for add, update and delete, and nothing changes", async () => {
+    await seed(1)
+    const { data: hypothesis } = await admin.from("research_hypotheses").select("id").eq("research_id", user.researchId).single()
+    const { data: analysis, error } = await admin
+      .from("analyses")
+      .insert({ workspace_id: user.workspaceId, research_id: user.researchId, kind: "verdict", period_start: "2026-09-01", feedback_count: 1, status: "running" })
+      .select("id")
+      .single()
+    if (error) throw error
+    try {
+      expect(await addHypothesis(user.researchId, "Durante l'analisi")).toEqual({ ok: false, reason: "busy" })
+      expect(await updateHypothesis(hypothesis!.id, "Cambiata")).toEqual({ ok: false, reason: "busy" })
+      expect(await deleteHypothesis(hypothesis!.id)).toEqual({ ok: false, reason: "busy" })
+      expect(await texts()).toEqual(["Ipotesi 1"])
+    } finally {
+      await admin.from("analyses").delete().eq("id", analysis.id)
+    }
+  })
+})

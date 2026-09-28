@@ -8,7 +8,8 @@ vi.mock("@/app/(app)/research/[id]/actions", () => ({
   updateHypothesis: vi.fn(),
   deleteHypothesis: vi.fn(),
 }))
-const { HypothesisList } = await import("./hypothesis-list")
+const { HypothesisList, FailureNote } = await import("./hypothesis-list")
+const { translator } = await import("@/test/next-intl")
 
 const RESEARCH = "11111111-1111-4111-8111-111111111111"
 
@@ -43,5 +44,11 @@ describe("HypothesisList", () => {
     )
     expect(html).toContain("Questa Research ha già 5 ipotesi, il massimo. Eliminane una per scriverne un&#x27;altra.")
     expect(html).not.toContain("Nuova ipotesi")
+  })
+
+  it("busy shows H7", () => {
+    const t = translator("research.hypotheses") as Parameters<typeof FailureNote>[0]["t"]
+    const html = renderToStaticMarkup(<FailureNote failure="busy" t={t} message="x" />)
+    expect(html).toContain("C&#x27;è un&#x27;analisi in corso su questa Research: le ipotesi si cambiano quando è finita.")
   })
 })

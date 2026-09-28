@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import type { RawOutput } from "@/lib/analysis"
-import { fakeModel } from "@/test/fake-model"
+import { fakeModel, fakeSynthesisModel } from "@/test/fake-model"
 import { admin, createTestUser, deleteTestUsers, type TestUser } from "@/test/supabase"
 
 // first_research_collected, research_synthesized and first_analysis_completed with the real trackMilestone,
@@ -43,6 +43,8 @@ beforeEach(async () => {
   posthog.mockClear()
   pending.tasks = []
   session.client = user.client
+  // Hypotheses first: their verdicts point to the analyses.
+  await admin.from("research_hypotheses").delete().eq("workspace_id", user.workspaceId)
   await admin.from("feedback").delete().eq("workspace_id", user.workspaceId)
   await admin.from("analyses").delete().eq("workspace_id", user.workspaceId)
   await admin.from("analytics_milestones").delete().eq("workspace_id", user.workspaceId)
@@ -242,6 +244,108 @@ describe("research_synthesized", () => {
   it("no question, feedback or theme text reaches PostHog", async () => {
     await fiveFeedback()
     ai.model = fakeModel(themes)
+    await synthesize(user.researchId)
+    await settle()
+    expect(posthog).toHaveBeenCalled()
+    expect(JSON.stringify(posthog.mock.calls)).not.toContain(MARKER)
+  })
+})
+
+// Two hypotheses, each with a verdict: 2 verified quotes and one made up.
+const verdicts = {
+  hypotheses: [
+    {
+      hypothesis: 1,
+      verdict: "confirmed",
+      reasoning: `Ragionamento ${MARKER}`,
+      supporting: [1, 2],
+      contradicting: [],
+      quotes: [
+        { feedback: 1, stance: "for", text: "Feedback 1" },
+        { feedback: 2, stance: "for", text: "inventata" },
+      ],
+    },
+    {
+      hypothesis: 2,
+      verdict: "refuted",
+      reasoning: "No.",
+      supporting: [],
+      contradicting: [5],
+      quotes: [{ feedback: 5, stance: "against", text: "Feedback 5" }],
+    },
+  ],
+}
+
+async function twoHypotheses() {
+  const { error } = await admin.from("research_hypotheses").insert([
+    { workspace_id: user.workspaceId, research_id: user.researchId, text: `Ipotesi uno ${MARKER}` },
+    { workspace_id: user.workspaceId, research_id: user.researchId, text: "Ipotesi due" },
+  ])
+  if (error) throw error
+}
+
+describe("research_synthesized with the verdict", () => {
+  it("citation_count adds the verdict quotes saved, hypothesis_count the hypotheses with a saved verdict", async () => {
+    await fiveFeedback()
+    await twoHypotheses()
+    ai.model = fakeSynthesisModel(themes, verdicts)
+    expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themes: "done", verdict: "done" })
+    await settle()
+    expect(sentEvents("research_synthesized")).toEqual([
+      expect.objectContaining({
+        properties: {
+          feedback_count: 5,
+          citation_count: 5,
+          hypothesis_count: 2,
+          $process_person_profile: false,
+          $geoip_disable: true,
+        },
+      }),
+    ])
+  })
+
+  it("a failed verdict counts no hypothesis and none of its quotes", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {})
+    await fiveFeedback()
+    await twoHypotheses()
+    ai.model = fakeSynthesisModel(themes, new Error("down"))
+    await synthesize(user.researchId)
+    log.mockRestore()
+    await settle()
+    expect(sentEvents("research_synthesized")).toEqual([
+      expect.objectContaining({ properties: expect.objectContaining({ citation_count: 3, hypothesis_count: 0 }) }),
+    ])
+  })
+
+  it("themes failed and verdict done: one research_synthesized, no first_analysis_completed", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {})
+    await fiveFeedback()
+    await twoHypotheses()
+    ai.model = fakeSynthesisModel(new Error("down"), verdicts)
+    await synthesize(user.researchId)
+    log.mockRestore()
+    await settle()
+    expect(sentEvents("research_synthesized")).toEqual([
+      expect.objectContaining({ properties: expect.objectContaining({ citation_count: 2, hypothesis_count: 2 }) }),
+    ])
+    expect(sentEvents("first_analysis_completed")).toEqual([])
+  })
+
+  it("none when both parts fail", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {})
+    await fiveFeedback()
+    await twoHypotheses()
+    ai.model = fakeSynthesisModel(new Error("down"), new Error("down"))
+    expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "failed" })
+    log.mockRestore()
+    await settle()
+    expect(sentEvents("research_synthesized")).toEqual([])
+  })
+
+  it("no question, hypothesis, feedback or reasoning text reaches PostHog", async () => {
+    await fiveFeedback()
+    await twoHypotheses()
+    ai.model = fakeSynthesisModel(themes, verdicts)
     await synthesize(user.researchId)
     await settle()
     expect(posthog).toHaveBeenCalled()

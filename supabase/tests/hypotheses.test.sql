@@ -2,7 +2,7 @@
 -- and a changed text that removes the verdict.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(34);
+select plan(41);
 
 -- ===== AC 1 (rest): RLS on in the migration that creates the tables =====
 
@@ -208,6 +208,60 @@ reset role;
 select is(
   (select count(*)::integer from public.verdict_feedback where hypothesis_id = '80000000-0000-0000-0000-000000000002'),
   0, 'a new text deletes the links of the verdict too'
+);
+
+-- ===== AC 21: hypotheses are locked while an analysis of their Research runs =====
+
+-- Room for one more, so the insert below meets the lock and not the maximum.
+delete from public.research_hypotheses where research_id = (select id from rs where name = 'ra') and text = 'Ipotesi 6';
+
+insert into public.analyses (id, workspace_id, research_id, kind, period_start, feedback_count, status)
+select '70000000-0000-0000-0000-000000000009', workspace_id, id, 'verdict', current_date, 1, 'running'
+from rs where name = 'ra';
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-0000000000a5", "role": "authenticated"}';
+select throws_ok(
+  $$insert into public.research_hypotheses (workspace_id, research_id, text)
+    select workspace_id, id, 'Durante l''analisi' from rs where name = 'ra'$$,
+  'P0001', 'analysis_running', 'insert of a hypothesis fails with analysis_running during an analysis of its Research'
+);
+select throws_ok(
+  $$update public.research_hypotheses set text = 'Cambiata' where text = 'Ipotesi 1'$$,
+  'P0001', 'analysis_running', 'update of a hypothesis fails with analysis_running during an analysis of its Research'
+);
+select throws_ok(
+  $$delete from public.research_hypotheses where text = 'Ipotesi 1'$$,
+  'P0001', 'analysis_running', 'delete of a hypothesis fails with analysis_running during an analysis of its Research'
+);
+reset role;
+select is((select count(*)::integer from public.research_hypotheses where text = 'Durante l''analisi'), 0,
+  'nothing was inserted, the row was not locked for nothing');
+
+-- B has no analysis running: its hypotheses stay writable.
+set local role authenticated;
+set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-0000000000b5", "role": "authenticated"}';
+select lives_ok(
+  $$update public.research_hypotheses set text = 'Ipotesi di B, di nuovo' where id = '80000000-0000-0000-0000-000000000002'$$,
+  'an analysis running in another workspace does not lock the hypotheses'
+);
+reset role;
+
+-- A run the server never finished stops locking after 10 minutes, like start_analysis closes it as stale.
+update public.analyses set created_at = now() - interval '11 minutes' where id = '70000000-0000-0000-0000-000000000009';
+set local role authenticated;
+set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-0000000000a5", "role": "authenticated"}';
+select lives_ok(
+  $$update public.research_hypotheses set text = 'Cambiata dopo' where text = 'Ipotesi 1'$$,
+  'an analysis running for more than 10 minutes no longer locks the hypotheses'
+);
+reset role;
+update public.analyses set created_at = now() where id = '70000000-0000-0000-0000-000000000009';
+
+-- Deleting the Research during the analysis still works: its hypotheses go in cascade.
+select lives_ok(
+  $$delete from public.research where id = (select id from rs where name = 'ra')$$,
+  'a Research with an analysis running can still be deleted with its hypotheses'
 );
 
 select * from finish();

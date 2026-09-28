@@ -4,11 +4,12 @@ import { createHmac } from "node:crypto"
 import { createClient } from "@supabase/supabase-js"
 import type { Database, Json } from "@/lib/database.types"
 import type { CheckedTheme } from "@/lib/analysis"
+import type { CheckedVerdict } from "@/lib/verdict"
 import type { Milestone } from "@/lib/analytics"
 import type { BillingState } from "@/lib/billing"
 
 // The secret key bypasses RLS, so it does only what the server alone may do: send a public form
-// submission with the visitor IP it sees, reserve, save or fail an AI analysis or a question, and write the billing
+// submission with the visitor IP it sees, reserve, save or fail an AI analysis (themes and verdicts) or a question, and write the billing
 // data from Stripe, and record which analytics events a workspace has sent. If users could do those,
 // they could skip the rate limits, write fake themes and costs, or give themselves Pro.
 
@@ -92,6 +93,33 @@ export async function finishAnalysis(analysisId: string, themes: CheckedTheme[],
   })
   if (error) throw error
   return data
+}
+
+// The verdicts, already checked by the server. The database checks the quotes again, skips feedback deleted
+// meanwhile and saves a confirmed or refuted left without quotes of its side as to_review.
+// A hypothesis whose text changed since the call keeps its previous verdict.
+// Returns the verified quotes and the verdicts it saved.
+export async function finishVerdict(
+  analysisId: string,
+  verdicts: CheckedVerdict[],
+  run: RunLog
+): Promise<{ quotes: number; verdicts: number }> {
+  const { data, error } = await adminClient().rpc("finish_verdict", {
+    analysis: analysisId,
+    verdicts: verdicts.map((v) => ({
+      hypothesis_id: v.hypothesisId,
+      text: v.hypothesisText,
+      verdict: v.verdict,
+      reasoning: v.reasoning,
+      feedback_read: v.feedbackRead,
+      arrived_after: v.arrivedAfter,
+      links: v.links.map((l) => ({ feedback_id: l.feedbackId, stance: l.stance })),
+      quotes: v.quotes.map((q) => ({ feedback_id: q.feedbackId, stance: q.stance, text: q.text })),
+    })),
+    run,
+  })
+  if (error) throw error
+  return { quotes: data[0].quotes_saved, verdicts: data[0].verdicts_saved }
 }
 
 export async function failAnalysis(analysisId: string, message: string, run: RunLog) {
