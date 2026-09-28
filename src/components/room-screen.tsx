@@ -12,19 +12,18 @@ import { Badge } from "@/components/ui/badge"
 import { formatNumber, KIND_LABELS, KIND_PLURALS } from "@/lib/format"
 import type { RoomStatus, RoomTheme } from "@/lib/room"
 import {
-  bubbleTargets,
   dotOrderByX,
   LABEL_DELAY,
   LABEL_STEP,
-  growBubble,
   pilePlaces,
+  pileScene,
   pileStep,
   roomGroups,
   themesLayout,
-  type Rect,
+  themesScene,
   type Label,
+  type Rect,
   type RoomGroup,
-  type Scene,
 } from "@/lib/room-viz"
 
 const POLL_MS = 3000
@@ -32,6 +31,10 @@ const LONG_QUESTION = 70
 
 // The themes, the count when they arrived, and the pile's dots from left to right at that moment.
 type Analysis = { themes: RoomTheme[]; responses: number; order: number[] }
+type Failure = AnalysisFailure | "no_open_themes"
+type View = "bubbles" | "list"
+// The act on screen: the pile, with the last analysis failure if any, or the themes.
+type Screen = { act: "pile"; failure: Failure | null } | { act: "themes"; analysis: Analysis; view: View }
 
 // Kit: the landing's poster scale, classes l-* and room-* in src/app/landing.css.
 // Shows counts and theme titles only: no feedback text ever reaches this component.
@@ -53,9 +56,7 @@ export function RoomScreen({
   limitNote?: string
 }) {
   const status = useRoomStatus(initialStatus)
-  const [analysis, setAnalysis] = useState<Analysis | null>(null)
-  const [view, setView] = useState<"bubbles" | "list">("bubbles")
-  const [failure, setFailure] = useState<AnalysisFailure | "no_open_themes" | null>(null)
+  const [screen, setScreen] = useState<Screen>({ act: "pile", failure: null })
   const [pending, startTransition] = useTransition()
 
   const [main, setMain] = useState<HTMLElement | null>(null)
@@ -67,10 +68,6 @@ export function RoomScreen({
   // The whole step is laid out once; a new response only takes the next place.
   const step = pileStep(status.responses)
   const places = useMemo(() => (pileRect ? pilePlaces(pileRect, step) : null), [pileRect, step])
-  const pileDots = useMemo(
-    () => places?.points.map((p) => ({ ...p, r: places.radius, color: "ink" as const })) ?? null,
-    [places]
-  )
   const placesRef = useRef(places)
   const responsesRef = useRef(status.responses)
   useEffect(() => {
@@ -78,68 +75,100 @@ export function RoomScreen({
     responsesRef.current = status.responses
   }, [places, status.responses])
 
-  // The groups as the analysis found them; only "Altro", the last, follows the live count.
-  const analysisGroups = useMemo(() => (analysis ? roomGroups(analysis.themes, analysis.responses) : []), [analysis])
-  const groups = useMemo(() => {
-    const themed = analysisGroups.slice(0, -1)
-    const other = analysisGroups.at(-1)
-    if (!other) return []
-    const covered = themed.reduce((sum, g) => sum + g.count, 0)
-    return [...themed, { ...other, count: Math.max(0, status.responses - covered) }]
-  }, [analysisGroups, status.responses])
-  // The bubbles are laid out once per analysis, with the counts it found. After that only "Altro"
-  // grows, in place, with the responses that keep arriving: the other bubbles never move.
-  const frozen = useMemo(
-    () => (analysisGroups.length && stageRect ? themesLayout(stageRect, analysisGroups) : null),
-    [analysisGroups, stageRect]
+  const analysis = screen.act === "themes" ? screen.analysis : null
+  // Laid out once per analysis, with the counts it found; the live groups only grow "Altro".
+  const layout = useMemo(
+    () => (analysis && stageRect ? themesLayout(stageRect, roomGroups(analysis.themes, analysis.responses)) : null),
+    [analysis, stageRect]
   )
-  const bubbles = useMemo(() => {
-    if (!frozen) return null
-    const other = frozen.bubbles.length - 1
-    return {
-      ...frozen,
-      bubbles: frozen.bubbles.map((b, i) => (i === other ? growBubble(b, groups[other].count, frozen.spacing) : b)),
-    }
-  }, [frozen, groups])
-
-  const scene = useMemo<Scene | null>(() => {
-    if (analysis) {
-      if (!bubbles) return null
-      const targets = bubbleTargets(analysis.order, bubbles.bubbles)
-      return {
-        mode: "bubbles",
-        dots: targets.map((t) => ({ x: t.x, y: t.y, r: bubbles.bubbles[t.group].dotRadius, color: groups[t.group].kind })),
-        // No halo for an empty "Altro".
-        halos: bubbles.bubbles.flatMap((b, i) =>
-          b.points.length ? [{ x: b.cx, y: b.cy, r: b.radius + b.dotRadius * 0.6, color: groups[i].kind }] : []
-        ),
-      }
-    }
-    if (!pileDots) return null
-    return { mode: "pile", dots: pileDots.slice(0, status.responses), halos: [] }
-  }, [analysis, bubbles, groups, pileDots, status.responses])
+  const groups = useMemo(() => (analysis ? roomGroups(analysis.themes, status.responses) : []), [analysis, status.responses])
+  const scene = useMemo(() => {
+    if (analysis) return layout ? themesScene(layout, groups, analysis.order) : null
+    return places ? pileScene(places, status.responses) : null
+  }, [analysis, layout, groups, places, status.responses])
 
   function runAnalysis() {
-    setFailure(null)
+    setScreen({ act: "pile", failure: null })
     startTransition(async () => {
       const result = await analyze()
-      if (!result.ok) {
-        setFailure(result.reason)
-        return
-      }
-      const next = await roomThemes()
-      if (next.length === 0) setFailure("no_open_themes")
-      else {
-        setView("bubbles")
-        setAnalysis({
-          themes: next,
-          responses: responsesRef.current,
-          order: dotOrderByX(placesRef.current?.points.slice(0, responsesRef.current) ?? []),
-        })
-      }
+      if (!result.ok) return setScreen({ act: "pile", failure: result.reason })
+      const themes = await roomThemes()
+      const responses = responsesRef.current
+      setScreen(
+        themes.length === 0
+          ? { act: "pile", failure: "no_open_themes" }
+          : {
+              act: "themes",
+              view: "bubbles",
+              analysis: { themes, responses, order: dotOrderByX(placesRef.current?.points.slice(0, responses) ?? []) },
+            }
+      )
     })
   }
 
+  return (
+    <main
+      ref={setMain}
+      className={cn(
+        "room relative isolate flex min-h-svh flex-col text-ink transition-colors duration-700 ease-out motion-reduce:transition-none",
+        screen.act === "themes" ? "bg-paper" : "bg-highlight"
+      )}
+    >
+      <RoomDots scene={scene} alive={pending} hidden={screen.act === "themes" && screen.view === "list"} />
+
+      {screen.act === "themes" ? (
+        <ThemesView
+          workspaceName={workspaceName}
+          groups={groups}
+          labels={layout?.labels ?? null}
+          responses={status.responses}
+          view={screen.view}
+          onView={(view) => setScreen({ ...screen, view })}
+          onBack={() => setScreen({ act: "pile", failure: null })}
+          stageRef={setStage}
+        />
+      ) : (
+        <PileView
+          workspaceName={workspaceName}
+          question={question}
+          shortUrl={shortUrl}
+          qrCode={qrCode}
+          status={status}
+          limitNote={limitNote}
+          failure={screen.failure}
+          pending={pending}
+          onAnalyze={runAnalysis}
+          pileRef={setPileArea}
+        />
+      )}
+    </main>
+  )
+}
+
+// Act 1: the question, the pile over the count, the analysis button and the QR code.
+function PileView({
+  workspaceName,
+  question,
+  shortUrl,
+  qrCode,
+  status,
+  limitNote,
+  failure,
+  pending,
+  onAnalyze,
+  pileRef,
+}: {
+  workspaceName: string
+  question: string
+  shortUrl: string
+  qrCode: ReactNode
+  status: RoomStatus
+  limitNote?: string
+  failure: Failure | null
+  pending: boolean
+  onAnalyze: () => void
+  pileRef: (element: HTMLElement | null) => void
+}) {
   const note = pending
     ? "Può volerci qualche minuto. I temi compaiono qui appena è finita."
     : failure === "no_open_themes"
@@ -153,91 +182,67 @@ export function RoomScreen({
             : undefined
 
   return (
-    <main
-      ref={setMain}
-      className={cn(
-        "room relative isolate flex min-h-svh flex-col text-ink transition-colors duration-700 ease-out motion-reduce:transition-none",
-        analysis ? "bg-paper" : "bg-highlight"
-      )}
-    >
-      <RoomDots scene={scene} alive={pending} hidden={Boolean(analysis) && view === "list"} />
+    <>
+      <RoomHeader workspaceName={workspaceName} />
 
-      {analysis ? (
-        <ThemesView
-          workspaceName={workspaceName}
-          themes={analysis.themes}
-          groups={groups}
-          labels={frozen?.labels ?? null}
-          responses={status.responses}
-          view={view}
-          onView={setView}
-          onBack={() => setAnalysis(null)}
-          stageRef={setStage}
-        />
-      ) : (
-        <>
-          <RoomHeader workspaceName={workspaceName} />
+      <div className="l-wrap grid flex-1 grid-cols-[minmax(0,1fr)_auto] gap-x-[4vw] pt-[1svh] pb-[4svh]">
+        <div className="flex min-w-0 flex-col gap-[2svh]">
+          <h1 className={cn("room-question max-w-[14em] wrap-anywhere", question.length > LONG_QUESTION && "is-long")}>
+            {question}
+          </h1>
 
-          <div className="l-wrap grid flex-1 grid-cols-[minmax(0,1fr)_auto] gap-x-[4vw] pt-[1svh] pb-[4svh]">
-            <div className="flex min-w-0 flex-col gap-[2svh]">
-              <h1 className={cn("room-question max-w-[14em] wrap-anywhere", question.length > LONG_QUESTION && "is-long")}>
-                {question}
-              </h1>
+          {/* The pile of dots lands here, on top of the count. */}
+          <div ref={pileRef} className="min-h-[12svh] flex-1" />
 
-              {/* The pile of dots lands here, on top of the count. */}
-              <div ref={setPileArea} className="min-h-[12svh] flex-1" />
-
-              <div className="flex flex-col gap-[3svh]">
-                <Counter responses={status.responses} />
-                <div className="flex flex-wrap items-center gap-x-[2vw] gap-y-3">
-                  <button
-                    type="button"
-                    className="l-cta"
-                    onClick={runAnalysis}
-                    disabled={pending || Boolean(limitNote) || status.responses === 0}
-                  >
-                    {pending ? "Analisi in corso…" : "Analizza le risposte"}
-                  </button>
-                  <p
-                    role="status"
-                    className={cn(
-                      "room-lede max-w-[34ch] empty:hidden",
-                      failure && !pending ? "text-problem" : "text-on-highlight"
-                    )}
-                  >
-                    {note}
-                  </p>
-                </div>
-              </div>
+          <div className="flex flex-col gap-[3svh]">
+            <Counter responses={status.responses} />
+            <div className="flex flex-wrap items-center gap-x-[2vw] gap-y-3">
+              <button
+                type="button"
+                className="l-cta"
+                onClick={onAnalyze}
+                disabled={pending || Boolean(limitNote) || status.responses === 0}
+              >
+                {pending ? "Analisi in corso…" : "Analizza le risposte"}
+              </button>
+              <p
+                role="status"
+                className={cn(
+                  "room-lede max-w-[34ch] empty:hidden",
+                  failure && !pending ? "text-problem" : "text-on-highlight"
+                )}
+              >
+                {note}
+              </p>
             </div>
-
-            <aside className="flex max-w-[min(52svh,30vw)] flex-col justify-center gap-[2svh] self-center">
-              {status.form === "open" ? (
-                <>
-                  <p className="room-lede">Inquadra e rispondi dal telefono. Non serve un account.</p>
-                  {qrCode}
-                  <p className="room-url">{shortUrl}</p>
-                </>
-              ) : status.form === "off" ? (
-                <FormPanel
-                  title="Il modulo è spento."
-                  text="Chi inquadra il QR code non trova il modulo."
-                  href="/collect"
-                  action="Riaccendi il link in Raccolta"
-                />
-              ) : (
-                <FormPanel
-                  title="Il modulo è pieno."
-                  text="Con il piano Free entrano al massimo 100 feedback: le nuove risposte non arrivano."
-                  href="/billing"
-                  action="Passa a Pro"
-                />
-              )}
-            </aside>
           </div>
-        </>
-      )}
-    </main>
+        </div>
+
+        <aside className="flex max-w-[min(52svh,30vw)] flex-col justify-center gap-[2svh] self-center">
+          {status.form === "open" ? (
+            <>
+              <p className="room-lede">Inquadra e rispondi dal telefono. Non serve un account.</p>
+              {qrCode}
+              <p className="room-url">{shortUrl}</p>
+            </>
+          ) : status.form === "off" ? (
+            <FormPanel
+              title="Il modulo è spento."
+              text="Chi inquadra il QR code non trova il modulo."
+              href="/collect"
+              action="Riaccendi il link in Raccolta"
+            />
+          ) : (
+            <FormPanel
+              title="Il modulo è pieno."
+              text="Con il piano Free entrano al massimo 100 feedback: le nuove risposte non arrivano."
+              href="/billing"
+              action="Passa a Pro"
+            />
+          )}
+        </aside>
+      </div>
+    </>
   )
 }
 
@@ -357,9 +362,11 @@ function FormPanel({ title, text, href, action }: { title: string; text: string;
   )
 }
 
+type ThemeGroup = RoomGroup & { kind: RoomTheme["kind"] }
+
+// Act 2: the themes as bubbles (drawn on the canvas, labels here) or as a list.
 function ThemesView({
   workspaceName,
-  themes,
   groups,
   labels,
   responses,
@@ -369,17 +376,17 @@ function ThemesView({
   stageRef,
 }: {
   workspaceName: string
-  themes: RoomTheme[]
   groups: RoomGroup[]
   labels: Label[] | null
   responses: number
-  view: "bubbles" | "list"
-  onView: (view: "bubbles" | "list") => void
+  view: View
+  onView: (view: View) => void
   onBack: () => void
   stageRef: (element: HTMLElement | null) => void
 }) {
   const heading = useRef<HTMLHeadingElement>(null)
   useEffect(() => heading.current?.focus(), [])
+  const themes = groups.filter((g): g is ThemeGroup => g.kind !== "other")
   const toggle =
     "room-lede rounded-full px-[0.8em] py-[0.25em] font-extrabold text-ink-muted transition-colors hover:text-ink aria-pressed:bg-ink aria-pressed:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
   return (
@@ -409,27 +416,24 @@ function ThemesView({
           <div ref={stageRef} className="relative min-h-0 flex-1">
             {labels && (
               <ol className="contents">
-                {groups.map((group, i) => {
-                  const label = labels[i]
-                  return (
-                    <li
-                      key={group.id}
-                      className="room-bubble-label absolute flex flex-col items-center gap-[0.8svh] text-center"
-                      style={{
-                        left: label.x,
-                        width: label.width,
-                        top: label.top,
-                        animationDelay: `${LABEL_DELAY + i * LABEL_STEP}ms`,
-                      }}
-                    >
-                      {group.kind === "other" ? (
-                        group.count > 0 && <span className="room-lede text-ink-muted">Altro</span>
-                      ) : (
-                        <ThemeLabel kind={group.kind} title={group.title} count={group.count} layout="bubble" />
-                      )}
-                    </li>
-                  )
-                })}
+                {groups.map((group, i) => (
+                  <li
+                    key={group.id}
+                    className="room-bubble-label absolute flex flex-col items-center gap-[0.8svh] text-center"
+                    style={{
+                      left: labels[i].x,
+                      width: labels[i].width,
+                      top: labels[i].top,
+                      animationDelay: `${LABEL_DELAY + i * LABEL_STEP}ms`,
+                    }}
+                  >
+                    {group.kind === "other" ? (
+                      group.count > 0 && <span className="room-lede text-ink-muted">Altro</span>
+                    ) : (
+                      <ThemeLabel kind={group.kind} title={group.title} count={group.count} layout="bubble" />
+                    )}
+                  </li>
+                ))}
               </ol>
             )}
           </div>
@@ -441,7 +445,7 @@ function ThemesView({
               key={theme.id}
               className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-[2.4vw] border-b border-line py-[1.6svh] last:border-b-0"
             >
-              <ThemeLabel kind={theme.kind} title={theme.title} count={theme.feedbackCount} layout="row" />
+              <ThemeLabel kind={theme.kind} title={theme.title} count={theme.count} layout="row" />
             </li>
           ))}
         </ol>
@@ -451,7 +455,7 @@ function ThemesView({
 }
 
 // "230 risposte, 5 temi: 2 problemi, 2 opportunità, 1 apprezzamento." What the bubbles say, in words.
-function themesSummary(responses: number, themes: RoomTheme[]) {
+function themesSummary(responses: number, themes: ThemeGroup[]) {
   const plural = (n: number, [one, many]: [string, string]) => `${formatNumber(n)} ${n === 1 ? one : many}`
   const kinds = (Object.keys(KIND_LABELS) as RoomTheme["kind"][])
     .map((kind) => [kind, themes.filter((t) => t.kind === kind).length] as const)

@@ -141,22 +141,16 @@ function createEngine(canvas: HTMLCanvasElement) {
 
   function setScene(scene: Scene) {
     const now = performance.now()
-    const still = reduced.matches
     const modeChanged = mode !== null && mode !== scene.mode
     const firstScene = mode === null
     mode = scene.mode
     halos = scene.halos
-    if (still) haloAlpha = halos.length ? HALO_ALPHA : 0
 
     // Dots that stay: fly to the other act, or slide to their new place.
     const kept = Math.min(dots.length, scene.dots.length)
     for (let i = 0; i < kept; i++) {
       const dot = dots[i]
       const to = scene.dots[i]
-      if (still) {
-        Object.assign(dot, to, { from: to, to, done: true })
-        continue
-      }
       const same = dot.to.x === to.x && dot.to.y === to.y && dot.to.r === to.r && dot.to.color === to.color
       if (same && !modeChanged) continue
       if (modeChanged) {
@@ -172,7 +166,7 @@ function createEngine(canvas: HTMLCanvasElement) {
 
     // Dots that go: they shrink away.
     for (const dot of dots.slice(scene.dots.length)) {
-      animate(dot, { ...dot, r: 0 }, "shrink", now, still ? 0 : 300)
+      animate(dot, { ...dot, r: 0 }, "shrink", now, 300)
       dying.push(dot)
     }
     dots = dots.slice(0, scene.dots.length)
@@ -183,7 +177,6 @@ function createEngine(canvas: HTMLCanvasElement) {
     added.forEach((to, k) => {
       const dot = newDot(to)
       dots.push(dot)
-      if (still) return
       if (scene.mode === "pile") {
         dot.x = to.x + (Math.random() - 0.5) * to.r * 4
         dot.y = -to.r * 2 - Math.random() * 60
@@ -195,8 +188,15 @@ function createEngine(canvas: HTMLCanvasElement) {
         animate(dot, to, "grow", now + (modeChanged ? GROW_DELAY : 0) + delays[k], 450)
       }
     })
-    if (still) dying = []
+    if (reduced.matches) finishAll()
     kick()
+  }
+
+  // Reduced motion: every dot is at once where the scene wants it, and the halos are on.
+  function finishAll() {
+    for (const dot of dots) Object.assign(dot, dot.to, { from: dot.to, done: true, ripple: false })
+    dying = []
+    haloAlpha = halos.length ? HALO_ALPHA : 0
   }
 
   function setHidden(next: boolean) {
