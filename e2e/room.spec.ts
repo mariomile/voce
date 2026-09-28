@@ -139,3 +139,15 @@ test("the room button is off with the quota note", async ({ page }) => {
   const { data: analyses } = await admin.from("analyses").select("id").eq("workspace_id", user.workspaceId)
   expect(analyses).toHaveLength(3)
 })
+
+test("/sala opens the room of the Research created last, or the list when there is none", async ({ page, browser }) => {
+  const user = await signedInUser(page, "sala-ultima")
+  const latest = await createResearch(user.workspaceId, "sala-ultima-nuova")
+  await page.goto("/sala")
+  await expect(page).toHaveURL(`/research/${latest.researchId}/sala`)
+
+  const empty = await (await browser.newContext()).newPage()
+  await signedInUser(empty, "sala-vuota", { research: false })
+  await empty.goto("/sala")
+  await expect(empty).toHaveURL(/\/research$/)
+})

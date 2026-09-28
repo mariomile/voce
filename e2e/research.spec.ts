@@ -122,15 +122,16 @@ test("every path under /research without a session goes to /login", async ({ pag
     `/research/${id}/themes/${crypto.randomUUID()}`,
     `/research/${id}/collect`,
     `/research/${id}/sala`,
+    "/sala",
   ]) {
     await page.goto(path)
     await expect(page).toHaveURL(/\/login$/)
   }
 })
 
-test("the themes, ask, feedback, collection and room routes of today answer 404", async ({ page, request }) => {
+test("the themes, ask, feedback, collection and room status routes of today answer 404", async ({ page, request }) => {
   await signedInUser(page, "vecchie")
-  for (const path of ["/themes", `/themes/${crypto.randomUUID()}`, "/ask", "/feedback", "/collect", "/collect/qr", "/sala", "/sala/status"]) {
+  for (const path of ["/themes", `/themes/${crypto.randomUUID()}`, "/ask", "/feedback", "/collect", "/collect/qr", "/sala/status"]) {
     const response = await page.goto(path)
     expect(response?.status(), path).toBe(404)
   }
