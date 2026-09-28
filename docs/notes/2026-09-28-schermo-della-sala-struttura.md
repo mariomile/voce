@@ -22,4 +22,4 @@ Numeri nella descrizione della PR. Screenshot nuovi in `/tmp/voce-sala-viz/` con
 
 ## Cosa resta
 
-- Trovato durante il confronto, **non corretto** perché questo passo non doveva cambiare comportamento: l'onda del mucchio durante l'analisi parte solo se qualche pallino si sta ancora muovendo al clic. Da fermo il ciclo del canvas fa un frame con `dt = 0`, il livello dell'onda resta 0 e il ciclo si ferma. C'era già prima di questo passo (provato sul commit 3f9e674).
+- Il difetto trovato durante il confronto (l'onda del mucchio non partiva a clic su un mucchio fermo) è corretto nel commit "Start the heap's breathing wave even when the heap is still".

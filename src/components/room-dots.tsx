@@ -331,7 +331,7 @@ function createEngine(canvas: HTMLCanvasElement) {
     if (Math.abs(haloTarget - haloAlpha) < 0.001) haloAlpha = haloTarget
 
     draw(now)
-    if (moving || dying.length || ripples.length || aliveLevel > 0 || haloAlpha !== haloTarget) {
+    if (moving || dying.length || ripples.length || aliveLevel > 0 || aliveLevel !== aliveTarget || haloAlpha !== haloTarget) {
       frame = requestAnimationFrame(tick)
     } else {
       last = 0
