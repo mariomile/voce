@@ -5,10 +5,10 @@
   "mode": "lite",
   "track": "product",
   "status": "open",
-  "current_phase": 5,
+  "current_phase": 6,
   "cycle": 1,
   "created_at": "2026-09-28T16:45:27.844Z",
-  "updated_at": "2026-09-28T22:21:04.000Z",
+  "updated_at": "2026-09-28T22:45:00.000Z",
   "review_due": null,
   "phases": {
     "0": {
@@ -129,11 +129,11 @@
       }
     },
     "5": {
-      "status": "in_progress",
+      "status": "passed",
       "artifact": "05-build-plan.md",
       "gate": {
-        "passed": false,
-        "checked_at": "2026-09-28T22:21:04.000Z",
+        "passed": true,
+        "checked_at": "2026-09-28T22:45:00.000Z",
         "checked_by": {
           "script": [
             "E.1",
@@ -149,11 +149,12 @@
           "5.2",
           "5.5"
         ],
-        "overridden": false
+        "overridden": true,
+        "override_reason": "Rilascio la Research ora, prima delle evals del verdetto: è una scelta mia. Le evals si eseguono appena la chiave Anthropic è in .env.local; se il verdetto scende sotto l'85% o inventa una citazione, si spegne il verdetto e restano i temi."
       }
     },
     "6": {
-      "status": "pending",
+      "status": "in_progress",
       "artifact": null,
       "gate": null
     },
@@ -244,6 +245,18 @@
       "event": "gate_failed",
       "phase": 5,
       "note": "Slices S1-S12 built test-first on feat/research (draft PR #13, not merged). Final: typecheck and lint clean, vitest 574/574 (46 files), pgTAP 185 PASS, migration-test 12 PASS, build OK, E2E 63/63; CI green. build-reviewer: no critical or high findings, 2 fixed (synthesize mode validation, notes confirmation timing), 2 low left. 5.2 and 5.5 fail only on AC 60 and 61: evals never run, no ANTHROPIC_API_KEY in any worktree. No override written: reserved to Mario."
+    },
+    {
+      "at": "2026-09-28T22:45:00.000Z",
+      "event": "gate_overridden",
+      "phase": 5,
+      "failed_conditions": [
+        "5.2",
+        "5.5"
+      ],
+      "reason": "Rilascio la Research ora, prima delle evals del verdetto: è una scelta mia. Le evals si eseguono appena la chiave Anthropic è in .env.local; se il verdetto scende sotto l'85% o inventa una citazione, si spegne il verdetto e restano i temi.",
+      "by": "Mario Miletta (scelto in conversazione, evidence/user-2026-09-28-deroga-gate-5-research.md)",
+      "note": "Two low review findings fixed before (a2de410): verdict read-back failure and notes on a deleted Research. vitest 576/576, pgTAP 185, migration-test 12, E2E 64/64, CI green on a2de410. Release to production before 1 Oct decided by Mario."
     }
   ]
 }
