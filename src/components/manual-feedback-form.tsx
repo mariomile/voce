@@ -154,7 +154,8 @@ export function ManualFeedbackForm({ researchId, channels, today }: { researchId
           {pending ? t("submitting") : t("submit")}
         </Button>
         <p role="status" className="text-base text-ink-muted">
-          {added && t("added")}
+          {/* Only once the fields take typing again: the next notes can start as soon as it shows. */}
+          {added && !pending && t("added")}
           {failure?.reason === "limit" && <span className="text-problem">{t("errors.limit")}</span>}
           {failure?.reason === "session" && (
             <span className="text-problem">
