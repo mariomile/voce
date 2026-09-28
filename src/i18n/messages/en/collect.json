@@ -1,1 +1,125 @@
-{}
+{
+  "metadata": {
+    "title": "Collect"
+  },
+  "page": {
+    "title": "Collect",
+    "lede": "Bring in the feedback you already have and ask for more. Each one keeps the channel it came from, so you can filter by it later.",
+    "sections": {
+      "csv": "Import a CSV",
+      "manual": "Paste feedback"
+    }
+  },
+  "channels": {
+    "support": "Support",
+    "salesCall": "Sales call",
+    "email": "Email",
+    "slack": "Slack",
+    "npsSurvey": "NPS survey",
+    "reviews": "Reviews"
+  },
+  "publicForm": {
+    "title": "Public form",
+    "disabled": "The link is off: anyone who opens it won't find the form. Turn it back on whenever you want, or generate a new one.",
+    "limitReached": "The link is on, but the Free plan is full: anyone who opens it sees a polite message and their feedback doesn't come in.",
+    "active": "One question, answered from a phone with no account needed. Share the link or print the QR code.",
+    "downloadQr": "Download the QR code",
+    "openRoomScreen": "Open the room screen"
+  },
+  "formLink": {
+    "regenerateWarning": "The current link and its QR code stop working right away. The new link is live.",
+    "generate": "Generate the new link",
+    "generating": "Generating…",
+    "cancel": "Cancel",
+    "disable": "Turn off the link",
+    "enable": "Turn the link back on",
+    "regenerate": "Generate a new link",
+    "failed": "That didn't work. Try again shortly."
+  },
+  "formQuestion": {
+    "label": "Form question",
+    "hint": "If you leave it empty, the form asks \"{question}\"",
+    "save": "Save the question",
+    "saving": "Saving…",
+    "saved": "Saved. The form shows it right away.",
+    "failed": "That didn't work. Try again shortly.",
+    "defaultQuestion": "What do you want to tell {name}'s team?"
+  },
+  "copyLink": {
+    "copy": "Copy the link",
+    "copied": "Link copied"
+  },
+  "manualForm": {
+    "intro": "Copied from an email, Slack, or your notes, one at a time.",
+    "feedbackLabel": "Feedback",
+    "feedbackPlaceholder": "The customer's words, exactly as they wrote them",
+    "channelLabel": "Channel",
+    "channelPlaceholder": "Support, Slack…",
+    "customerLabel": "Customer",
+    "customerOptional": "optional",
+    "customerPlaceholder": "Name or company",
+    "dateLabel": "Date",
+    "dateOptional": "today if left empty",
+    "submit": "Add the feedback",
+    "submitting": "Adding…",
+    "added": "Added. You'll find it among your feedback.",
+    "limitReached": "You've reached the Free plan limit: this feedback wasn't saved.",
+    "errors": {
+      "text": "Write the feedback text, {limit} characters at most.",
+      "channel": "Write where it came from, {limit} characters at most.",
+      "customer": "{limit} characters at most.",
+      "receivedAt": "Pick a date today or in the past."
+    }
+  },
+  "csvImport": {
+    "chooseFile": "Choose the file",
+    "reading": "Reading {name}…",
+    "defaultFileName": "the file",
+    "sizeError": "The file is over 1 MB. Split it into several files and import them one at a time.",
+    "chooseFileError": "Choose a CSV file.",
+    "intro": "You need a <b>text</b> column. Channel, customer, and date are optional. Up to {max} rows and 1 MB. Before saving you'll see what comes in and which rows don't; feedback already saved won't be duplicated.",
+    "toImport": "{count, plural, one {1 feedback to import} other {{n} feedback to import}}",
+    "freeLimitTitle": "The Free plan holds 100 feedback",
+    "overLimitNoneOne": "No room left: the new feedback stays out.",
+    "overLimitNoneMany": "No room left: {n} new feedback stay out.",
+    "overLimitSome": "We're importing the first {n} valid rows, the other {m} stay out.",
+    "proUnlimited": "With Pro, feedback is unlimited.",
+    "rowsHeadingPartial": "The first rows",
+    "rowsHeadingFull": "The rows",
+    "tableFeedback": "Feedback",
+    "tableChannel": "Channel",
+    "tableCustomer": "Customer",
+    "tableDate": "Date",
+    "todayCell": "today",
+    "invalidHeading": "{count, plural, one {1 invalid row} other {{n} invalid rows}}",
+    "invalidHint": "These aren't imported. Fix them in the file and upload it again: rows already imported won't be duplicated.",
+    "invalidRow": "Row",
+    "invalidReason": "Problem",
+    "invalidText": "Text",
+    "moreInvalid": "And {n} more invalid rows.",
+    "import": "{count, plural, one {Import 1 feedback} other {Import {n} feedback}}",
+    "importing": "Importing…",
+    "chooseAnother": "Choose another file",
+    "imported": "{count, plural, one {Imported 1 feedback} other {Imported {n} feedback}}",
+    "seeFeedback": "See the feedback",
+    "importAnother": "Import another file",
+    "ignoredPrefix": ". Left out: ",
+    "ignoredAnd": " and ",
+    "ignoredDuplicates": "{count, plural, one {1 already there} other {{n} already there}}",
+    "ignoredInvalid": "{count, plural, one {1 invalid row} other {{n} invalid rows}}",
+    "ignoredOverLimit": "{n} over the plan limit",
+    "emptyFile": "The file is empty.",
+    "missingColumnFound": "Missing the text column. Columns found: {columns}.",
+    "missingColumnNone": "Missing the text column in the file's first row.",
+    "onlyHeader": "The file only has a header, no feedback.",
+    "tooManyRows": "The file has {rows} rows, the maximum is {max}. Split it into several files.",
+    "emptyText": "The text is empty.",
+    "textTooLong": "The text has {length} characters, the maximum is {max}.",
+    "channelTooLong": "The channel is over {max} characters.",
+    "customerTooLong": "The customer is over {max} characters.",
+    "brokenQuotes": "This row's quotes aren't closed or are misplaced: the text may have merged with the rows after it.",
+    "extraColumns": "This row has more columns than the header: there may be a comma in the text without quotes.",
+    "invalidDate": "The date \"{value}\" isn't valid. Use day/month/year, like 25/09/2026, or 2026-09-25.",
+    "futureDate": "The date {date} is in the future."
+  }
+}

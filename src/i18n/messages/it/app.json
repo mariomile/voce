@@ -1,1 +1,14 @@
-{}
+{
+  "tabs": {
+    "themes": "Temi",
+    "ask": "Chiedi",
+    "feedback": "Feedback",
+    "collect": "Raccolta",
+    "billing": "Piano"
+  },
+  "bar": {
+    "feedbackQuota": "Feedback: <b>{count} di {limit}</b>. ",
+    "analysesQuota": "Analisi di {month}: <b>{count} di {limit}</b>",
+    "signOut": "Esci"
+  }
+}

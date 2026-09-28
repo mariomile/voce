@@ -1,3 +1,4 @@
+import { getLocale, getTranslations } from "next-intl/server"
 import Link from "next/link"
 import { DeleteFeedbackButton } from "@/components/delete-feedback-button"
 import { Page, PageHeader, PageLede, PageMore, PageTitle } from "@/components/page"
@@ -8,6 +9,8 @@ import { getCurrentWorkspace, listFeedback } from "@/lib/data"
 import { formatDate } from "@/lib/format"
 
 export default async function FeedbackPage({ searchParams }: PageProps<"/feedback">) {
+  const t = await getTranslations("feedback")
+  const locale = await getLocale()
   const params = await searchParams
   const channel = typeof params.channel === "string" ? params.channel : undefined
   const workspace = await getCurrentWorkspace()
@@ -26,16 +29,11 @@ export default async function FeedbackPage({ searchParams }: PageProps<"/feedbac
     <Page>
       <PageHeader>
         <div>
-          <PageTitle>Feedback</PageTitle>
+          <PageTitle>{t("page.title")}</PageTitle>
           <PageLede>
-            {total === 0 ? (
-              "Qui trovi ogni feedback raccolto, dal più recente, con il canale da cui arriva."
-            ) : (
-              <>
-                <b>{total} feedback</b> da{" "}
-                {channels.length === 1 ? "un canale" : `${channels.length} canali`}, dal più recente.
-              </>
-            )}
+            {total === 0
+              ? t("page.ledeEmpty")
+              : t.rich("page.ledeCount", { total, channelCount: channels.length, b: (chunks) => <b>{chunks}</b> })}
           </PageLede>
         </div>
       </PageHeader>
@@ -44,7 +42,8 @@ export default async function FeedbackPage({ searchParams }: PageProps<"/feedbac
         <>
           <FilterBar className="flex-wrap border-b-0 pb-6">
             <Link href="/feedback" aria-current={!channel} className={chipVariants()}>
-              Tutti<ChipCount>{total}</ChipCount>
+              {t("filters.all")}
+              <ChipCount>{total}</ChipCount>
             </Link>
             {channels.map((c) => (
               <Link
@@ -61,12 +60,12 @@ export default async function FeedbackPage({ searchParams }: PageProps<"/feedbac
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Feedback</TableHead>
-                <TableHead>Canale</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead className="text-right">Data</TableHead>
+                <TableHead>{t("table.feedback")}</TableHead>
+                <TableHead>{t("table.channel")}</TableHead>
+                <TableHead>{t("table.customer")}</TableHead>
+                <TableHead className="text-right">{t("table.date")}</TableHead>
                 <TableHead>
-                  <span className="sr-only">Azioni</span>
+                  <span className="sr-only">{t("table.actions")}</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -77,7 +76,7 @@ export default async function FeedbackPage({ searchParams }: PageProps<"/feedbac
                   <TableCell className="whitespace-nowrap text-ink-muted">{f.channel}</TableCell>
                   <TableCell className="whitespace-nowrap text-ink-muted">{f.customer}</TableCell>
                   <TableCell className="text-right whitespace-nowrap tabular-nums">
-                    {formatDate(f.receivedAt)}
+                    {formatDate(f.receivedAt, locale)}
                   </TableCell>
                   <TableCell className="text-right whitespace-nowrap">
                     <DeleteFeedbackButton feedbackId={f.id} />
@@ -87,21 +86,19 @@ export default async function FeedbackPage({ searchParams }: PageProps<"/feedbac
             </TableBody>
           </Table>
           {feedback.length === 0 && (
-            <p className="mt-8 text-base text-ink-muted">Nessun feedback da questo canale.</p>
+            <p className="mt-8 text-base text-ink-muted">{t("table.emptyChannel")}</p>
           )}
           {pageCount > 1 && (
             <PageMore className="flex items-center gap-6">
               {page > 1 && (
                 <Link href={pageHref(page - 1)} className={buttonVariants({ variant: "link" })}>
-                  Più recenti
+                  {t("pagination.newer")}
                 </Link>
               )}
-              <span className="tabular-nums">
-                Pagina {page} di {pageCount}
-              </span>
+              <span className="tabular-nums">{t("pagination.page", { page, pageCount })}</span>
               {page < pageCount && (
                 <Link href={pageHref(page + 1)} className={buttonVariants({ variant: "link" })}>
-                  Meno recenti
+                  {t("pagination.older")}
                 </Link>
               )}
             </PageMore>

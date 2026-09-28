@@ -1,1 +1,30 @@
-{}
+{
+  "metadata": {
+    "title": "{name}: il tuo feedback"
+  },
+  "sent": {
+    "title": "Ricevuto. Grazie.",
+    "text": "Il team di {name} lo legge insieme agli altri feedback e lo usa per decidere cosa migliorare.",
+    "another": "Scrivi un altro feedback",
+    "footer": "Raccolto con Voce."
+  },
+  "intro": "Un problema, un'idea, qualcosa che ti piace. Lo leggono le persone che costruiscono il prodotto.",
+  "feedbackLabel": "Il tuo feedback",
+  "feedbackPlaceholder": "Scrivi come lo diresti a voce",
+  "feedbackError": "Non siamo riusciti a inviarlo. Controlla il testo e riprova.",
+  "emailLabel": "Email",
+  "emailOptional": "facoltativa",
+  "emailPlaceholder": "nome@esempio.it",
+  "emailError": "Questa email sembra incompleta. Correggila o lasciala vuota.",
+  "emailHint": "Lasciala solo se vuoi essere ricontattato.",
+  "rateLimited": "Troppi invii in poco tempo. Riprova più tardi.",
+  "submit": "Invia",
+  "submitting": "Invio…",
+  "footer": "Raccolto con Voce. Non serve un account.",
+  "unavailable": {
+    "title": "Per ora questo modulo non accetta nuovi feedback.",
+    "text": "Se vuoi scrivere a {name}, usa il supporto dall'app o dal sito. Il tuo messaggio arriva comunque alle stesse persone.",
+    "footer": "Raccolto con Voce."
+  },
+  "defaultQuestion": "Cosa vuoi dire al team di {name}?"
+}

@@ -1,1 +1,74 @@
-{}
+{
+  "page": {
+    "title": "What customers say about {name}",
+    "lede": "<b>{count} feedback</b> from {start} to {end}, grouped into <b>{themes, plural, one {# theme} other {# themes}}</b>.",
+    "newAnalysis": "New analysis",
+    "filterAll": "All",
+    "noThemesFiltered": "No themes match these filters.",
+    "showOpenThemes": "Show open themes",
+    "showMore": "{count, plural, one {Show one more theme} other {Show # more themes}}",
+    "withFeedback": "with {list} feedback",
+    "emptyNoFeedback": {
+      "heading": "Here you'll read what your customers say, grouped by theme.",
+      "lede": "To get started you need feedback. Start with what you already have: tickets, call notes, survey answers. The more channels you bring together, the more complete the themes.",
+      "askTitle": "Ask your customers",
+      "askText": "A public form with one question, your choice. Answered from the phone, no account needed.",
+      "csvTitle": "Import a CSV",
+      "csvText": "You need a <b>text</b> column. Channel, customer and date are optional. Up to 2,000 rows.",
+      "chooseFile": "Choose the file",
+      "pasteTitle": "Paste feedback",
+      "pasteText": "Copied from an email, Slack or your notes, one at a time.",
+      "pasteAction": "Paste a text"
+    },
+    "emptyNoAnalysis": {
+      "title": "{count} feedback, no themes yet",
+      "lede": "One by one, they say little. The analysis groups them into problems, opportunities and praise, with the quotes that represent them best.",
+      "readyTitle": "Ready for the first analysis",
+      "channelLine": "{count} from {name}",
+      "quotaFirst": "You'll use 1 of the {limit} analyses for {month}.",
+      "quotaRemaining": "{remaining, plural, one {You have 1 analysis left for {month}.} other {You have {remaining} analyses left for {month}.}}",
+      "analyzeLabel": "Analyze {count} feedback"
+    }
+  },
+  "statusMenu": {
+    "label": "Status",
+    "open": "open",
+    "all": "all"
+  },
+  "detail": {
+    "allThemes": "All themes",
+    "otherFeedback": "The other {count} feedback in this theme"
+  },
+  "row": {
+    "feedbackLabel": "feedback",
+    "readAll": "Read all {count} feedback"
+  },
+  "trend": {
+    "ariaLabel": "Feedback per week: {weeks}",
+    "note": "Last 13 weeks. Last 2 in black."
+  },
+  "controls": {
+    "priority": "Priority",
+    "status": "Status",
+    "unset": "Not set"
+  },
+  "analyzeButton": {
+    "running": "Analysis running…",
+    "runningNote": "It can take a few minutes. The themes appear here as soon as it's done.",
+    "failures": {
+      "no_feedback": "There's no feedback to analyze from the last 90 days.",
+      "busy": "An analysis is already running. Reload the page in a minute.",
+      "limit": "You've used all your analyses for this month, or too many attempts have failed.",
+      "no_themes": "The analysis found no theme with at least 2 feedback and doesn't count against this month's limit. Nothing changed.",
+      "failed": "The analysis failed and doesn't count against this month's limit. Nothing changed: try again shortly."
+    }
+  },
+  "limitWarning": {
+    "title": "You've reached {limit} feedback, the Free plan limit",
+    "text": "The public form no longer accepts new feedback. With Pro, feedback is unlimited and analyses go up to 100 a month.",
+    "cta": "Upgrade to Pro"
+  },
+  "qrCode": {
+    "alt": "QR code for the public form"
+  }
+}

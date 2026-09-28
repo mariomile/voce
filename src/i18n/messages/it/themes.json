@@ -1,1 +1,74 @@
-{}
+{
+  "page": {
+    "title": "Cosa dicono i clienti di {name}",
+    "lede": "<b>{count} feedback</b> dal {start} al {end}, raggruppati in <b>{themes} temi</b>.",
+    "newAnalysis": "Nuova analisi",
+    "filterAll": "Tutti",
+    "noThemesFiltered": "Nessun tema con questi filtri.",
+    "showOpenThemes": "Mostra i temi aperti",
+    "showMore": "{count, plural, one {Mostra un altro tema} other {Mostra altri # temi}}",
+    "withFeedback": "con {list} feedback",
+    "emptyNoFeedback": {
+      "heading": "Qui leggerai cosa dicono i tuoi clienti, raggruppato per tema.",
+      "lede": "Per cominciare servono i feedback. Parti da quelli che hai già in giro: ticket, note delle call, risposte ai sondaggi. Più canali metti insieme, più i temi sono completi.",
+      "askTitle": "Chiedi ai clienti",
+      "askText": "Un modulo pubblico con una sola domanda, che scegli tu. Si risponde dal telefono, senza account.",
+      "csvTitle": "Importa un CSV",
+      "csvText": "Serve una colonna <b>testo</b>. Canale, cliente e data sono facoltativi. Fino a 2.000 righe.",
+      "chooseFile": "Scegli il file",
+      "pasteTitle": "Incolla un feedback",
+      "pasteText": "Copiato da un'email, da Slack o dalle tue note, uno alla volta.",
+      "pasteAction": "Incolla un testo"
+    },
+    "emptyNoAnalysis": {
+      "title": "{count} feedback, ancora nessun tema",
+      "lede": "Letti uno per uno dicono poco. L'analisi li raggruppa in problemi, opportunità e apprezzamenti, con le citazioni che li rappresentano meglio.",
+      "readyTitle": "Pronti per la prima analisi",
+      "channelLine": "{count} da {name}",
+      "quotaFirst": "Userai 1 delle {limit} analisi di {month}.",
+      "quotaRemaining": "Ti restano {remaining} analisi di {month}.",
+      "analyzeLabel": "Analizza {count} feedback"
+    }
+  },
+  "statusMenu": {
+    "label": "Stato",
+    "open": "aperti",
+    "all": "tutti"
+  },
+  "detail": {
+    "allThemes": "Tutti i temi",
+    "otherFeedback": "Gli altri {count} feedback del tema"
+  },
+  "row": {
+    "feedbackLabel": "feedback",
+    "readAll": "Leggi tutti i {count} feedback"
+  },
+  "trend": {
+    "ariaLabel": "Feedback per settimana: {weeks}",
+    "note": "Ultime 13 settimane. In nero le ultime 2."
+  },
+  "controls": {
+    "priority": "Priorità",
+    "status": "Stato",
+    "unset": "Da impostare"
+  },
+  "analyzeButton": {
+    "running": "Analisi in corso…",
+    "runningNote": "Può volerci qualche minuto. I temi compaiono qui appena è finita.",
+    "failures": {
+      "no_feedback": "Negli ultimi 90 giorni non ci sono feedback da analizzare.",
+      "busy": "C'è già un'analisi in corso. Ricarica la pagina tra un minuto.",
+      "limit": "Hai usato tutte le analisi di questo mese, o troppi tentativi non sono riusciti.",
+      "no_themes": "L'analisi non ha trovato temi con almeno 2 feedback e non conta nel limite del mese. Non è cambiato nulla.",
+      "failed": "L'analisi non è riuscita e non conta nel limite del mese. Non è cambiato nulla: riprova tra poco."
+    }
+  },
+  "limitWarning": {
+    "title": "Hai raggiunto {limit} feedback, il limite del piano Free",
+    "text": "Il modulo pubblico non accetta nuovi feedback. Con Pro i feedback sono illimitati e le analisi diventano 100 al mese.",
+    "cta": "Passa a Pro"
+  },
+  "qrCode": {
+    "alt": "QR code del modulo pubblico"
+  }
+}

@@ -1,5 +1,6 @@
 "use server"
 
+import { getLocale, getTranslations } from "next-intl/server"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { trackMilestone } from "@/lib/analytics"
@@ -107,9 +108,11 @@ export async function importCsv(formData: FormData): Promise<CsvImportResult | C
 }
 
 async function runImport(formData: FormData, dryRun: boolean) {
+  const t = await getTranslations("collect")
   const file = formData.get("file")
-  if (!(file instanceof File)) return { ok: false as const, error: "Scegli un file CSV." }
-  const parsed = parseFeedbackCsv(new Uint8Array(await file.arrayBuffer()), isoDateOf(new Date()))
+  if (!(file instanceof File)) return { ok: false as const, error: t("csvImport.chooseFileError") }
+  const locale = await getLocale()
+  const parsed = parseFeedbackCsv(new Uint8Array(await file.arrayBuffer()), isoDateOf(new Date()), t, locale)
   if (!parsed.ok) return parsed
   const workspace = await getCurrentWorkspace()
   const supabase = await createClient()

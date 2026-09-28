@@ -1,53 +1,56 @@
+import type { Metadata } from "next"
+import { getLocale, getTranslations } from "next-intl/server"
 import { BillingButton } from "@/components/billing-button"
 import { CheckoutConfirmed, CheckoutPending } from "@/components/checkout-pending"
 import { Page, PageHeader, PageLede, PageTitle } from "@/components/page"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardActions, CardText, CardTitle } from "@/components/ui/card"
+import type { Locale } from "@/i18n/locale"
 import { getBilling, getCurrentWorkspace, type Billing } from "@/lib/data"
 import { formatDate, isoDateOf } from "@/lib/format"
 import { PLAN_LIMITS } from "@/lib/plans"
 import { stripeConfig } from "@/lib/stripe"
 
-export const metadata = { title: "Piano" }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("billing.metadata")
+  return { title: t("title") }
+}
 
 // The plan shown here is always the one the Stripe webhook wrote. Back from Checkout
 // (?checkout=done) the page waits for it and says so: the URL never makes a workspace Pro.
 export default async function BillingPage({ searchParams }: PageProps<"/billing">) {
+  const t = await getTranslations("billing.page")
+  const locale = await getLocale()
   const workspace = await getCurrentWorkspace()
   const billing = await getBilling(workspace.id)
   const configured = stripeConfig() !== null
   const { checkout } = await searchParams
   const backFromCheckout = checkout === "done" && configured
   const pro = billing.plan === "pro"
+  const b = (chunks: React.ReactNode) => <b>{chunks}</b>
 
   return (
     <Page>
       <PageHeader>
         <div>
-          <PageTitle>Piano</PageTitle>
+          <PageTitle>{t("title")}</PageTitle>
           <PageLede>
-            {pro ? (
-              <>
-                {workspace.name} è sul piano <b>Pro</b>: feedback illimitati e{" "}
-                {PLAN_LIMITS.pro.analysesPerMonth} analisi al mese.
-              </>
-            ) : (
-              <>
-                {workspace.name} è sul piano <b>Free</b>: fino a {PLAN_LIMITS.free.feedback} feedback e{" "}
-                {PLAN_LIMITS.free.analysesPerMonth} analisi al mese.
-              </>
-            )}
+            {pro
+              ? t.rich("ledePro", { name: workspace.name, analyses: PLAN_LIMITS.pro.analysesPerMonth, b })
+              : t.rich("ledeFree", {
+                  name: workspace.name,
+                  feedback: PLAN_LIMITS.free.feedback ?? 0,
+                  analyses: PLAN_LIMITS.free.analysesPerMonth,
+                  b,
+                })}
           </PageLede>
         </div>
       </PageHeader>
 
       {!configured && (
         <Card variant="soft" className="mb-8" role="status">
-          <CardTitle>I pagamenti non sono attivi</CardTitle>
-          <CardText className="mb-0">
-            Mancano le chiavi di Stripe, quindi il piano non può cambiare
-            {pro ? "." : " e il workspace resta Free."}
-          </CardText>
+          <CardTitle>{t("notConfiguredTitle")}</CardTitle>
+          <CardText className="mb-0">{pro ? t("notConfiguredTextPro") : t("notConfiguredTextFree")}</CardText>
         </Card>
       )}
       {backFromCheckout && !pro && <CheckoutPending />}
@@ -55,26 +58,31 @@ export default async function BillingPage({ searchParams }: PageProps<"/billing"
 
       <div className="grid max-w-[760px] grid-cols-2 gap-5">
         <Card>
-          <PlanHeading name="Free" price="0 €" period="per sempre" current={!pro} />
+          <PlanHeading name={t("freeName")} price={t("freePrice")} period={t("freePeriod")} current={!pro} yourPlan={t("yourPlan")} />
           <CardText>
-            Fino a {PLAN_LIMITS.free.feedback} feedback, {PLAN_LIMITS.free.analysesPerMonth} analisi AI al
-            mese, {PLAN_LIMITS.free.questionsPerMonth} domande ai feedback al mese.
+            {t("freeDescription", {
+              feedback: PLAN_LIMITS.free.feedback ?? 0,
+              analyses: PLAN_LIMITS.free.analysesPerMonth,
+              questions: PLAN_LIMITS.free.questionsPerMonth,
+            })}
           </CardText>
           {!pro && billing.stripeCustomerId && configured && billing.isOwner && (
             <CardActions>
-              <BillingButton action="portal" label="Fatture e pagamenti" variant="secondary" />
+              <BillingButton action="portal" label={t("invoices")} variant="secondary" />
             </CardActions>
           )}
         </Card>
         <Card variant={pro ? "default" : "highlight"}>
-          <PlanHeading name="Pro" price="19 €" period="al mese" current={pro} />
+          <PlanHeading name={t("proName")} price={t("proPrice")} period={t("proPeriod")} current={pro} yourPlan={t("yourPlan")} />
           <CardText>
-            Feedback illimitati, {PLAN_LIMITS.pro.analysesPerMonth} analisi AI al mese,{" "}
-            {PLAN_LIMITS.pro.questionsPerMonth} domande ai feedback al mese.
-            {pro && <> {proStatus(billing)}</>}
+            {t("proDescription", {
+              analyses: PLAN_LIMITS.pro.analysesPerMonth,
+              questions: PLAN_LIMITS.pro.questionsPerMonth,
+            })}
+            {pro && <> {proStatus(t, billing, locale)}</>}
           </CardText>
           <CardActions>
-            <ProAction billing={billing} configured={configured} waiting={backFromCheckout && !pro} />
+            <ProAction billing={billing} configured={configured} waiting={backFromCheckout && !pro} t={t} />
           </CardActions>
         </Card>
       </div>
@@ -82,12 +90,24 @@ export default async function BillingPage({ searchParams }: PageProps<"/billing"
   )
 }
 
-function PlanHeading({ name, price, period, current }: { name: string; price: string; period: string; current: boolean }) {
+function PlanHeading({
+  name,
+  price,
+  period,
+  current,
+  yourPlan,
+}: {
+  name: string
+  price: string
+  period: string
+  current: boolean
+  yourPlan: string
+}) {
   return (
     <>
       <CardTitle className="flex items-center gap-2">
         {name}
-        {current && <Badge>Il tuo piano</Badge>}
+        {current && <Badge>{yourPlan}</Badge>}
       </CardTitle>
       <p className="mb-4 flex items-baseline gap-2">
         <span className="text-4xl leading-none font-bold tracking-numbers">{price}</span>
@@ -99,29 +119,35 @@ function PlanHeading({ name, price, period, current }: { name: string; price: st
   )
 }
 
-function ProAction({ billing, configured, waiting }: { billing: Billing; configured: boolean; waiting: boolean }) {
+function ProAction({
+  billing,
+  configured,
+  waiting,
+  t,
+}: {
+  billing: Billing
+  configured: boolean
+  waiting: boolean
+  t: Awaited<ReturnType<typeof getTranslations<"billing.page">>>
+}) {
   if (!configured || waiting) return null
   if (!billing.isOwner) {
-    return <p className="text-sm">Solo l&apos;owner del workspace gestisce l&apos;abbonamento.</p>
+    return <p className="text-sm">{t("ownerOnly")}</p>
   }
-  if (billing.plan === "free") return <BillingButton action="checkout" label="Passa a Pro" />
+  if (billing.plan === "free") return <BillingButton action="checkout" label={t("upgrade")} />
   // Pro without a Stripe customer only happens with the development seed.
   if (!billing.stripeCustomerId) return null
-  return <BillingButton action="portal" label="Gestisci o disdici" variant="secondary" />
+  return <BillingButton action="portal" label={t("manage")} variant="secondary" />
 }
 
-function proStatus(billing: Billing) {
-  if (billing.cancelAt) {
-    return `Disdetto: resta Pro fino al ${day(billing.cancelAt)}, poi torna Free. I dati restano tutti.`
-  }
-  if (billing.stripeStatus === "past_due") {
-    return "L'ultimo pagamento non è riuscito e Stripe sta riprovando: aggiorna il metodo di pagamento per restare Pro."
-  }
-  if (billing.currentPeriodEnd) return `Si rinnova il ${day(billing.currentPeriodEnd)}.`
+function proStatus(t: Awaited<ReturnType<typeof getTranslations<"billing.page">>>, billing: Billing, locale: Locale) {
+  if (billing.cancelAt) return t("cancelStatus", { date: day(billing.cancelAt, locale) })
+  if (billing.stripeStatus === "past_due") return t("pastDueStatus")
+  if (billing.currentPeriodEnd) return t("renewsStatus", { date: day(billing.currentPeriodEnd, locale) })
   return ""
 }
 
-// "2026-10-25T08:00:00Z" → "25 ottobre", on the Italian calendar.
-function day(timestamp: string) {
-  return formatDate(isoDateOf(new Date(timestamp)))
+// "2026-10-25T08:00:00Z" → "25 ottobre", "October 25", on the Italian calendar.
+function day(timestamp: string, locale: Locale) {
+  return formatDate(isoDateOf(new Date(timestamp)), locale)
 }

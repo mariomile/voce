@@ -1,12 +1,14 @@
 import { cn } from "cn"
+import { useTranslations } from "next-intl"
 
 // Kit: .trend. One bar per week, the last 2 in ink.
 export function Trend({ weeks, compact = false }: { weeks: number[]; compact?: boolean }) {
+  const t = useTranslations("themes.trend")
   const max = Math.max(...weeks, 1)
   return (
     <div
       role="img"
-      aria-label={`Feedback per settimana: ${weeks.join(", ")}`}
+      aria-label={t("ariaLabel", { weeks: weeks.join(", ") })}
       className={cn("flex items-end gap-[3px]", compact ? "mt-3 h-6" : "mt-4 h-10")}
     >
       {weeks.map((count, i) => (
@@ -24,9 +26,6 @@ export function Trend({ weeks, compact = false }: { weeks: number[]; compact?: b
 }
 
 export function TrendNote() {
-  return (
-    <p className="mt-2 text-xs leading-normal text-ink-subtle">
-      Ultime 13 settimane. In nero le ultime 2.
-    </p>
-  )
+  const t = useTranslations("themes.trend")
+  return <p className="mt-2 text-xs leading-normal text-ink-subtle">{t("note")}</p>
 }

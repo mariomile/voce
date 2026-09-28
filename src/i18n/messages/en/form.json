@@ -1,1 +1,30 @@
-{}
+{
+  "metadata": {
+    "title": "{name}: your feedback"
+  },
+  "sent": {
+    "title": "Received. Thank you.",
+    "text": "{name}'s team reads it together with other feedback and uses it to decide what to improve.",
+    "another": "Write more feedback",
+    "footer": "Collected with Voce."
+  },
+  "intro": "A problem, an idea, something you like. It's read by the people building the product.",
+  "feedbackLabel": "Your feedback",
+  "feedbackPlaceholder": "Write it like you'd say it out loud",
+  "feedbackError": "We couldn't send it. Check the text and try again.",
+  "emailLabel": "Email",
+  "emailOptional": "optional",
+  "emailPlaceholder": "name@example.com",
+  "emailError": "This email looks incomplete. Fix it or leave it empty.",
+  "emailHint": "Leave it only if you want us to get back to you.",
+  "rateLimited": "Too many submissions in a short time. Try again later.",
+  "submit": "Send",
+  "submitting": "Sending…",
+  "footer": "Collected with Voce. No account needed.",
+  "unavailable": {
+    "title": "This form isn't accepting new feedback right now.",
+    "text": "If you want to write to {name}, use support in the app or on the site. Your message still reaches the same people.",
+    "footer": "Collected with Voce."
+  },
+  "defaultQuestion": "What do you want to tell {name}'s team?"
+}

@@ -1,5 +1,6 @@
 "use client"
 
+import { useLocale, useTranslations } from "next-intl"
 import { useState, useTransition } from "react"
 import { addFeedback, type ManualFeedbackField } from "@/app/(app)/collect/actions"
 import { Button } from "@/components/ui/button"
@@ -9,14 +10,15 @@ import { Textarea } from "@/components/ui/textarea"
 import { formatNumber } from "@/lib/format"
 import { CHANNEL_MAX_LENGTH, CUSTOMER_MAX_LENGTH, FEEDBACK_MAX_LENGTH } from "@/lib/plans"
 
-const ERRORS: Record<ManualFeedbackField, string> = {
-  text: `Scrivi il testo del feedback, al massimo ${formatNumber(FEEDBACK_MAX_LENGTH)} caratteri.`,
-  channel: `Scrivi da dove arriva, al massimo ${CHANNEL_MAX_LENGTH} caratteri.`,
-  customer: `Al massimo ${CUSTOMER_MAX_LENGTH} caratteri.`,
-  receivedAt: "Scegli una data di oggi o del passato.",
-}
-
 export function ManualFeedbackForm({ channels, today }: { channels: string[]; today: string }) {
+  const t = useTranslations("collect.manualForm")
+  const locale = useLocale()
+  const ERRORS: Record<ManualFeedbackField, string> = {
+    text: t("errors.text", { limit: formatNumber(FEEDBACK_MAX_LENGTH, locale) }),
+    channel: t("errors.channel", { limit: CHANNEL_MAX_LENGTH }),
+    customer: t("errors.customer", { limit: CUSTOMER_MAX_LENGTH }),
+    receivedAt: t("errors.receivedAt"),
+  }
   const [text, setText] = useState("")
   const [channel, setChannel] = useState("")
   const [customer, setCustomer] = useState("")
@@ -50,34 +52,32 @@ export function ManualFeedbackForm({ channels, today }: { channels: string[]; to
 
   return (
     <form noValidate onSubmit={submit} className="flex max-w-[720px] flex-col gap-5">
-      <p className="text-base text-ink-muted">
-        Copiato da un&apos;email, da Slack o dalle tue note, uno alla volta.
-      </p>
+      <p className="text-base text-ink-muted">{t("intro")}</p>
       <Field>
-        <FieldLabel htmlFor="manual-text">Feedback</FieldLabel>
+        <FieldLabel htmlFor="manual-text">{t("feedbackLabel")}</FieldLabel>
         <Textarea
           id="manual-text"
           rows={5}
           maxLength={FEEDBACK_MAX_LENGTH}
-          placeholder="Le parole del cliente, così come le ha scritte"
+          placeholder={t("feedbackPlaceholder")}
           value={text}
           onChange={(e) => setText(e.target.value)}
           {...errorProps("text")}
         />
         {error("text") ?? (
           <FieldCount>
-            {formatNumber(text.length)} / {formatNumber(FEEDBACK_MAX_LENGTH)}
+            {formatNumber(text.length, locale)} / {formatNumber(FEEDBACK_MAX_LENGTH, locale)}
           </FieldCount>
         )}
       </Field>
       <div className="grid grid-cols-3 gap-5">
         <Field>
-          <FieldLabel htmlFor="manual-channel">Canale</FieldLabel>
+          <FieldLabel htmlFor="manual-channel">{t("channelLabel")}</FieldLabel>
           <Input
             id="manual-channel"
             list="manual-channels"
             maxLength={CHANNEL_MAX_LENGTH}
-            placeholder="Supporto, Slack…"
+            placeholder={t("channelPlaceholder")}
             value={channel}
             onChange={(e) => setChannel(e.target.value)}
             {...errorProps("channel")}
@@ -91,12 +91,12 @@ export function ManualFeedbackForm({ channels, today }: { channels: string[]; to
         </Field>
         <Field>
           <FieldLabel htmlFor="manual-customer">
-            Cliente <FieldOptional>facoltativo</FieldOptional>
+            {t("customerLabel")} <FieldOptional>{t("customerOptional")}</FieldOptional>
           </FieldLabel>
           <Input
             id="manual-customer"
             maxLength={CUSTOMER_MAX_LENGTH}
-            placeholder="Nome o azienda"
+            placeholder={t("customerPlaceholder")}
             value={customer}
             onChange={(e) => setCustomer(e.target.value)}
             {...errorProps("customer")}
@@ -105,7 +105,7 @@ export function ManualFeedbackForm({ channels, today }: { channels: string[]; to
         </Field>
         <Field>
           <FieldLabel htmlFor="manual-date">
-            Data <FieldOptional>se vuota, oggi</FieldOptional>
+            {t("dateLabel")} <FieldOptional>{t("dateOptional")}</FieldOptional>
           </FieldLabel>
           <Input
             id="manual-date"
@@ -120,15 +120,11 @@ export function ManualFeedbackForm({ channels, today }: { channels: string[]; to
       </div>
       <div className="flex items-center gap-4">
         <Button type="submit" disabled={!text.trim() || !channel.trim() || pending}>
-          {pending ? "Aggiungo…" : "Aggiungi il feedback"}
+          {pending ? t("submitting") : t("submit")}
         </Button>
         <p role="status" className="text-base text-ink-muted">
-          {message === "added" && "Aggiunto. Lo trovi tra i feedback."}
-          {message === "limit" && (
-            <span className="text-problem">
-              Hai raggiunto il limite del piano Free: questo feedback non è stato salvato.
-            </span>
-          )}
+          {message === "added" && t("added")}
+          {message === "limit" && <span className="text-problem">{t("limitReached")}</span>}
         </p>
       </div>
     </form>

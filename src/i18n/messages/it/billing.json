@@ -1,1 +1,47 @@
-{}
+{
+  "metadata": { "title": "Piano" },
+  "page": {
+    "title": "Piano",
+    "ledePro": "{name} è sul piano <b>Pro</b>: feedback illimitati e {analyses} analisi al mese.",
+    "ledeFree": "{name} è sul piano <b>Free</b>: fino a {feedback} feedback e {analyses} analisi al mese.",
+    "notConfiguredTitle": "I pagamenti non sono attivi",
+    "notConfiguredTextPro": "Mancano le chiavi di Stripe, quindi il piano non può cambiare.",
+    "notConfiguredTextFree": "Mancano le chiavi di Stripe, quindi il piano non può cambiare e il workspace resta Free.",
+    "yourPlan": "Il tuo piano",
+    "freeName": "Free",
+    "freePrice": "0 €",
+    "freePeriod": "per sempre",
+    "freeDescription": "Fino a {feedback} feedback, {analyses} analisi AI al mese, {questions} domande ai feedback al mese.",
+    "invoices": "Fatture e pagamenti",
+    "proName": "Pro",
+    "proPrice": "19 €",
+    "proPeriod": "al mese",
+    "proDescription": "Feedback illimitati, {analyses} analisi AI al mese, {questions} domande ai feedback al mese.",
+    "ownerOnly": "Solo l'owner del workspace gestisce l'abbonamento.",
+    "upgrade": "Passa a Pro",
+    "manage": "Gestisci o disdici",
+    "cancelStatus": "Disdetto: resta Pro fino al {date}, poi torna Free. I dati restano tutti.",
+    "pastDueStatus": "L'ultimo pagamento non è riuscito e Stripe sta riprovando: aggiorna il metodo di pagamento per restare Pro.",
+    "renewsStatus": "Si rinnova il {date}."
+  },
+  "button": {
+    "openingStripe": "Apro Stripe…",
+    "errors": {
+      "not_configured": "I pagamenti non sono attivi.",
+      "not_owner": "Solo l'owner del workspace gestisce l'abbonamento.",
+      "already_pro": "Il workspace è già Pro.",
+      "pending": "Hai già un abbonamento: stiamo aspettando la conferma di Stripe. Ricarica tra qualche secondo.",
+      "no_customer": "Questo workspace non ha ancora un abbonamento su Stripe.",
+      "failed": "Stripe non risponde. Riprova tra poco."
+    }
+  },
+  "checkoutPending": {
+    "waitingTitle": "Aspettiamo la conferma di Stripe…",
+    "lateTitle": "La conferma di Stripe sta tardando",
+    "waitingText": "Il pagamento è stato inviato. Il workspace diventa Pro appena Stripe lo conferma, di solito in pochi secondi.",
+    "lateText": "Se il pagamento è andato a buon fine, il workspace passa a Pro appena arriva la conferma: questa pagina si aggiorna da sola.",
+    "stoppedText": "La conferma non è arrivata. Se il pagamento è andato a buon fine il workspace passa a Pro appena arriva: ricarica la pagina più tardi. Se non è riuscito, Stripe te lo scrive via email.",
+    "confirmedTitle": "Pagamento confermato",
+    "confirmedText": "Il workspace è Pro da adesso."
+  }
+}

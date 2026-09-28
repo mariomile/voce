@@ -1,1 +1,31 @@
-{}
+{
+  "page": {
+    "title": "Feedback",
+    "ledeEmpty": "All the feedback you've collected, most recent first, with the channel it came from.",
+    "ledeCount": "<b>{total} feedback</b> {channelCount, plural, one {from 1 channel} other {from {channelCount} channels}}, most recent first."
+  },
+  "filters": {
+    "all": "All"
+  },
+  "table": {
+    "feedback": "Feedback",
+    "channel": "Channel",
+    "customer": "Customer",
+    "date": "Date",
+    "actions": "Actions",
+    "emptyChannel": "No feedback from this channel."
+  },
+  "pagination": {
+    "newer": "Newer",
+    "older": "Older",
+    "page": "Page {page} of {pageCount}"
+  },
+  "delete": {
+    "button": "Delete",
+    "confirmQuestion": "Delete this feedback?",
+    "cancel": "Cancel",
+    "confirm": "Yes, delete",
+    "pending": "Deleting…",
+    "failed": "Couldn't delete it. Try again."
+  }
+}
