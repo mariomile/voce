@@ -1,1 +1,104 @@
-{}
+{
+  "nav": {
+    "pricing": "Pricing",
+    "login": "Log in"
+  },
+  "hero": {
+    "title": "The loudest customer <mark>doesn't set the roadmap.</mark>",
+    "lede": "Voce groups customer feedback into themes with AI, and counts them.",
+    "cta": "Create your workspace",
+    "freeNote": "Free up to {feedback} feedback. No card needed."
+  },
+  "example": {
+    "countLabel": "feedback, one single theme",
+    "title": "Bank sync keeps disconnecting",
+    "priority": "High priority",
+    "heading": "Different words, same problem.",
+    "caption": "Example with made-up feedback: five channels, one theme as you see it in Voce.",
+    "voices": {
+      "support": {
+        "channel": "Support",
+        "text": "Every Monday I have to reconnect the bank, or the transactions don't come in.",
+        "highlight": "I have to reconnect the bank"
+      },
+      "review": {
+        "channel": "Review",
+        "text": "The account disconnected again, third time this month.",
+        "highlight": "disconnected again"
+      },
+      "salesCall": {
+        "channel": "Sales call",
+        "text": "Why do transactions show up days late?",
+        "highlight": "transactions show up days late"
+      },
+      "nps": {
+        "channel": "NPS survey",
+        "text": "I like it, but the bank connection drops after every weekend.",
+        "highlight": "drops after every weekend"
+      },
+      "form": {
+        "channel": "Public form",
+        "text": "Fix the bank sync, everything else is great.",
+        "highlight": "Fix the bank sync"
+      }
+    }
+  },
+  "steps": {
+    "label": "How it works",
+    "collect": {
+      "verb": "Collect.",
+      "line": "Paste, import a CSV or share a link with a QR code."
+    },
+    "analyze": {
+      "verb": "Analyze.",
+      "line": "AI groups the feedback into themes, with quotes from your customers."
+    },
+    "decide": {
+      "verb": "Decide.",
+      "line": "Themes ranked by feedback. You set priority and status."
+    }
+  },
+  "ask": {
+    "heading": "Ask your feedback.",
+    "lede": "Voce answers with how many mention it and up to 5 quotes, word for word.",
+    "question": "What do customers say about pricing?",
+    "countLabel": "feedback mention it",
+    "answer": "For small teams the basic plan costs too much.",
+    "quote1": {
+      "text": "There are three of us: 49 euros a month is a lot for us.",
+      "highlight": "a lot for us",
+      "cite": "Sales call"
+    },
+    "quote2": {
+      "text": "I'd pay for the whole year if there were a discount.",
+      "highlight": "I'd pay for the whole year",
+      "cite": "NPS survey"
+    },
+    "caption": "Example answer, with made-up feedback."
+  },
+  "pricing": {
+    "heading": "Free up to {feedback} feedback.",
+    "lede": "Then Pro, at €19 a month.",
+    "free": {
+      "price": "€0",
+      "period": "forever",
+      "feedback": "Up to {count} feedback",
+      "analyses": "{count} AI analyses a month",
+      "questions": "{count} questions to your feedback a month",
+      "sources": "Public form, CSV and manual entry",
+      "cta": "Start free"
+    },
+    "pro": {
+      "price": "€19",
+      "period": "a month",
+      "feedback": "Unlimited feedback",
+      "analyses": "{count} AI analyses a month",
+      "questions": "{count} questions to your feedback a month",
+      "everything": "Everything in Free",
+      "cta": "Try Pro"
+    }
+  },
+  "closing": {
+    "heading": "Bring the themes to your next roadmap meeting."
+  }
+}

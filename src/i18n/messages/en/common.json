@@ -6,5 +6,36 @@
     "label": "Language",
     "it": "Italiano",
     "en": "English"
+  },
+  "kind": {
+    "problem": "Problem",
+    "opportunity": "Opportunity",
+    "praise": "Praise"
+  },
+  "kindPlural": {
+    "problem": "Problems",
+    "opportunity": "Opportunities",
+    "praise": "Praise"
+  },
+  "sentiment": {
+    "positive": "Positive tone",
+    "neutral": "Neutral tone",
+    "negative": "Negative tone",
+    "mixed": "Mixed tone"
+  },
+  "priority": {
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low"
+  },
+  "status": {
+    "to_review": "To review",
+    "roadmap": "On the roadmap",
+    "done": "Done",
+    "discarded": "Discarded"
+  },
+  "analysisLimit": {
+    "free": "You've used all {limit} analyses for {month}. With Pro you get 100 a month.",
+    "pro": "You've used all {limit} analyses for {month}."
   }
 }
