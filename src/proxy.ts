@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
-const APP_PATHS = ["/themes", "/feedback", "/collect", "/billing"]
+const APP_PATHS = ["/themes", "/ask", "/feedback", "/collect", "/billing"]
 const AUTH_PATHS = ["/login", "/signup"]
 
 // Refreshes the Supabase session on every request and keeps signed-out users out of the app.
@@ -31,7 +31,11 @@ export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname
   const inApp = APP_PATHS.some((p) => path === p || path.startsWith(`${p}/`))
 
-  if (inApp && !signedIn) return redirectKeepingSession(request, response, "/login")
+  // The question action answers "session" itself, so the page can say so and keep the question.
+  // Only a POST is ever a server action call: a GET carrying the same header is a page load, and a
+  // forged header must not skip the redirect and reach the page's own queries without a session.
+  const askAction = path === "/ask" && request.method === "POST" && request.headers.has("next-action")
+  if (inApp && !signedIn && !askAction) return redirectKeepingSession(request, response, "/login")
   if (AUTH_PATHS.includes(path) && signedIn) return redirectKeepingSession(request, response, "/themes")
   return response
 }

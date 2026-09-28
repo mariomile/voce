@@ -8,7 +8,7 @@ import type { Milestone } from "@/lib/analytics"
 import type { BillingState } from "@/lib/billing"
 
 // The secret key bypasses RLS, so it does only what the server alone may do: send a public form
-// submission with the visitor IP it sees, reserve, save or fail an AI analysis, and write the billing
+// submission with the visitor IP it sees, reserve, save or fail an AI analysis or a question, and write the billing
 // data from Stripe, and record which analytics events a workspace has sent. If users could do those,
 // they could skip the rate limits, write fake themes and costs, or give themselves Pro.
 
@@ -86,6 +86,56 @@ export async function finishAnalysis(analysisId: string, themes: CheckedTheme[],
 export async function failAnalysis(analysisId: string, message: string, run: RunLog) {
   const { error } = await adminClient().rpc("fail_analysis", { analysis: analysisId, error: message, run })
   if (error) throw error
+}
+
+// Questions to the feedback. Same rules as the analysis: the workspace id must come from the
+// signed-in user's session, and only the server reserves, closes or fails a question.
+export async function startQuestion(input: {
+  workspaceId: string
+  model: string
+  feedbackConsidered: number
+  input: Json
+}): Promise<{ outcome: "ok"; questionId: string } | { outcome: "busy" | "limit" }> {
+  const { data, error } = await adminClient().rpc("start_question", {
+    ws: input.workspaceId,
+    model: input.model,
+    feedback_considered: input.feedbackConsidered,
+    input: input.input,
+  })
+  if (error) throw error
+  const row = data[0]
+  if (row?.outcome === "ok" && row.question_id) return { outcome: "ok", questionId: row.question_id }
+  if (row?.outcome === "busy" || row?.outcome === "limit") return { outcome: row.outcome }
+  throw new Error(`Unexpected start_question result: ${JSON.stringify(data)}`)
+}
+
+// Returns the quotes kept after the database checked them again against the saved feedback.
+export async function finishQuestion(
+  questionId: string,
+  feedbackCount: number,
+  quotes: { feedbackId: string; text: string }[],
+  run: RunLog
+): Promise<{ feedbackId: string; text: string }[]> {
+  const { data, error } = await adminClient().rpc("finish_question", {
+    question: questionId,
+    feedback_count: feedbackCount,
+    quotes: quotes.map((q) => ({ feedback_id: q.feedbackId, text: q.text })),
+    run,
+  })
+  if (error) throw error
+  return (data as { feedback_id: string; text: string }[]).map((q) => ({ feedbackId: q.feedback_id, text: q.text }))
+}
+
+export async function failQuestion(questionId: string, message: string, run: RunLog) {
+  const { error } = await adminClient().rpc("fail_question", { question: questionId, error: message, run })
+  if (error) throw error
+}
+
+// Users cannot read the questions table: the server counts them for the session's workspace.
+export async function questionUsage(workspaceId: string) {
+  const { data, error } = await adminClient().rpc("question_usage", { ws: workspaceId })
+  if (error) throw error
+  return { used: data[0].used, quota: data[0].quota }
 }
 
 // The workspace id must come from the signed-in user's session. Sets the Stripe customer only once:

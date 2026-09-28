@@ -132,16 +132,10 @@ export async function runAnalysis({
     maxOutputTokens: 16_000,
     timeout: ANALYSIS_TIMEOUT_MS,
     providerOptions: MODEL_OPTIONS,
-  }).catch((error: unknown) => {
-    // A model cut off before finishing its JSON fails parsing: say why it stopped.
-    if (NoObjectGeneratedError.isInstance(error) && error.finishReason && error.finishReason !== "stop") {
-      throw stoppedEarly(error.finishReason, error.usage?.outputTokens)
-    }
-    throw error
-  })
+  }).catch(explainStop)
   const durationMs = Math.round(performance.now() - started)
   const { inputTokens, outputTokens } = result.usage
-  if (result.finishReason !== "stop") throw stoppedEarly(result.finishReason, outputTokens)
+  checkFinished(result.finishReason, outputTokens)
   const raw = result.output
   return {
     raw,
@@ -151,6 +145,20 @@ export async function runAnalysis({
     durationMs,
     costUsd: estimateCost(modelId, inputTokens, outputTokens),
   }
+}
+
+// Shared with the questions: a model that stops for any reason other than "stop" (out of output
+// tokens, above all) fails with an error that says why. A model cut off before finishing its JSON
+// fails parsing, so explainStop turns that parsing error into the same message.
+export function explainStop(error: unknown): never {
+  if (NoObjectGeneratedError.isInstance(error) && error.finishReason && error.finishReason !== "stop") {
+    throw stoppedEarly(error.finishReason, error.usage?.outputTokens)
+  }
+  throw error
+}
+
+export function checkFinished(finishReason: string, outputTokens: number | undefined) {
+  if (finishReason !== "stop") throw stoppedEarly(finishReason, outputTokens)
 }
 
 function stoppedEarly(finishReason: string, outputTokens: number | undefined) {

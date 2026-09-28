@@ -5,7 +5,7 @@ import { admin, createTestUser, deleteTestUsers, signIn, type Client } from "@/t
 const session = vi.hoisted(() => ({ client: null as unknown }))
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => session.client }))
 
-const { FEEDBACK_PAGE_SIZE, getCurrentWorkspace, getDashboard, getPublicForm, getTheme, getUsage, listFeedback } =
+const { FEEDBACK_PAGE_SIZE, getCurrentWorkspace, getDashboard, getPublicForm, getQuestionWindow, getTheme, getUsage, listFeedback } =
   await import("./data")
 
 const users: Record<"fatturino" | "orto" | "ordinalo", Client> = {} as never
@@ -208,5 +208,46 @@ describe("getUsage", () => {
     expect(pro.analysesThisMonth).toBeGreaterThan(0)
     const free = await getUsage(as("ordinalo"))
     expect(free).toMatchObject({ plan: "free", feedbackCount: 100, feedbackLimit: 100, analysesLimit: 3 })
+  })
+})
+
+describe("getUsage: questions", () => {
+  it("counts the questions of the month apart from the analyses", async () => {
+    const user = await createTestUser("usage")
+    try {
+      session.client = user.client
+      await admin.from("questions").insert(
+        Array.from({ length: 10 }, (_, i) => ({
+          workspace_id: user.workspaceId,
+          status: i % 2 ? ("failed" as const) : ("done" as const),
+          outcome: i % 2 ? null : ("answered" as const),
+          feedback_considered: 1,
+        }))
+      )
+      expect(await getUsage(user.workspaceId)).toMatchObject({
+        plan: "free",
+        analysesThisMonth: 0,
+        questionsThisMonth: 10,
+        questionsLimit: 10,
+      })
+    } finally {
+      await deleteTestUsers([user])
+    }
+  })
+})
+
+describe("getQuestionWindow", () => {
+  it("counts all the feedback and those of the last 90 days, today included", async () => {
+    const user = await createTestUser("window")
+    try {
+      session.client = user.client
+      const day = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000).toLocaleDateString("en-CA", { timeZone: "Europe/Rome" })
+      await admin.from("feedback").insert(
+        [0, 89, 90].map((n) => ({ workspace_id: user.workspaceId, text: `Feedback ${n}`, channel: "Supporto", received_at: day(n) }))
+      )
+      expect(await getQuestionWindow(user.workspaceId)).toEqual({ total: 3, recent: 2 })
+    } finally {
+      await deleteTestUsers([user])
+    }
   })
 })

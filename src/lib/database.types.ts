@@ -199,6 +199,110 @@ export type Database = {
           },
         ]
       }
+      question_runs: {
+        Row: {
+          cost_usd: number | null
+          created_at: string
+          duration_ms: number | null
+          error: string | null
+          finished_at: string | null
+          input: Json
+          input_tokens: number | null
+          issues: Json | null
+          model: string
+          output: Json | null
+          output_tokens: number | null
+          question_id: string
+          workspace_id: string
+        }
+        Insert: {
+          cost_usd?: number | null
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          input: Json
+          input_tokens?: number | null
+          issues?: Json | null
+          model: string
+          output?: Json | null
+          output_tokens?: number | null
+          question_id: string
+          workspace_id: string
+        }
+        Update: {
+          cost_usd?: number | null
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          input?: Json
+          input_tokens?: number | null
+          issues?: Json | null
+          model?: string
+          output?: Json | null
+          output_tokens?: number | null
+          question_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_runs_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: true
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_runs_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      questions: {
+        Row: {
+          citation_count: number | null
+          created_at: string
+          feedback_considered: number
+          feedback_count: number | null
+          id: string
+          outcome: Database["public"]["Enums"]["question_outcome"] | null
+          status: Database["public"]["Enums"]["question_status"]
+          workspace_id: string
+        }
+        Insert: {
+          citation_count?: number | null
+          created_at?: string
+          feedback_considered: number
+          feedback_count?: number | null
+          id?: string
+          outcome?: Database["public"]["Enums"]["question_outcome"] | null
+          status?: Database["public"]["Enums"]["question_status"]
+          workspace_id: string
+        }
+        Update: {
+          citation_count?: number | null
+          created_at?: string
+          feedback_considered?: number
+          feedback_count?: number | null
+          id?: string
+          outcome?: Database["public"]["Enums"]["question_outcome"] | null
+          status?: Database["public"]["Enums"]["question_status"]
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questions_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           cancel_at: string | null
@@ -426,9 +530,22 @@ export type Database = {
         Args: { analysis: string; error: string; run?: Json }
         Returns: undefined
       }
+      fail_question: {
+        Args: { error: string; question: string; run?: Json }
+        Returns: undefined
+      }
       finish_analysis: {
         Args: { analysis: string; run: Json; themes: Json }
         Returns: undefined
+      }
+      finish_question: {
+        Args: {
+          feedback_count: number
+          question: string
+          quotes: Json
+          run: Json
+        }
+        Returns: Json
       }
       get_public_form: {
         Args: { slug: string }
@@ -442,6 +559,13 @@ export type Database = {
         Args: { dry_run?: boolean; rows: Json; ws: string }
         Returns: string[]
       }
+      question_usage: {
+        Args: { ws: string }
+        Returns: {
+          quota: number
+          used: number
+        }[]
+      }
       regenerate_form_link: { Args: { ws: string }; Returns: string }
       start_analysis: {
         Args: {
@@ -454,6 +578,18 @@ export type Database = {
         Returns: {
           analysis_id: string
           outcome: string
+        }[]
+      }
+      start_question: {
+        Args: {
+          feedback_considered: number
+          input: Json
+          model: string
+          ws: string
+        }
+        Returns: {
+          outcome: string
+          question_id: string
         }[]
       }
       submit_public_feedback: {
@@ -470,6 +606,8 @@ export type Database = {
       analysis_status: "running" | "done" | "failed"
       member_role: "owner" | "member"
       plan: "free" | "pro"
+      question_outcome: "answered" | "no_evidence"
+      question_status: "running" | "done" | "failed"
       theme_kind: "problem" | "opportunity" | "praise"
       theme_priority: "high" | "medium" | "low"
       theme_sentiment: "positive" | "neutral" | "negative" | "mixed"
@@ -607,6 +745,8 @@ export const Constants = {
       analysis_status: ["running", "done", "failed"],
       member_role: ["owner", "member"],
       plan: ["free", "pro"],
+      question_outcome: ["answered", "no_evidence"],
+      question_status: ["running", "done", "failed"],
       theme_kind: ["problem", "opportunity", "praise"],
       theme_priority: ["high", "medium", "low"],
       theme_sentiment: ["positive", "neutral", "negative", "mixed"],

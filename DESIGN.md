@@ -27,8 +27,8 @@ Una schermata nuova si costruisce con il kit. Se manca un pezzo, si aggiunge al 
 | `--color-veil` | #F3F3F0 | Superfici secondarie: card, campi, select, chip, pulsante secondario |
 | `--color-ink` | #1E2127 | Testo principale, pulsante primario, stato attivo |
 | `--color-ink-hover` | #000000 | Pulsante primario al passaggio del mouse |
-| `--color-ink-muted` | #5F6470 | Testo di supporto: sintesi, descrizioni, suggerimenti |
-| `--color-ink-subtle` | #9095A0 | Fonti delle citazioni, etichette leggere, placeholder, contatori |
+| `--color-ink-muted` | #5F6470 | Testo di supporto: sintesi, descrizioni, suggerimenti, fonti delle citazioni |
+| `--color-ink-subtle` | #9095A0 | Etichette leggere, placeholder, contatori |
 | `--color-line` | #E4E4DF | Divisori tra righe |
 | `--color-line-strong` | #C4C6C0 | Barre dell'andamento |
 | `--color-highlight` | #FFE45C | Evidenziatore, azione consigliata, testata del modulo pubblico |
@@ -121,6 +121,7 @@ Ogni componente è in `design/kit.css` e in `design/kit.html` con tutti i suoi s
 
 - `.input` e `.textarea` (fondo velo) nell'app.
 - `.input-line` e `.textarea-line` (a riga, textarea in serif) solo nel modulo pubblico, dove si scrive come su un foglio.
+- `.textarea-ask` per la domanda di Chiedi: fondo carta, bordo interno di 1,5 px in `--color-ink-muted`, testo sans 20, `rows="2"`, niente ridimensionamento. Il velo su carta (1,11:1) da un proiettore non si vede; il bordo `ink-muted` regge 5,9:1, sopra i 3:1 dei confini di un controllo.
 - Errore: `aria-invalid="true"` sul campo, `.field-error` sotto, collegato con `aria-describedby`. Il messaggio dice come rimediare.
 - `.field-quiet` rende l'etichetta leggera: quando il valore conta più del nome (priorità e stato di un tema).
 - L'altezza di una textarea si dà con `rows`, non con CSS.
@@ -163,7 +164,7 @@ Ogni componente è in `design/kit.css` e in `design/kit.html` con tutti i suoi s
 
 ### Citazione evidenziata
 
-`.quote` (serif 20) o `.quote-sm` (serif 18), con `<cite>` per canale e data. `.quote-stack` per impilarle, `.quote-grid` per due colonne con linee, `.quote-bar` per riportare il testo appena scritto.
+`.quote` (serif 20) o `.quote-sm` (serif 18), con `<cite>` per canale e data, in `--color-ink-muted`: a 13 px `ink-subtle` (3,0:1) non si legge, e su un proiettore sparisce. `.quote-stack` per impilarle, `.quote-grid` per due colonne con linee, `.quote-bar` per riportare il testo appena scritto.
 
 - La citazione è sempre il testo del cliente, tra virgolette tipografiche, senza modifiche. Se si accorcia, i puntini lo dicono.
 - Un solo `<mark>` per citazione: la frase che riassume il tema. Se tutto è evidenziato, niente lo è.

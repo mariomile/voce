@@ -196,6 +196,14 @@ mark {
 .textarea-line::placeholder { font-style: italic; }
 .input-line[aria-invalid="true"], .textarea-line[aria-invalid="true"] { box-shadow: none; border-bottom-color: var(--color-problem); }
 
+/* Variante "domanda": la casella di Chiedi, leggibile da un proiettore */
+.textarea-ask {
+  resize: none; background: var(--color-paper);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: inset 0 0 0 1.5px var(--color-ink-muted);
+  font-size: var(--text-2xl); line-height: var(--leading-normal);
+}
+
 /* ========== Select ========== */
 
 .select {
@@ -282,7 +290,7 @@ mark {
 }
 .quote cite {
   display: block; margin-top: var(--space-1);
-  font-family: var(--font-sans); font-style: normal; font-size: var(--text-sm); color: var(--color-ink-subtle);
+  font-family: var(--font-sans); font-style: normal; font-size: var(--text-sm); color: var(--color-ink-muted);
 }
 .quote-sm { font-size: var(--text-xl); }
 .quote-bar { border-left: 2px solid var(--color-ink); padding-left: var(--space-4); }

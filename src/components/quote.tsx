@@ -43,7 +43,7 @@ export function Quote({
       )}
       ”
       {cite && (
-        <cite className="mt-1 block font-sans text-sm text-ink-subtle not-italic">{cite}</cite>
+        <cite className="mt-1 block font-sans text-sm text-ink-muted not-italic">{cite}</cite>
       )}
     </blockquote>
   )
