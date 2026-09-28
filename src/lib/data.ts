@@ -8,6 +8,7 @@ import type { Tables } from "./database.types";
 import { ANALYSIS_WINDOW_DAYS } from "./analysis";
 import { isoDateOf, monthOf } from "./format";
 import { FORM_SLUG_PATTERN, PLAN_LIMITS } from "./plans";
+import { formState, PUBLIC_FORM_CHANNEL, type RoomStatus } from "./room";
 import { questionUsage } from "./supabase/admin";
 import { createClient } from "./supabase/server";
 import type { Analysis, Feedback, Plan, Theme, ThemeKind, ThemeStatus, Workspace } from "./types";
@@ -108,6 +109,29 @@ export const getUsage = cache(async (workspaceId: string, now = new Date()): Pro
     questionsLimit: questions.quota,
   };
 });
+
+// For the room screen, polled every few seconds: counts only, never feedback text.
+export async function getRoomStatus(workspace: Pick<Workspace, "id" | "formEnabled">): Promise<RoomStatus> {
+  const supabase = await createClient();
+  const [subscription, total, responses] = await Promise.all([
+    supabase.from("subscriptions").select("plan").eq("workspace_id", workspace.id).maybeSingle(),
+    supabase.from("feedback").select("id", { count: "exact", head: true }).eq("workspace_id", workspace.id),
+    supabase
+      .from("feedback")
+      .select("id", { count: "exact", head: true })
+      .eq("workspace_id", workspace.id)
+      .eq("channel", PUBLIC_FORM_CHANNEL),
+  ]);
+  const plan = unwrap(subscription)?.plan ?? "free";
+  return {
+    responses: countOf(responses),
+    form: formState({
+      formEnabled: workspace.formEnabled,
+      feedbackCount: countOf(total),
+      feedbackLimit: PLAN_LIMITS[plan].feedback,
+    }),
+  };
+}
 
 // For "Chiedi": all the feedback, and those a question reads (the last 90 days, today included).
 export async function getQuestionWindow(workspaceId: string) {
