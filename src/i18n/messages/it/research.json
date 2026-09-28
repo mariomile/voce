@@ -115,6 +115,7 @@
       "themesFailed": "I temi non sono stati aggiornati e non contano nel limite del mese: restano quelli del {date}. Il verdetto delle ipotesi è pronto qui sotto.",
       "themesFailedFirst": "I temi non sono arrivati e non contano nel limite del mese. Il verdetto delle ipotesi è pronto qui sotto.",
       "verdictFailed": "Il verdetto non è arrivato e non conta nel limite del mese: le ipotesi mostrano ancora il verdetto precedente. Riprova con «Solo il verdetto».",
+      "verdictFailedNextAnalysis": "Il verdetto non è arrivato e non conta nel limite del mese: le ipotesi mostrano ancora il verdetto precedente. Arriva con la prossima analisi.",
       "themesOnlyNote": "Ti resta 1 analisi di {month}: basta per i temi, non per il verdetto, che ne usa un'altra. Il verdetto delle ipotesi torna disponibile il 1 {nextMonth}, o subito con Pro."
     },
     "changes": {

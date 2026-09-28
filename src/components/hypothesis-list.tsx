@@ -56,6 +56,7 @@ export function HypothesisList({
   // Annulla on the first field gives the focus back to "Scrivi un'ipotesi", once it is back on the page.
   const focusWrite = useRef(false)
   const full = hypotheses.length >= MAX_HYPOTHESES
+  const canVerdictOnly = Boolean(verdictOnly && showVerdictOnly(hypotheses, verdictOnly))
 
   useEffect(() => {
     if (open || !focusWrite.current) return
@@ -119,7 +120,7 @@ export function HypothesisList({
             last={hypotheses.length + 1 >= MAX_HYPOTHESES}
           />
         ))}
-      {verdictOnly && showVerdictOnly(hypotheses, verdictOnly) && (
+      {canVerdictOnly && verdictOnly && (
         <VerdictOnlyButton
           researchId={researchId}
           count={hypotheses.length}
@@ -135,9 +136,10 @@ export function HypothesisList({
       <p role="status" className="mt-2 text-sm text-ink-muted empty:hidden">
         {announcement}
       </p>
-      {/* S6: the verdict of the last click failed; the verdicts above are the previous ones. */}
+      {/* S6: the verdict of the last click failed; the verdicts above are the previous ones. It points to
+          "Solo il verdetto" only when the button is there; otherwise the next analysis redoes the verdict. */}
       <p role="status" className="mt-2 max-w-[64ch] text-sm text-problem empty:hidden">
-        {verdictFailed && tAnalyze("verdictFailed")}
+        {verdictFailed && tAnalyze(canVerdictOnly ? "verdictFailed" : "verdictFailedNextAnalysis")}
       </p>
     </section>
   )

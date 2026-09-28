@@ -9,6 +9,9 @@ vi.mock("@/app/(app)/research/[id]/actions", () => ({
   updateHypothesis: vi.fn(),
   deleteHypothesis: vi.fn(),
 }))
+// S6 lives in the Sintesi's shared state: here it is set by the test.
+const outcome = vi.hoisted(() => ({ failed: false }))
+vi.mock("./synthesis-outcome", () => ({ useVerdictFailure: () => ({ failed: outcome.failed, setFailed: () => {} }) }))
 const { HypothesisList, FailureNote } = await import("./hypothesis-list")
 const { translator } = await import("@/test/next-intl")
 
@@ -172,5 +175,31 @@ describe("HypothesisList", () => {
       expect(html).toContain(limit)
       expect(html).not.toContain(note)
     })
+  })
+
+  it("S6 sends the PM to Solo il verdetto only when the button is there, otherwise to the next analysis", () => {
+    outcome.failed = true
+    try {
+      const verdictOnly = { feedbackSinceThemes: 0, note: "Userai 1 delle 3 analisi di ottobre." }
+      const withButton = renderToStaticMarkup(
+        <HypothesisList researchId={RESEARCH} hypotheses={[hypothesis(1)]} verdictOnly={verdictOnly} />
+      )
+      expect(withButton).toContain("Solo il verdetto di 1 ipotesi")
+      expect(withButton).toContain(
+        "Il verdetto non è arrivato e non conta nel limite del mese: le ipotesi mostrano ancora il verdetto precedente. Riprova con «Solo il verdetto»."
+      )
+
+      // Every verdict up to date and no feedback after them: no button, so S6 cannot point to it.
+      const withoutButton = renderToStaticMarkup(
+        <HypothesisList researchId={RESEARCH} hypotheses={[withVerdict({})]} verdictOnly={verdictOnly} />
+      )
+      expect(withoutButton).not.toContain("Solo il verdetto di")
+      expect(withoutButton).not.toContain("Riprova con «Solo il verdetto»")
+      expect(withoutButton).toContain(
+        "Il verdetto non è arrivato e non conta nel limite del mese: le ipotesi mostrano ancora il verdetto precedente. Arriva con la prossima analisi."
+      )
+    } finally {
+      outcome.failed = false
+    }
   })
 })

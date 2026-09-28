@@ -120,6 +120,17 @@ describe("addNotes", () => {
   })
 })
 
+describe("CSV import without a session", () => {
+  it("previewCsv and importCsv return the session note and import nothing", async () => {
+    session.client = anon()
+    const note = "La sessione è scaduta. Accedi di nuovo per importare il file."
+    expect(await previewCsv(user.researchId, csv("testo\nNuovo"))).toEqual({ ok: false, error: note })
+    expect(await importCsv(user.researchId, csv("testo\nNuovo"))).toEqual({ ok: false, error: note })
+    session.client = user.client
+    expect(await savedFeedback()).toEqual([])
+  })
+})
+
 describe("first feedback event", () => {
   beforeEach(() => analytics.trackMilestone.mockClear())
 

@@ -94,6 +94,7 @@
     "brokenQuotes": "Le virgolette di questa riga non sono chiuse o sono fuori posto: il testo potrebbe essersi unito alle righe dopo.",
     "extraColumns": "La riga ha più colonne dell'intestazione: forse c'è una virgola nel testo senza virgolette.",
     "invalidDate": "La data \"{value}\" non è valida. Usa 25/09/2026 o 2026-09-25.",
-    "futureDate": "La data {date} è nel futuro."
+    "futureDate": "La data {date} è nel futuro.",
+    "session": "La sessione è scaduta. Accedi di nuovo per importare il file."
   }
 }

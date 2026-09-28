@@ -36,11 +36,12 @@ export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname
   const inApp = APP_PATHS.some((p) => path === p || path.startsWith(`${p}/`))
 
-  // The action creating a Research, those of the Sintesi (hypotheses, analysis) and the question of
-  // Chiedi answer "session" themselves, so the page can say so and keep the text. Only a POST is ever a
-  // server action call: a GET carrying the same header is a page load, and a forged header must not skip
-  // the redirect and reach the page's own queries without a session.
-  const answersSession = path === "/research" || /^\/research\/[^/]+(\/ask)?$/.test(path)
+  // The action creating a Research, those of the Sintesi (hypotheses, analysis), the question of Chiedi and
+  // those of the Raccolta (notes, CSV, deletion) answer "session" themselves, so the page can say so and
+  // keep the text; the form link controls fail without a session. Only a POST is ever a server action call:
+  // a GET carrying the same header is a page load, and a forged header must not skip the redirect and reach
+  // the page's own queries without a session.
+  const answersSession = path === "/research" || /^\/research\/[^/]+(\/ask|\/collect)?$/.test(path)
   const sessionAction = answersSession && request.method === "POST" && request.headers.has("next-action")
   if (inApp && !signedIn && !sessionAction) return redirectKeepingSession(request, response, "/login")
   if (AUTH_PATHS.includes(path) && signedIn) return redirectKeepingSession(request, response, "/research")

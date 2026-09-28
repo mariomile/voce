@@ -567,6 +567,25 @@ test("deleting a Research lands on /research with Research eliminata., and on th
   await page.getByRole("button", { name: "Elimina la Research" }).last().click()
   await expect(page).toHaveURL(/\/research$/)
   await expect(page.getByRole("status").filter({ hasText: "Research eliminata." })).toBeVisible()
-  await expect(page.getByText("Qui tieni le tue domande sui clienti, con le loro risposte.")).toBeVisible()
+  // The heading, not any text: Next's route announcer may read the same title.
+  await expect(page.getByRole("heading", { level: 1, name: "Qui tieni le tue domande sui clienti, con le loro risposte." })).toBeVisible()
   await expect(page.getByLabel("La tua domanda")).toBeVisible()
+})
+
+test("the Raccolta without a session: the notes and the deletion say E-SESS instead of leaving for /login", async ({ page, context }) => {
+  const user = await signedInUser(page, "raccolta-sessione")
+  await page.goto(`/research/${user.researchId}/collect`)
+  await context.clearCookies()
+
+  await page.getByLabel("Note", { exact: true }).fill("Note di un'intervista.")
+  await page.getByRole("button", { name: "Aggiungi le note" }).click()
+  await expect(page.getByText("La sessione è scaduta.", { exact: false }).first()).toBeVisible()
+  await expect(page).toHaveURL(new RegExp(`/research/${user.researchId}/collect$`))
+
+  await page.getByRole("button", { name: "Elimina la Research" }).click()
+  await page.getByRole("button", { name: "Elimina la Research" }).last().click()
+  await expect(page.getByText("La sessione è scaduta. Accedi di nuovo per continuare.")).toBeVisible()
+  await expect(page).toHaveURL(new RegExp(`/research/${user.researchId}/collect$`))
+  const { data } = await admin.from("research").select("id").eq("id", user.researchId)
+  expect(data).toHaveLength(1)
 })

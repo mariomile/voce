@@ -94,6 +94,7 @@
     "brokenQuotes": "This row's quotes aren't closed or are misplaced: the text may have merged with the rows after it.",
     "extraColumns": "This row has more columns than the header: there may be a comma in the text without quotes.",
     "invalidDate": "The date \"{value}\" isn't valid. Use day/month/year, like 25/09/2026, or 2026-09-25.",
-    "futureDate": "The date {date} is in the future."
+    "futureDate": "The date {date} is in the future.",
+    "session": "Your session has expired. Sign in again to import the file."
   }
 }

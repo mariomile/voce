@@ -115,6 +115,7 @@
       "themesFailed": "The themes were not updated and don't count toward this month's limit: the ones from {date} stay. The hypothesis verdict is ready below.",
       "themesFailedFirst": "The themes didn't come through and don't count toward this month's limit. The hypothesis verdict is ready below.",
       "verdictFailed": "The verdict didn't come through and doesn't count toward this month's limit: the hypotheses still show the previous verdict. Try again with “Verdict only”.",
+      "verdictFailedNextAnalysis": "The verdict didn't come through and doesn't count toward this month's limit: the hypotheses still show the previous verdict. It comes with the next analysis.",
       "themesOnlyNote": "You have 1 analysis left for {month}: enough for the themes, not for the verdict, which uses another one. The hypothesis verdict is available again on {nextMonth} 1, or right away with Pro."
     },
     "changes": {

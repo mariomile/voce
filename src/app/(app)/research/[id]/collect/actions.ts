@@ -140,8 +140,10 @@ async function runImport(researchId: string, formData: FormData, dryRun: boolean
   const locale = await getLocale()
   const parsed = parseFeedbackCsv(new Uint8Array(await file.arrayBuffer()), isoDateOf(new Date()), t, locale)
   if (!parsed.ok) return parsed
-  const workspace = await getCurrentWorkspace()
   const supabase = await createClient()
+  const { data: auth } = await supabase.auth.getClaims()
+  if (!auth?.claims) return { ok: false as const, error: t("csvImport.session") }
+  const workspace = await getCurrentWorkspace()
   const { data, error } = await supabase.rpc("import_feedback", {
     ws: workspace.id,
     research: researchId,
