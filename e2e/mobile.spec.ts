@@ -47,3 +47,20 @@ test("on a phone no page of the app runs off the screen", async ({ page }) => {
     expect(await offScreen(page), path).toEqual([])
   }
 })
+
+// The keyboard goes through the app bar in the order it reads, left to right and top to bottom.
+for (const width of [390, 1440])
+  test(`the app bar's focus order follows its layout at ${width} px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 })
+    await signedInUser(page, `bar-order-${width}`)
+    const order = await page.getByRole("banner").evaluate((bar) => {
+      const items = [...bar.querySelectorAll<HTMLElement>("a, button")].map((el) => {
+        const box = el.getBoundingClientRect()
+        return { name: el.textContent?.trim() ?? "", top: Math.round(box.top), left: Math.round(box.left) }
+      })
+      // Rows first: items whose tops are within 12 px sit on the same row.
+      const visual = [...items].sort((a, b) => (Math.abs(a.top - b.top) > 12 ? a.top - b.top : a.left - b.left))
+      return { dom: items.map((i) => i.name), visual: visual.map((i) => i.name) }
+    })
+    expect(order.dom).toEqual(order.visual)
+  })
