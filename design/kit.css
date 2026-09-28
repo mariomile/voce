@@ -46,6 +46,10 @@
   --text-4xl: 32px;
   --text-5xl: 40px;
   --text-6xl: 48px;
+  /* Display sizes: landing only */
+  --text-7xl: 64px;
+  --text-8xl: 80px;
+  --text-9xl: 96px;
 
   --leading-none: 1;
   --leading-display: 1.1;
@@ -63,6 +67,7 @@
   --tracking-tight: -0.02em;
   --tracking-snug: -0.01em;
   --tracking-numbers: -0.03em;
+  --tracking-display: -0.035em;
 
   /* Spaziature, base 4 */
   --space-1: 4px;
