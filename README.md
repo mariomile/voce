@@ -25,7 +25,7 @@ pnpm test:e2e    # registrazione, feedback e prima analisi nel browser
 pnpm evals       # solo dopo modifiche al prompt: chiama il modello vero
 ```
 
-`pnpm test:e2e` avvia da solo l'app sulla porta 3000 (che deve essere libera) e un finto AI Gateway sulla 4010: l'analisi non chiama mai il modello vero. La prima volta serve `pnpm exec playwright install chromium`. L'email di conferma si legge da Mailpit.
+`pnpm test:e2e` avvia da solo l'app sulla porta 3000 (che deve essere libera) e una finta API Anthropic sulla 4010: l'analisi non chiama mai il modello vero. La prima volta serve `pnpm exec playwright install chromium`. L'email di conferma si legge da Mailpit.
 
 A ogni pull request GitHub Actions (`.github/workflows/ci.yml`) esegue typecheck, lint, test del database, unit test, build e test end-to-end, con uno stack Supabase locale avviato nel job. Non servono segreti.
 
@@ -56,10 +56,10 @@ Poi `pnpm dev` e apri `http://localhost:3000`.
 
 ## Analisi AI
 
-L'analisi usa Claude tramite Vercel AI Gateway. Il modello si sceglie con `AI_MODEL` (default `anthropic/claude-sonnet-5`). In locale le credenziali del Gateway arrivano da `vercel env pull` (`VERCEL_OIDC_TOKEN` in `.env.local`, dura 12 ore) oppure da `AI_GATEWAY_API_KEY`. Il Gateway risponde solo se il team Vercel ha una carta di credito registrata.
+L'analisi usa Claude direttamente sull'API Anthropic. La chiave va in `ANTHROPIC_API_KEY` (solo lato server: in locale in `.env.local`, in produzione nelle variabili d'ambiente di Vercel) e si crea nella console Anthropic, dove si impostano anche i limiti di spesa. Il modello si sceglie con `AI_MODEL`, con gli id di Anthropic (default `claude-sonnet-5`).
 
 - **Registro**: ogni analisi lascia una riga in `analysis_runs` (input, output grezzo, scarti, modello, token, durata, costo stimato, errore). Si legge da Studio: gli utenti non la vedono.
-- **Test**: `pnpm test` usa un modello finto, non chiama mai il Gateway.
+- **Test**: `pnpm test` usa un modello finto, non chiama mai l'API Anthropic.
 - **Evals**: `pnpm evals` chiama il modello vero sul set sintetico in `evals/dataset.json` (costa qualche centesimo). Il risultato va in `evals/results/` e si confronta con il precedente. Da eseguire dopo ogni modifica al prompt o ai controlli dell'analisi.
 
 ## Accesso con Google
