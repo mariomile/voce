@@ -19,7 +19,15 @@ vi.mock("@/lib/analysis", async (importOriginal) => ({
   analysisLanguageModel: () => ai.model,
 }))
 
+// The language of the interface when the analysis starts. Italian unless a test says otherwise.
+const ui = vi.hoisted(() => ({ locale: "it" }))
+vi.mock("next-intl/server", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next-intl/server")>()),
+  getLocale: async () => ui.locale,
+}))
+
 const { analyze } = await import("./actions")
+const { analysisInstructions } = await import("@/lib/analysis")
 const { deleteFeedback } = await import("@/app/(app)/feedback/actions")
 const { getDashboard, getUsage } = await import("@/lib/data")
 
@@ -33,6 +41,7 @@ afterAll(() => deleteTestUsers([user]))
 
 beforeEach(async () => {
   session.client = user.client
+  ui.locale = "it"
   await admin.from("analyses").delete().eq("workspace_id", user.workspaceId)
   await admin.from("feedback").delete().eq("workspace_id", user.workspaceId)
   await admin.from("subscriptions").update({ plan: "free" }).eq("workspace_id", user.workspaceId)
@@ -179,6 +188,17 @@ describe("analyze", () => {
       ["La banca si scollega", "negative", 2],
       ["Fatture dal telefono veloci", "positive", 2],
     ])
+  })
+
+  it("asks for titles and summaries in the language of the interface", async () => {
+    await addFeedback()
+    ui.locale = "en"
+    const model = answer({ themes: [] })
+    await analyze()
+    const system = model.doGenerateCalls[0].prompt.filter((m) => m.role === "system")
+    expect(system).toEqual([{ role: "system", content: analysisInstructions("en") }])
+    const [analysis] = await analyses()
+    expect((await runLog(analysis.id)).input).toMatchObject({ instructions: analysisInstructions("en") })
   })
 
   it("carries priority and status to the themes with the same title", async () => {
