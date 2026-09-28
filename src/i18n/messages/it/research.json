@@ -9,8 +9,16 @@
     "row": {
       "feedbackLabel": "feedback",
       "formOff": "Modulo spento",
-      "noFeedback": "Nessun feedback ancora"
-    }
+      "noFeedback": "Nessun feedback ancora",
+      "themes": "{count, plural, one {# tema} other {# temi}}",
+      "hypotheses": "{count} ipotesi",
+      "hypothesesWithVerdicts": "{count} ipotesi: {verdicts}",
+      "confirmed": "{count, plural, one {# confermata} other {# confermate}}",
+      "refuted": "{count, plural, one {# smentita} other {# smentite}}",
+      "toReview": "{count} da rivedere",
+      "newFeedback": "{count, plural, one {# feedback nuovo da analizzare} other {# feedback nuovi da analizzare}}"
+    },
+    "deleted": "Research eliminata."
   },
   "firstRun": {
     "title": "Qui tieni le tue domande sui clienti, con le loro risposte.",
@@ -29,7 +37,11 @@
       "failed": "Non sono riuscito a salvare la Research. Riprova tra poco: la domanda è ancora qui.",
       "session": "La sessione è scaduta. Accedi di nuovo per continuare: copia prima il testo che hai scritto, qui non resta.",
       "sessionLink": "Accedi"
-    }
+    },
+    "edit": "Modifica",
+    "editLabel": "Modifica la domanda",
+    "save": "Salva",
+    "saving": "Salvo…"
   },
   "header": {
     "back": "Tutte le Research",
@@ -159,5 +171,15 @@
     "writtenAfter": "Scritta il {date}. Dei {read} feedback letti, {count, plural, one {1 è arrivato dopo} other {# sono arrivati dopo}}.",
     "writtenBefore": "Scritta il {date}. Tutti i {read} feedback letti erano già arrivati quando l'hai scritta: il verdetto li rilegge, non la mette alla prova con feedback nuovi.",
     "arrivedAfterVerdict": "Dopo questo verdetto {count, plural, one {è arrivato 1 feedback} other {sono arrivati # feedback}}."
+  },
+  "delete": {
+    "open": "Elimina la Research",
+    "confirm": "Elimini «{question}» con i suoi {count} feedback, i temi, le ipotesi e i verdetti. Il link del modulo e il QR code smettono di funzionare. Non si può annullare.",
+    "submit": "Elimina la Research",
+    "deleting": "Elimino…",
+    "cancel": "Annulla",
+    "failed": "Non sono riuscito a eliminare la Research. Non è cambiato nulla: riprova tra poco.",
+    "session": "La sessione è scaduta. Accedi di nuovo per continuare.",
+    "sessionLink": "Accedi"
   }
 }

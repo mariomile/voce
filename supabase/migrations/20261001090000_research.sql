@@ -64,7 +64,9 @@ alter table public.feedback add constraint feedback_text_check check (char_lengt
 create view public.research_feedback_stats with (security_invoker = true) as
   select f.workspace_id, f.research_id, count(*)::integer as feedback_count,
     count(distinct f.channel)::integer as channel_count,
-    min(f.received_at) as first_received_at, max(f.received_at) as last_received_at
+    min(f.received_at) as first_received_at, max(f.received_at) as last_received_at,
+    -- When the last feedback entered Voce: the activity of the Research in the list.
+    max(f.created_at) as last_created_at
   from public.feedback f
   group by f.workspace_id, f.research_id;
 
@@ -422,7 +424,8 @@ $$;
 -- ===== Save the themes of a Research =====
 
 -- Same as before, on a themes row: priority and status come from the last done themes analysis of the
--- same Research, and the themes carry its research_id. Returns the number of verified quotes it saved.
+-- same Research, and the themes carry its research_id. Fails with research_deleted when the Research is gone.
+-- Returns the number of verified quotes it saved.
 drop function public.finish_analysis(uuid, jsonb, jsonb);
 create function public.finish_analysis(analysis uuid, themes jsonb, run jsonb)
 returns integer
@@ -440,6 +443,12 @@ begin
   where a.id = analysis and a.status = 'running' and a.kind = 'themes';
   if ws is null then
     raise exception 'analysis_not_running' using errcode = '22023';
+  end if;
+  -- Deleting the Research empties research_id and keeps the row: nothing to save the themes on. The lock
+  -- waits for a deletion in progress, then finds no row.
+  perform 1 from public.research r where r.id = res for key share;
+  if not found then
+    raise exception 'research_deleted' using errcode = '22023';
   end if;
   perform 1 from public.workspaces w where w.id = ws for no key update;
 
@@ -851,3 +860,71 @@ $$;
 
 revoke all on function public.start_question(uuid, uuid, text, integer, jsonb) from public, anon, authenticated;
 grant execute on function public.start_question(uuid, uuid, text, integer, jsonb) to service_role;
+
+-- ===== Deleting a Research =====
+
+-- Its feedback, themes, hypotheses, verdicts and links go in cascade. Its analyses and questions stay, with a
+-- null research_id, so the month's quota still counts them; their logs keep model, tokens, duration, cost and
+-- error, and lose every text: input, output, issues.
+alter table public.analysis_runs alter column input drop not null;
+alter table public.question_runs alter column input drop not null;
+
+-- Before the row goes: after it, the analyses and questions have already lost their research_id.
+create function private.forget_research_texts()
+returns trigger
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  update public.analysis_runs r set input = null, output = null, issues = null
+  from public.analyses a where a.id = r.analysis_id and a.research_id = old.id;
+  update public.question_runs r set input = null, output = null, issues = null
+  from public.questions q where q.id = r.question_id and q.research_id = old.id;
+  return old;
+end
+$$;
+
+create trigger before_research_delete
+  before delete on public.research
+  for each row execute function private.forget_research_texts();
+
+-- A run still going when its Research was deleted closes later (fail_analysis, finish_question): it takes no
+-- text back. A null research_id only ever means a deleted Research: every row gets one at the reservation.
+create function private.analysis_run_without_research()
+returns trigger
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  if exists (select 1 from public.analyses a where a.id = new.analysis_id and a.research_id is null) then
+    new.input := null;
+    new.output := null;
+    new.issues := null;
+  end if;
+  return new;
+end
+$$;
+
+create trigger before_analysis_run_update
+  before update on public.analysis_runs
+  for each row execute function private.analysis_run_without_research();
+
+create function private.question_run_without_research()
+returns trigger
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  if exists (select 1 from public.questions q where q.id = new.question_id and q.research_id is null) then
+    new.input := null;
+    new.output := null;
+    new.issues := null;
+  end if;
+  return new;
+end
+$$;
+
+create trigger before_question_run_update
+  before update on public.question_runs
+  for each row execute function private.question_run_without_research();
+
+revoke all on function private.forget_research_texts() from public, anon, authenticated;
+revoke all on function private.analysis_run_without_research() from public, anon, authenticated;
+revoke all on function private.question_run_without_research() from public, anon, authenticated;

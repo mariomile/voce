@@ -502,3 +502,71 @@ test("hypotheses: 5 at most, H3 in place of the field, and E-SESS with the text 
   await expect(section.getByRole("link", { name: "Accedi" })).toHaveAttribute("href", "/login")
   await expect(section.getByLabel("Testo dell'ipotesi")).toHaveValue("La quinta, cambiata")
 })
+
+test("Modifica changes the question from the keyboard, with RC1, and Annulla gives the focus back", async ({ page }) => {
+  const user = await signedInUser(page, "modifica")
+  await page.goto(`/research/${user.researchId}`)
+  const edit = page.getByRole("button", { name: "Modifica la domanda" })
+  await edit.focus()
+  await page.keyboard.press("Enter")
+  const field = page.getByLabel("La tua domanda")
+  await expect(field).toBeFocused()
+  await expect(field).toHaveValue("Domanda di modifica?")
+  await page.keyboard.press("Escape")
+  await expect(edit).toBeFocused()
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Domanda di modifica?")
+
+  await page.keyboard.press("Enter")
+  await field.fill("   ")
+  await page.keyboard.press("Enter")
+  await expect(page.getByText("Scrivi la domanda a cui vuoi rispondere.", { exact: false })).toBeVisible()
+  await expect(field).toBeFocused()
+  await expect(field).toHaveAttribute("aria-invalid", "true")
+
+  await field.fill("Perché i team piccoli non passano a Pro?")
+  await page.keyboard.press("Enter")
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Perché i team piccoli non passano a Pro?")
+  await expect(edit).toBeFocused()
+  const { data } = await admin.from("research").select("question").eq("id", user.researchId).single()
+  expect(data!.question).toBe("Perché i team piccoli non passano a Pro?")
+})
+
+test("deleting a Research lands on /research with Research eliminata., and on the first run after the last one", async ({ page }) => {
+  const user = await signedInUser(page, "elimina")
+  await insertFeedback(user, ["Uno.", "Due."])
+  const other = await createResearch(user.workspaceId, "resta")
+
+  await page.goto(`/research/${user.researchId}/collect`)
+  const open = page.getByRole("button", { name: "Elimina la Research" })
+  await open.click()
+  await expect(
+    page.getByText(
+      "Elimini «Domanda di elimina?» con i suoi 2 feedback, i temi, le ipotesi e i verdetti. Il link del modulo e il QR code smettono di funzionare. Non si può annullare."
+    )
+  ).toBeVisible()
+  const cancel = page.getByRole("button", { name: "Annulla" })
+  await expect(cancel).toBeFocused()
+  await page.keyboard.press("Escape")
+  await expect(open).toBeFocused()
+
+  await page.keyboard.press("Enter")
+  await page.keyboard.press("Tab")
+  await page.keyboard.press("Enter")
+  await expect(page).toHaveURL(/\/research$/)
+  await expect(page.getByRole("status").filter({ hasText: "Research eliminata." })).toBeVisible()
+  await expect(page.getByRole("heading", { level: 1, name: "Le tue Research" })).toBeFocused()
+  await expect(page.getByRole("article")).toHaveCount(1)
+  const { data: gone } = await admin.from("research").select("id").eq("id", user.researchId)
+  expect(gone).toEqual([])
+  const { count } = await admin.from("feedback").select("id", { count: "exact", head: true }).eq("workspace_id", user.workspaceId)
+  expect(count).toBe(0)
+
+  // The last one: the first run, with the question field.
+  await page.goto(`/research/${other.researchId}/collect`)
+  await page.getByRole("button", { name: "Elimina la Research" }).click()
+  await page.getByRole("button", { name: "Elimina la Research" }).last().click()
+  await expect(page).toHaveURL(/\/research$/)
+  await expect(page.getByRole("status").filter({ hasText: "Research eliminata." })).toBeVisible()
+  await expect(page.getByText("Qui tieni le tue domande sui clienti, con le loro risposte.")).toBeVisible()
+  await expect(page.getByLabel("La tua domanda")).toBeVisible()
+})

@@ -36,10 +36,11 @@ describe("/research", () => {
   })
 
   it("with Research lists them under Le tue Research, with Nuova Research and no field", async () => {
+    const state = { themeCount: 0, hypotheses: { total: 0, confirmed: 0, refuted: 0, toReview: 0 }, newFeedback: 0 }
     data.research = [
-      { id: "11111111-1111-4111-8111-111111111111", question: "Prima domanda?", formEnabled: true, feedbackCount: 3 },
-      { id: "22222222-2222-4222-8222-222222222222", question: "Seconda domanda?", formEnabled: false, feedbackCount: 0 },
-    ] as ResearchSummary[]
+      { ...state, id: "11111111-1111-4111-8111-111111111111", question: "Prima domanda?", formEnabled: true, feedbackCount: 3, lastActivity: "2026-09-28T10:00:00Z" },
+      { ...state, id: "22222222-2222-4222-8222-222222222222", question: "Seconda domanda?", formEnabled: false, feedbackCount: 0, lastActivity: "2026-09-27T10:00:00Z" },
+    ]
     const html = await render()
     expect(html).toContain("Le tue Research")
     expect(html).toContain("Una Research parte da una domanda sui clienti e raccoglie i feedback che servono a rispondere.")

@@ -9,8 +9,16 @@
     "row": {
       "feedbackLabel": "feedback",
       "formOff": "Form off",
-      "noFeedback": "No feedback yet"
-    }
+      "noFeedback": "No feedback yet",
+      "themes": "{count, plural, one {# theme} other {# themes}}",
+      "hypotheses": "{count, plural, one {# hypothesis} other {# hypotheses}}",
+      "hypothesesWithVerdicts": "{count, plural, one {# hypothesis} other {# hypotheses}}: {verdicts}",
+      "confirmed": "{count} confirmed",
+      "refuted": "{count} refuted",
+      "toReview": "{count} to review",
+      "newFeedback": "{count} new feedback to analyze"
+    },
+    "deleted": "Research deleted."
   },
   "firstRun": {
     "title": "Here you keep your questions about customers, with their answers.",
@@ -29,7 +37,11 @@
       "failed": "I couldn't save the Research. Try again shortly: your question is still here.",
       "session": "Your session has expired. Log in again to continue: copy the text you wrote first, it won't stay here.",
       "sessionLink": "Log in"
-    }
+    },
+    "edit": "Edit",
+    "editLabel": "Edit the question",
+    "save": "Save",
+    "saving": "Saving…"
   },
   "header": {
     "back": "All Research",
@@ -159,5 +171,15 @@
     "writtenAfter": "Written on {date}. Of the {read} feedback read, {count, plural, one {1 arrived after} other {# arrived after}}.",
     "writtenBefore": "Written on {date}. All {read} feedback read had already arrived when you wrote it: the verdict rereads them, it doesn't test it against new feedback.",
     "arrivedAfterVerdict": "{count, plural, one {1 feedback has arrived} other {# feedback have arrived}} since this verdict."
+  },
+  "delete": {
+    "open": "Delete the Research",
+    "confirm": "You delete “{question}” with its {count} feedback, the themes, the hypotheses and the verdicts. The form link and the QR code stop working. This can't be undone.",
+    "submit": "Delete the Research",
+    "deleting": "Deleting…",
+    "cancel": "Cancel",
+    "failed": "I couldn't delete the Research. Nothing changed: try again in a moment.",
+    "session": "Your session has expired. Log in again to continue.",
+    "sessionLink": "Log in"
   }
 }

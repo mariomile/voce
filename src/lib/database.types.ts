@@ -90,7 +90,7 @@ export type Database = {
           duration_ms: number | null
           error: string | null
           finished_at: string | null
-          input: Json
+          input: Json | null
           input_tokens: number | null
           issues: Json | null
           model: string
@@ -105,7 +105,7 @@ export type Database = {
           duration_ms?: number | null
           error?: string | null
           finished_at?: string | null
-          input: Json
+          input?: Json | null
           input_tokens?: number | null
           issues?: Json | null
           model: string
@@ -120,7 +120,7 @@ export type Database = {
           duration_ms?: number | null
           error?: string | null
           finished_at?: string | null
-          input?: Json
+          input?: Json | null
           input_tokens?: number | null
           issues?: Json | null
           model?: string
@@ -287,7 +287,7 @@ export type Database = {
           duration_ms: number | null
           error: string | null
           finished_at: string | null
-          input: Json
+          input: Json | null
           input_tokens: number | null
           issues: Json | null
           model: string
@@ -302,7 +302,7 @@ export type Database = {
           duration_ms?: number | null
           error?: string | null
           finished_at?: string | null
-          input: Json
+          input?: Json | null
           input_tokens?: number | null
           issues?: Json | null
           model: string
@@ -317,7 +317,7 @@ export type Database = {
           duration_ms?: number | null
           error?: string | null
           finished_at?: string | null
-          input?: Json
+          input?: Json | null
           input_tokens?: number | null
           issues?: Json | null
           model?: string
@@ -730,6 +730,7 @@ export type Database = {
           channel_count: number | null
           feedback_count: number | null
           first_received_at: string | null
+          last_created_at: string | null
           last_received_at: string | null
           research_id: string | null
           workspace_id: string | null

@@ -169,7 +169,7 @@ Ogni slice va da capo a piedi: pagina o action, logica, database, evento dove es
 | S8 | **Evals del verdetto.** `evals/verdicts.eval.ts` su `evals/verdicts.json` (G1-G5 e controlli per caso), primo run col modello vero, ritocchi alle istruzioni di `verdict.ts` finché non passano soglia e must-pass, risultato in `evals/results/` | 60 | S6, P1 | piccola nel codice, rischio alto sul modello | codice fatto, run delle evals in attesa della chiave (`docs/notes/2026-09-28-research-s8-evals-verdetto.md`) |
 | S9 | **Quota del verdetto e "Solo il verdetto".** Costo prima del clic (1 o 2 analisi), S4 con solo temi deciso dal server, "Solo il verdetto di {h} ipotesi" con le sue condizioni, pulsanti spenti a quota finita, riga "Il verdetto delle ipotesi usa 1 analisi" in `/billing` e landing | 44, 45, 54 (parte), 55, 65 (resto) | S7; decision: S4 (AC 44, domanda aperta della spec) | media: action e 2 componenti estesi, 2 pagine dei piani, cataloghi | fatta (`docs/notes/2026-09-28-research-s9-quota-verdetto.md`) |
 | S10 | **Sala della Research.** Conteggio delle sole risposte del modulo della Research, "Analizza le risposte" che riserva solo i temi con la nota sulle ipotesi, R1 e 404 di `/sala/status` a Research eliminata, pulsante spento a quota finita, `room.spec.ts` riscritto | 52, 53, 54 (resto), 63 (parte), 64 (parte) | S6 | piccola: 1 pagina, 1 route, 1 componente esteso, 1 E2E | fatta (`docs/notes/2026-09-28-research-s10-sala.md`) |
-| S11 | **Elenco completo, modifica ed eliminazione.** Righe dell'elenco con tutti gli stati e l'ordine per attività, `updateResearchQuestion`, `deleteResearch` con D1 e D2, trigger che svuota i registri, righe di quota con `research_id` nullo, `research_deleted` in `finish_analysis` e `finish_verdict` | 14 (resto), 56, 57, 58, 59 | S6 | media: 2 action, 1 componente esteso, migrazione estesa, pgTAP, 1 E2E | da fare |
+| S11 | **Elenco completo, modifica ed eliminazione.** Righe dell'elenco con tutti gli stati e l'ordine per attività, `updateResearchQuestion`, `deleteResearch` con D1 e D2, trigger che svuota i registri, righe di quota con `research_id` nullo, `research_deleted` in `finish_analysis` e `finish_verdict` | 14 (resto), 56, 57, 58, 59 | S6 | media: 2 action, 1 componente esteso, migrazione estesa, pgTAP, 1 E2E | fatta (`docs/notes/2026-09-28-research-s11-elenco-modifica-eliminazione.md`) |
 | S12 | **Chiusura.** Seed completo (due Research, ipotesi e verdetti), `docs/analytics.md` con eventi e query, test di render in inglese su tutti i cataloghi, rilancio delle evals di analisi e Chiedi contro S0, tutti i comandi di AC 73 da zero con output incollato, controllo del diff contro le 22 voci fuori scope, strumentazione verificata, revisione indipendente (`build-reviewer`), `TECH.md` e roadmap | 16 (resto), 61, 68, 69, 72, 73 | S0, S2, S4, S7, S8, S9, S10, S11 | piccola nel codice, verifica completa | da fare |
 
 ### Blocking edges
@@ -404,6 +404,15 @@ Emerse costruendo (S9):
 - **Con ipotesi la nota del costo dice sempre 2 analisi** (S9), anche dopo la prima del mese, al posto di "Ti restano {n} analisi di {mese}.".
 - **Dopo "Solo il verdetto" il focus va sull'h2 "Ipotesi"** (S9): il pulsante sparisce quando tutti i verdetti sono aggiornati, e l'annuncio lo fa la sezione.
 - **"Solo il verdetto" senza ipotesi risponde `failed`** (S9) senza riservare nulla: la pagina non lo mostra, lo può mandare solo una richiesta forzata.
+
+Emerse costruendo (S11):
+
+- **Il trigger che svuota i registri è `before delete`**, non `after delete` (S11): dopo la cancellazione `research_id` di analisi e domande è già nullo e i registri non si ritrovano.
+- **`analysis_runs.input` e `question_runs.input` diventano nullabili, con un trigger `before update` sui due registri** (S11): un'analisi o una domanda che si chiude dopo l'eliminazione della sua Research non riscrive testi nel registro.
+- **`research_feedback_stats` ha `last_created_at`** (S11), per ordinare l'elenco per attività senza scaricare i feedback.
+- **"{k} feedback nuovi da analizzare" prima della prima analisi conta tutti i feedback; "{n} temi" conta tutti i temi dell'ultima analisi dei temi** (S11).
+- **Dopo il salvataggio della domanda il focus torna su "Modifica"** (S11): il disegno non lo diceva.
+- **E-SESS dell'eliminazione non si vede dalla Raccolta** (S11): il proxy manda le action di `/research/[id]/collect` senza sessione a `/login`, come per le altre action della scheda.
 
 Emerse costruendo (S10):
 

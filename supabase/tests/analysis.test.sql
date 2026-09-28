@@ -2,7 +2,7 @@
 -- that inherits only from the same Research.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(23);
+select plan(25);
 
 insert into auth.users (id, email, raw_user_meta_data) values
   ('00000000-0000-0000-0000-0000000000a3', 'analysis-a@test.voce', '{"workspace_name": "A"}'),
@@ -229,6 +229,31 @@ select throws_ok(
     values ((select id from ws where name = 'a'), (select id from rs where name = 'rb'), (select analysis_id from fourth),
       'problem', 'Altrui', 'S', 'negative')$$,
   '23503', null, 'a theme with A''s workspace and B''s Research is refused'
+);
+
+-- ===== AC 58: a Research deleted while its themes are being analyzed =====
+
+-- A themes row running on B's Research, then the Research is deleted.
+insert into public.analyses (id, workspace_id, research_id, kind, period_start, feedback_count, status)
+values ('3e000000-0000-0000-0000-000000000001', (select id from ws where name = 'b'), (select id from rs where name = 'rb'),
+  'themes', current_date, 2, 'running');
+insert into public.analysis_runs (analysis_id, workspace_id, model, input)
+values ('3e000000-0000-0000-0000-000000000001', (select id from ws where name = 'b'), 'm', '{}');
+delete from public.research where id = (select id from rs where name = 'rb');
+
+set local role service_role;
+select throws_ok(
+  $$select public.finish_analysis('3e000000-0000-0000-0000-000000000001', jsonb_build_array(jsonb_build_object(
+    'title', 'Banca', 'summary', 'Sintesi', 'kind', 'problem', 'sentiment', 'negative',
+    'feedback', '[]'::jsonb, 'quotes', '[]'::jsonb)), '{}')$$,
+  '22023', 'research_deleted', 'finish_analysis on a deleted Research fails with research_deleted'
+);
+reset role;
+select results_eq(
+  $$select (select status::text from public.analyses where id = '3e000000-0000-0000-0000-000000000001'),
+      (select count(*)::integer from public.themes where analysis_id = '3e000000-0000-0000-0000-000000000001')$$,
+  $$values ('running'::text, 0)$$,
+  'and saves no theme: the server then fails the row'
 );
 
 select * from finish();

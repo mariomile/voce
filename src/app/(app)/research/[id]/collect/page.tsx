@@ -4,6 +4,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { CopyLinkButton } from "@/components/copy-link-button"
 import { CsvImport } from "@/components/csv-import"
+import { DeleteResearch } from "@/components/delete-research"
 import { FormLinkControls } from "@/components/form-link-controls"
 import { FormQuestionField } from "@/components/form-question-field"
 import { LimitWarning } from "@/components/limit-warning"
@@ -11,7 +12,7 @@ import { ManualFeedbackForm } from "@/components/manual-feedback-form"
 import { QrCode } from "@/components/qr-code"
 import { buttonVariants } from "@/components/ui/button"
 import { Card, CardActions, CardBody, CardMeta, CardText, CardTitle } from "@/components/ui/card"
-import { channelCounts, getCurrentWorkspace, getResearch, getUsage } from "@/lib/data"
+import { channelCounts, getCurrentWorkspace, getResearch, getResearchStats, getUsage } from "@/lib/data"
 import { isoDateOf } from "@/lib/format"
 import { getOrigin } from "@/lib/origin"
 import { PUBLIC_FORM_LOCALE } from "@/i18n/locale"
@@ -21,7 +22,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("title") }
 }
 
-// The Raccolta tab of a Research: its public form and QR code, the interview notes, the CSV import.
+// The Raccolta tab of a Research: its public form and QR code, the interview notes, the CSV import, and at
+// the bottom "Elimina la Research".
 export default async function CollectPage({ params }: PageProps<"/research/[id]/collect">) {
   const t = await getTranslations("collect")
   const tNotes = await getTranslations("research.notes")
@@ -31,10 +33,11 @@ export default async function CollectPage({ params }: PageProps<"/research/[id]/
   const research = await getResearch((await params).id)
   if (!research) notFound()
   const workspace = await getCurrentWorkspace()
-  const [usage, channels, origin] = await Promise.all([
+  const [usage, channels, origin, stats] = await Promise.all([
     getUsage(workspace.id),
     channelCounts(workspace.id),
     getOrigin(),
+    getResearchStats(research),
   ])
   const limitReached = usage.feedbackLimit !== null && usage.feedbackCount >= usage.feedbackLimit
   const formPath = `/f/${research.formSlug}`
@@ -100,6 +103,8 @@ export default async function CollectPage({ params }: PageProps<"/research/[id]/
         <SectionTitle>{t("page.sections.csv")}</SectionTitle>
         <CsvImport researchId={research.id} />
       </section>
+
+      <DeleteResearch researchId={research.id} question={research.question} feedbackCount={stats.feedbackCount} />
     </>
   )
 }

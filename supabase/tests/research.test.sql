@@ -1,7 +1,7 @@
 -- Research: the table, its access rules, create_research, and feedback that always belong to one.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(31);
+select plan(38);
 
 -- ===== AC 1 (part): RLS on in the migration that creates the table =====
 
@@ -47,7 +47,7 @@ select case m.user_id
 from public.workspace_members m
 where m.user_id in ('00000000-0000-0000-0000-0000000000a2', '00000000-0000-0000-0000-0000000000b2',
                     '00000000-0000-0000-0000-0000000000c2');
-grant select on ws to authenticated, anon;
+grant select on ws to authenticated, anon, service_role;
 
 select results_eq(
   $$select (select count(*) from public.workspace_members m where m.workspace_id = w.id)::integer,
@@ -210,6 +210,111 @@ select throws_ok(
   $$insert into public.feedback (workspace_id, text, channel) select id, 'Senza Research', 'Supporto' from ws where name = 'a'$$,
   '23502', null, 'a feedback without research_id violates not null'
 );
+
+-- ===== AC 56: deleting a Research =====
+
+-- A Research of A with everything a Research holds, another one that stays, and A on Free (3 analyses).
+reset role;
+insert into public.research (id, workspace_id, question, form_slug) values
+  ('dd000000-0000-0000-0000-000000000001', (select id from ws where name = 'a'), 'Da eliminare?', 'da-eliminare'),
+  ('dd000000-0000-0000-0000-000000000002', (select id from ws where name = 'a'), 'Resta?', 'resta-qui');
+insert into public.feedback (id, workspace_id, research_id, text, channel) values
+  ('dd100000-0000-0000-0000-000000000001', (select id from ws where name = 'a'), 'dd000000-0000-0000-0000-000000000001',
+    'Il prezzo pesa.', 'Supporto'),
+  ('dd100000-0000-0000-0000-000000000002', (select id from ws where name = 'a'), 'dd000000-0000-0000-0000-000000000002',
+    'Resto qui.', 'Supporto');
+-- Four analyses this month (three themes, one verdict), each with its log.
+insert into public.analyses (id, workspace_id, research_id, kind, period_start, feedback_count, status)
+select ('dd200000-0000-0000-0000-00000000000' || n)::uuid, (select id from ws where name = 'a'),
+  'dd000000-0000-0000-0000-000000000001', (case when n = 3 then 'verdict' else 'themes' end)::public.analysis_kind,
+  current_date, 1, 'done'
+from generate_series(1, 4) n;
+insert into public.analysis_runs (analysis_id, workspace_id, model, input, output, issues, input_tokens)
+select id, workspace_id, 'm', '{"prompt": "Il prezzo pesa."}', '"Il prezzo pesa."', '[]', 100
+from public.analyses where research_id = 'dd000000-0000-0000-0000-000000000001';
+insert into public.themes (id, workspace_id, research_id, analysis_id, kind, title, summary, sentiment)
+values ('dd300000-0000-0000-0000-000000000001', (select id from ws where name = 'a'), 'dd000000-0000-0000-0000-000000000001',
+  'dd200000-0000-0000-0000-000000000001', 'problem', 'Prezzo', 'Il prezzo pesa.', 'negative');
+insert into public.theme_feedback (theme_id, feedback_id, workspace_id, quote_rank, highlight)
+values ('dd300000-0000-0000-0000-000000000001', 'dd100000-0000-0000-0000-000000000001', (select id from ws where name = 'a'), 1, 'prezzo');
+insert into public.research_hypotheses (id, workspace_id, research_id, text)
+values ('dd400000-0000-0000-0000-000000000001', (select id from ws where name = 'a'), 'dd000000-0000-0000-0000-000000000001', 'Il prezzo frena');
+insert into public.hypothesis_verdicts (hypothesis_id, workspace_id, research_id, analysis_id, verdict, reasoning, feedback_read, arrived_after)
+values ('dd400000-0000-0000-0000-000000000001', (select id from ws where name = 'a'), 'dd000000-0000-0000-0000-000000000001',
+  'dd200000-0000-0000-0000-000000000003', 'confirmed', 'Il prezzo pesa.', 1, 0);
+insert into public.verdict_feedback (hypothesis_id, feedback_id, workspace_id, stance, quote_rank, highlight)
+values ('dd400000-0000-0000-0000-000000000001', 'dd100000-0000-0000-0000-000000000001', (select id from ws where name = 'a'), 'for', 1, 'prezzo');
+insert into public.questions (id, workspace_id, research_id, status, feedback_considered)
+values ('dd500000-0000-0000-0000-000000000001', (select id from ws where name = 'a'), 'dd000000-0000-0000-0000-000000000001', 'failed', 1);
+insert into public.question_runs (question_id, workspace_id, model, input, output, issues, input_tokens)
+values ('dd500000-0000-0000-0000-000000000001', (select id from ws where name = 'a'), 'm', '{"prompt": "Il prezzo pesa?"}',
+  '"Il prezzo pesa."', '[]', 50);
+-- The fourth analysis is still running (set after the hypothesis: they are locked during an analysis).
+update public.analyses set status = 'running' where id = 'dd200000-0000-0000-0000-000000000004';
+
+-- The member deletes it during an analysis: the hypotheses go with it.
+set local role authenticated;
+set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-0000000000a2", "role": "authenticated"}';
+select lives_ok(
+  $$delete from public.research where id = 'dd000000-0000-0000-0000-000000000001'$$,
+  'a member deletes a Research, also during one of its analyses'
+);
+reset role;
+
+select results_eq(
+  $$select (select count(*) from public.feedback where research_id = 'dd000000-0000-0000-0000-000000000001')::integer,
+      (select count(*) from public.feedback where id = 'dd100000-0000-0000-0000-000000000002')::integer,
+      (select count(*) from public.themes where id = 'dd300000-0000-0000-0000-000000000001')::integer,
+      (select count(*) from public.theme_feedback where theme_id = 'dd300000-0000-0000-0000-000000000001')::integer,
+      (select count(*) from public.research_hypotheses where id = 'dd400000-0000-0000-0000-000000000001')::integer,
+      (select count(*) from public.hypothesis_verdicts where hypothesis_id = 'dd400000-0000-0000-0000-000000000001')::integer,
+      (select count(*) from public.verdict_feedback where hypothesis_id = 'dd400000-0000-0000-0000-000000000001')::integer$$,
+  $$values (0, 1, 0, 0, 0, 0, 0)$$,
+  'deleting a Research deletes its feedback, themes, hypotheses, verdicts and links, and nothing of another Research'
+);
+
+select results_eq(
+  $$select (select count(*) from public.analyses where id::text like 'dd200000-%' and research_id is null)::integer,
+      (select count(*) from public.questions where id = 'dd500000-0000-0000-0000-000000000001' and research_id is null)::integer$$,
+  $$values (4, 1)$$,
+  'its analyses and questions stay with a null research_id'
+);
+
+select results_eq(
+  $$select count(*)::integer, count(*) filter (where input is null and output is null and issues is null)::integer,
+      count(*) filter (where model = 'm' and input_tokens = 100)::integer
+    from public.analysis_runs where analysis_id::text like 'dd200000-%'$$,
+  $$values (4, 4, 4)$$,
+  'their analysis runs lose input, output and issues, and keep model and tokens'
+);
+select results_eq(
+  $$select input is null and output is null and issues is null, input_tokens from public.question_runs
+    where question_id = 'dd500000-0000-0000-0000-000000000001'$$,
+  $$values (true, 50)$$,
+  'their question runs lose input, output and issues, and keep the tokens'
+);
+
+-- The analysis that was running closes after the deletion: its log takes no text back.
+set local role service_role;
+select public.fail_analysis('dd200000-0000-0000-0000-000000000004', 'research_deleted',
+  '{"output": "Il prezzo pesa.", "issues": [{"reason": "x"}], "input_tokens": 7}');
+reset role;
+select results_eq(
+  $$select error, output is null and issues is null, input_tokens from public.analysis_runs
+    where analysis_id = 'dd200000-0000-0000-0000-000000000004'$$,
+  $$values ('research_deleted'::text, true, 7)$$,
+  'a run closed after its Research was deleted keeps no text'
+);
+
+-- Still counted: the 3 done analyses of the deleted Research fill A's Free month.
+set local role service_role;
+select is(
+  (select outcome from public.start_analysis((select id from ws where name = 'a'), 'dd000000-0000-0000-0000-000000000002', 'm',
+    array['themes']::public.analysis_kind[], current_date, 1, '{}')),
+  'limit',
+  'the analyses of a deleted Research still count in the month'
+);
+reset role;
 
 -- ===== AC 8 (part): anon reads nothing =====
 

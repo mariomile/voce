@@ -44,8 +44,17 @@ export type ThemeSummary = Theme & {
   quotes: Quote[];
 };
 
-// A row of /research: the Research with its number of feedback.
-export type ResearchSummary = Pick<Research, "id" | "question" | "formEnabled"> & { feedbackCount: number };
+// A row of /research: the Research with its number of feedback and its state. themeCount: the themes of its
+// last done themes analysis; hypotheses: how many, and their verdicts by word; newFeedback: the feedback that
+// entered Voce after that analysis (all of them before the first); lastActivity: the latest of its creation,
+// its last feedback and its last analysis.
+export type ResearchSummary = Pick<Research, "id" | "question" | "formEnabled"> & {
+  feedbackCount: number;
+  themeCount: number;
+  hypotheses: { total: number; confirmed: number; refuted: number; toReview: number };
+  newFeedback: number;
+  lastActivity: string;
+};
 
 // The last verdict of a hypothesis, as the Sintesi shows it. supporting and contradicting count the verified
 // links that still exist; feedbackRead is what the model read; arrivedAfter, the feedback read that entered
@@ -110,24 +119,69 @@ export const getCurrentWorkspace = cache(async (): Promise<Workspace> => {
   return { id: data.id, name: data.name };
 });
 
-// Newest first. Cached per request like the workspace.
+// Most recent activity first. Cached per request like the workspace.
 export const listResearch = cache(async (workspaceId: string): Promise<ResearchSummary[]> => {
   const supabase = await createClient();
-  const [research, stats] = await Promise.all([
+  const [research, stats, analyses, hypotheses, verdicts] = await Promise.all([
+    supabase.from("research").select("id, question, form_enabled, created_at").eq("workspace_id", workspaceId),
     supabase
-      .from("research")
-      .select("id, question, form_enabled")
+      .from("research_feedback_stats")
+      .select("research_id, feedback_count, last_created_at")
+      .eq("workspace_id", workspaceId),
+    // Newest first: the first of each Research is its last.
+    supabase
+      .from("analyses")
+      .select("id, research_id, kind, created_at")
       .eq("workspace_id", workspaceId)
+      .eq("status", "done")
+      .not("research_id", "is", null)
       .order("created_at", { ascending: false }),
-    supabase.from("research_feedback_stats").select("research_id, feedback_count").eq("workspace_id", workspaceId),
+    supabase.from("research_hypotheses").select("research_id").eq("workspace_id", workspaceId),
+    supabase.from("hypothesis_verdicts").select("research_id, verdict").eq("workspace_id", workspaceId),
   ]);
   const counts = unwrap(stats);
-  return unwrap(research).map((r) => ({
-    id: r.id,
-    question: r.question,
-    formEnabled: r.form_enabled,
-    feedbackCount: counts.find((c) => c.research_id === r.id)?.feedback_count ?? 0,
-  }));
+  const done = unwrap(analyses);
+  const lastThemes = (id: string) => done.find((a) => a.research_id === id && a.kind === "themes");
+  const themeRows = unwrap(
+    await supabase
+      .from("themes")
+      .select("analysis_id")
+      .eq("workspace_id", workspaceId)
+      .in(
+        "analysis_id",
+        unwrap(research).flatMap((r) => lastThemes(r.id)?.id ?? [])
+      )
+  );
+  const hypothesisRows = unwrap(hypotheses);
+  const verdictRows = unwrap(verdicts);
+  const rows = await Promise.all(
+    unwrap(research).map(async (r) => {
+      const stat = counts.find((c) => c.research_id === r.id);
+      const feedbackCount = stat?.feedback_count ?? 0;
+      const themes = lastThemes(r.id);
+      const lastAnalysis = done.find((a) => a.research_id === r.id);
+      const words = verdictRows.filter((v) => v.research_id === r.id).map((v) => v.verdict);
+      const newFeedback =
+        feedbackCount === 0 ? 0 : themes ? await countFeedbackAfter({ id: r.id, workspaceId }, themes.created_at) : feedbackCount;
+      const activity = [r.created_at, stat?.last_created_at, lastAnalysis?.created_at].filter((d): d is string => Boolean(d));
+      return {
+        id: r.id,
+        question: r.question,
+        formEnabled: r.form_enabled,
+        feedbackCount,
+        themeCount: themes ? themeRows.filter((t) => t.analysis_id === themes.id).length : 0,
+        hypotheses: {
+          total: hypothesisRows.filter((h) => h.research_id === r.id).length,
+          confirmed: words.filter((w) => w === "confirmed").length,
+          refuted: words.filter((w) => w === "refuted").length,
+          toReview: words.filter((w) => w === "to_review").length,
+        },
+        newFeedback,
+        lastActivity: activity.reduce((latest, d) => (Date.parse(d) > Date.parse(latest) ? d : latest)),
+      };
+    })
+  );
+  return rows.sort((a, b) => Date.parse(b.lastActivity) - Date.parse(a.lastActivity));
 });
 
 // Null when the id is not a Research the user can read: another workspace's, deleted, or not a uuid.

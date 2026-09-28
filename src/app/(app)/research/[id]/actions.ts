@@ -261,8 +261,14 @@ async function failPart(analysisId: string, error: unknown, modelId: string, sta
   })
 }
 
+// A database error (research_deleted, quote_not_in_feedback) comes as a plain object with a message.
 function errorMessage(error: unknown) {
-  const text = error instanceof Error ? `${error.name}: ${error.message}` : String(error)
+  const text =
+    error instanceof Error
+      ? `${error.name}: ${error.message}`
+      : typeof error === "object" && error !== null && "message" in error && typeof error.message === "string"
+        ? error.message
+        : String(error)
   return text.slice(0, 2000)
 }
 

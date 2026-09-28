@@ -1030,6 +1030,65 @@ describe("synthesize from the room", () => {
   })
 })
 
+describe("synthesize and the question of the Research", () => {
+  it("neither the themes nor the verdict prompt contains the Research question", async () => {
+    await admin.from("research").update({ question: `Domanda ${MARKER}?` }).eq("id", user.researchId)
+    try {
+      await addFeedback()
+      await addHypotheses(["La banca si scollega"])
+      const model = fakeSynthesisModel({ themes: [bank] }, priced)
+      ai.model = model
+      expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themes: "done", verdict: "done" })
+      expect(model.doGenerateCalls).toHaveLength(2)
+      expect(JSON.stringify(model.doGenerateCalls)).not.toContain(MARKER)
+      const { themes, verdict } = await byKind()
+      expect(JSON.stringify([(await runLog(themes[0].id)).input, (await runLog(verdict[0].id)).input])).not.toContain(MARKER)
+    } finally {
+      await admin.from("research").update({ question: "Domanda di prova?" }).eq("id", user.researchId)
+    }
+  })
+})
+
+describe("synthesize and a Research deleted during its analysis", () => {
+  it("both parts fail with research_deleted: no theme, no verdict, no text in the logs, nothing counted", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {})
+    const created = await user.client.rpc("create_research", { ws: user.workspaceId, question: "Da eliminare?" })
+    const researchId = created.data!
+    const { data: feedback } = await admin
+      .from("feedback")
+      .insert(TEXTS.map((text) => ({ workspace_id: user.workspaceId, research_id: researchId, text, channel: "Supporto" })))
+      .select("id")
+    await admin.from("research_hypotheses").insert({ workspace_id: user.workspaceId, research_id: researchId, text: "La banca si scollega" })
+    // The PM deletes the Research while the model is answering.
+    const model = fakeSynthesisModel({ themes: [bank] }, priced)
+    let deleted: PromiseLike<unknown> | null = null
+    ai.model = new MockLanguageModelV4({
+      doGenerate: async (options) => {
+        deleted ??= admin.from("research").delete().eq("id", researchId)
+        await deleted
+        return model.doGenerate(options)
+      },
+    })
+    expect(await synthesize(researchId)).toEqual({ ok: false, reason: "failed" })
+    log.mockRestore()
+
+    const rows = (await analyses()).filter((a) => a.research_id === null)
+    expect(rows.map((a) => [a.kind, a.status]).sort()).toEqual([
+      ["themes", "failed"],
+      ["verdict", "failed"],
+    ])
+    for (const row of rows) {
+      const run = await runLog(row.id)
+      expect(run.error).toContain("research_deleted")
+      expect([run.input, run.output, run.issues]).toEqual([null, null, null])
+    }
+    const { count } = await admin.from("themes").select("id", { count: "exact", head: true }).in("analysis_id", rows.map((a) => a.id))
+    expect(count).toBe(0)
+    expect(feedback).toHaveLength(TEXTS.length)
+    expect((await getUsage(user.workspaceId)).analysesThisMonth).toBe(0)
+  })
+})
+
 function themeRow(theme: typeof bank | typeof phone) {
   return {
     title: theme.title,

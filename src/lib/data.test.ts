@@ -39,7 +39,8 @@ function as(name: keyof typeof users) {
 async function initial(name: keyof typeof users) {
   const workspaceId = as(name)
   const list = await listResearch(workspaceId)
-  return { id: list.at(-1)!.id, workspaceId }
+  // Fatturino has a second, empty Research.
+  return { id: (list.length === 1 ? list[0] : list.find((r) => r.feedbackCount > 0)!).id, workspaceId }
 }
 
 describe("getCurrentWorkspace", () => {
@@ -50,13 +51,13 @@ describe("getCurrentWorkspace", () => {
 })
 
 describe("the Research of the seed", () => {
-  it("listResearch gives the newest first, with the number of feedback", async () => {
+  it("listResearch gives every Research of the workspace, with the number of feedback", async () => {
     const list = await listResearch(as("fatturino"))
-    expect(list.map((r) => [r.question, r.formEnabled, r.feedbackCount > 0])).toEqual([
+    expect(list.map((r) => [r.question, r.formEnabled, r.feedbackCount > 0]).sort()).toEqual([
       ["Come usano l'export in Excel i clienti Pro?", true, false],
       ["Cosa dicono i clienti di Fatturino?", true, true],
     ])
-    expect(list[0].feedbackCount).toBe(0)
+    expect(list.find((r) => r.feedbackCount === 0)!.question).toBe("Come usano l'export in Excel i clienti Pro?")
   })
 
   it("getResearch reads the form of the Research", async () => {
@@ -84,6 +85,94 @@ describe("the Research of the seed", () => {
     expect(stats.feedbackCount).toBe(orto.feedbackCount)
     expect(stats.channelCount).toBeGreaterThan(0)
     expect(stats.firstReceivedAt! <= stats.lastReceivedAt!).toBe(true)
+  })
+})
+
+describe("listResearch", () => {
+  it("orders rows by the latest of creation, last feedback and last analysis, with the state of each row", async () => {
+    const user = await createTestUser("elenco")
+    try {
+      const ago = (hours: number) => new Date(Date.now() - hours * 60 * 60 * 1000).toISOString()
+      const ws = user.workspaceId
+      // Three Research: made 10 days ago with feedback yesterday, made 5 days ago with an analysis 1 hour ago,
+      // and the test user's own, made now.
+      const make = async (question: string, createdAt: string) => {
+        const { data } = await user.client.rpc("create_research", { ws, question })
+        await admin.from("research").update({ created_at: createdAt }).eq("id", data!)
+        return data!
+      }
+      const fed = await make("Con feedback ieri?", ago(240))
+      const analyzed = await make("Analizzata un'ora fa?", ago(120))
+      await admin.from("research").update({ created_at: ago(1000), form_enabled: false }).eq("id", user.researchId)
+      const { data: fb } = await admin
+        .from("feedback")
+        .insert([
+          { workspace_id: ws, research_id: fed, text: "Ieri", channel: "Supporto", created_at: ago(24) },
+          { workspace_id: ws, research_id: analyzed, text: "Prima", channel: "Supporto", created_at: ago(100) },
+          { workspace_id: ws, research_id: analyzed, text: "Seconda", channel: "Supporto", created_at: ago(100) },
+          { workspace_id: ws, research_id: analyzed, text: "Dopo", channel: "Supporto", created_at: ago(0.5) },
+        ])
+        .select("id, text")
+      const { data: runs } = await admin
+        .from("analyses")
+        .insert([
+          { workspace_id: ws, research_id: analyzed, kind: "themes" as const, period_start: "2026-09-01", feedback_count: 2, status: "done" as const, created_at: ago(1) },
+          { workspace_id: ws, research_id: analyzed, kind: "verdict" as const, period_start: "2026-09-01", feedback_count: 2, status: "done" as const, created_at: ago(1) },
+          // An older themes analysis: its themes do not count.
+          { workspace_id: ws, research_id: analyzed, kind: "themes" as const, period_start: "2026-09-01", feedback_count: 1, status: "done" as const, created_at: ago(90) },
+        ])
+        .select("id, kind, created_at")
+      const latest = runs!.find((a) => a.kind === "themes" && a.created_at === runs![0].created_at)!.id
+      const older = runs!.find((a) => a.kind === "themes" && a.id !== latest)!.id
+      const verdictRun = runs!.find((a) => a.kind === "verdict")!.id
+      const theme = (analysisId: string, title: string) => ({
+        workspace_id: ws,
+        research_id: analyzed,
+        analysis_id: analysisId,
+        kind: "problem" as const,
+        title,
+        summary: "S",
+        sentiment: "negative" as const,
+      })
+      await admin.from("themes").insert([theme(latest, "Uno"), theme(latest, "Due"), theme(older, "Vecchio")])
+      const { data: hyps } = await admin
+        .from("research_hypotheses")
+        .insert([
+          { workspace_id: ws, research_id: analyzed, text: "Confermata" },
+          { workspace_id: ws, research_id: analyzed, text: "Da rivedere" },
+          { workspace_id: ws, research_id: analyzed, text: "Senza verdetto" },
+        ])
+        .select("id, text")
+      const verdict = (text: string, word: "confirmed" | "to_review") => ({
+        hypothesis_id: hyps!.find((h) => h.text === text)!.id,
+        workspace_id: ws,
+        research_id: analyzed,
+        analysis_id: verdictRun,
+        verdict: word,
+        reasoning: "R",
+        feedback_read: 2,
+        arrived_after: 0,
+      })
+      await admin.from("hypothesis_verdicts").insert([verdict("Confermata", "confirmed"), verdict("Da rivedere", "to_review")])
+      expect(fb).toHaveLength(4)
+
+      as("orto")
+      session.client = user.client
+      const list = await listResearch(ws)
+      expect(list.map((r) => r.question)).toEqual(["Analizzata un'ora fa?", "Con feedback ieri?", "Domanda di prova?"])
+      const [first, second, third] = list
+      expect(first).toMatchObject({
+        feedbackCount: 3,
+        themeCount: 2,
+        hypotheses: { total: 3, confirmed: 1, refuted: 0, toReview: 1 },
+        newFeedback: 1,
+      })
+      // Never analyzed: every feedback is new.
+      expect(second).toMatchObject({ feedbackCount: 1, themeCount: 0, newFeedback: 1, hypotheses: { total: 0 } })
+      expect(third).toMatchObject({ feedbackCount: 0, formEnabled: false, newFeedback: 0 })
+    } finally {
+      await deleteTestUsers([user])
+    }
   })
 })
 

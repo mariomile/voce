@@ -4,7 +4,7 @@ import { notFound } from "next/navigation"
 import { getLocale, getTranslations } from "next-intl/server"
 import { AppTabs } from "@/components/app-tabs"
 import { Page, PageLede } from "@/components/page"
-import { ResearchTitle } from "@/components/research-title"
+import { ResearchQuestion } from "@/components/research-question"
 import { getResearch, getResearchStats } from "@/lib/data"
 import { formatDate } from "@/lib/format"
 
@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: LayoutProps<"/research/[id]">
   return { title: research?.question ?? "Voce" }
 }
 
-// The header every tab of a Research shares: the way back, the question, its numbers, the tabs.
+// The header every tab of a Research shares: the way back, the question with "Modifica", its numbers, the tabs.
 // A Research the user cannot read (another workspace's, deleted, a wrong id) is the same not-found page.
 export default async function ResearchLayout({ children, params }: LayoutProps<"/research/[id]">) {
   const research = await getResearch((await params).id)
@@ -27,7 +27,7 @@ export default async function ResearchLayout({ children, params }: LayoutProps<"
           <span aria-hidden="true">← </span>
           {t("header.back")}
         </Link>
-        <ResearchTitle>{research.question}</ResearchTitle>
+        <ResearchQuestion researchId={research.id} question={research.question} />
         <PageLede>
           {stats.feedbackCount > 0
             ? t("header.ledeCount", {
