@@ -42,7 +42,7 @@ describe("the question prompt", () => {
   it("in English asks for the answer in English", () => {
     expect(questionInstructions("en")).toContain("- answer: in English, also when the question or the feedback are in another language.")
     expect(questionInstructions("en")).not.toContain("Italian")
-    expect(JSON.stringify(z.toJSONSchema(questionOutputSchemaFor("en")))).toContain("At most 3 sentences in English")
+    expect(JSON.stringify(z.toJSONSchema(questionOutputSchemaFor("en")))).toContain("At most 2 short sentences in English, about 40 words")
   })
 
   it("is sent in the requested language", async () => {
