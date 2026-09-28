@@ -222,6 +222,64 @@ export type Database = {
           },
         ]
       }
+      hypothesis_verdicts: {
+        Row: {
+          analysis_id: string
+          arrived_after: number
+          created_at: string
+          feedback_read: number
+          hypothesis_id: string
+          reasoning: string
+          research_id: string
+          verdict: Database["public"]["Enums"]["hypothesis_verdict"]
+          workspace_id: string
+        }
+        Insert: {
+          analysis_id: string
+          arrived_after: number
+          created_at?: string
+          feedback_read: number
+          hypothesis_id: string
+          reasoning: string
+          research_id: string
+          verdict: Database["public"]["Enums"]["hypothesis_verdict"]
+          workspace_id: string
+        }
+        Update: {
+          analysis_id?: string
+          arrived_after?: number
+          created_at?: string
+          feedback_read?: number
+          hypothesis_id?: string
+          reasoning?: string
+          research_id?: string
+          verdict?: Database["public"]["Enums"]["hypothesis_verdict"]
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hypothesis_verdicts_workspace_id_analysis_id_fkey"
+            columns: ["workspace_id", "analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analyses"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "hypothesis_verdicts_workspace_id_hypothesis_id_fkey"
+            columns: ["workspace_id", "hypothesis_id"]
+            isOneToOne: false
+            referencedRelation: "research_hypotheses"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "hypothesis_verdicts_workspace_id_research_id_fkey"
+            columns: ["workspace_id", "research_id"]
+            isOneToOne: false
+            referencedRelation: "research"
+            referencedColumns: ["workspace_id", "id"]
+          },
+        ]
+      }
       question_runs: {
         Row: {
           cost_usd: number | null
@@ -364,6 +422,44 @@ export type Database = {
           },
         ]
       }
+      research_hypotheses: {
+        Row: {
+          created_at: string
+          id: string
+          position: number
+          research_id: string
+          text: string
+          workspace_id: string
+          written_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          position?: number
+          research_id: string
+          text: string
+          workspace_id: string
+          written_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          position?: number
+          research_id?: string
+          text?: string
+          workspace_id?: string
+          written_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_hypotheses_workspace_id_research_id_fkey"
+            columns: ["workspace_id", "research_id"]
+            isOneToOne: false
+            referencedRelation: "research"
+            referencedColumns: ["workspace_id", "id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           cancel_at: string | null
@@ -501,6 +597,48 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "analyses"
             referencedColumns: ["workspace_id", "id"]
+          },
+        ]
+      }
+      verdict_feedback: {
+        Row: {
+          feedback_id: string
+          highlight: string | null
+          hypothesis_id: string
+          quote_rank: number | null
+          stance: Database["public"]["Enums"]["verdict_stance"]
+          workspace_id: string
+        }
+        Insert: {
+          feedback_id: string
+          highlight?: string | null
+          hypothesis_id: string
+          quote_rank?: number | null
+          stance: Database["public"]["Enums"]["verdict_stance"]
+          workspace_id: string
+        }
+        Update: {
+          feedback_id?: string
+          highlight?: string | null
+          hypothesis_id?: string
+          quote_rank?: number | null
+          stance?: Database["public"]["Enums"]["verdict_stance"]
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verdict_feedback_workspace_id_feedback_id_fkey"
+            columns: ["workspace_id", "feedback_id"]
+            isOneToOne: false
+            referencedRelation: "feedback"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "verdict_feedback_workspace_id_hypothesis_id_fkey"
+            columns: ["workspace_id", "hypothesis_id"]
+            isOneToOne: false
+            referencedRelation: "hypothesis_verdicts"
+            referencedColumns: ["workspace_id", "hypothesis_id"]
           },
         ]
       }
@@ -708,6 +846,7 @@ export type Database = {
     Enums: {
       analysis_kind: "themes" | "verdict"
       analysis_status: "running" | "done" | "failed"
+      hypothesis_verdict: "confirmed" | "refuted" | "to_review"
       member_role: "owner" | "member"
       plan: "free" | "pro"
       question_outcome: "answered" | "no_evidence"
@@ -716,6 +855,7 @@ export type Database = {
       theme_priority: "high" | "medium" | "low"
       theme_sentiment: "positive" | "neutral" | "negative" | "mixed"
       theme_status: "to_review" | "roadmap" | "done" | "discarded"
+      verdict_stance: "for" | "against"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -848,6 +988,7 @@ export const Constants = {
     Enums: {
       analysis_kind: ["themes", "verdict"],
       analysis_status: ["running", "done", "failed"],
+      hypothesis_verdict: ["confirmed", "refuted", "to_review"],
       member_role: ["owner", "member"],
       plan: ["free", "pro"],
       question_outcome: ["answered", "no_evidence"],
@@ -856,6 +997,7 @@ export const Constants = {
       theme_priority: ["high", "medium", "low"],
       theme_sentiment: ["positive", "neutral", "negative", "mixed"],
       theme_status: ["to_review", "roadmap", "done", "discarded"],
+      verdict_stance: ["for", "against"],
     },
   },
 } as const

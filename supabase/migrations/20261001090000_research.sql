@@ -508,3 +508,131 @@ revoke all on function public.start_analysis(uuid, uuid, text, public.analysis_k
 revoke all on function public.finish_analysis(uuid, jsonb, jsonb) from public, anon, authenticated;
 grant execute on function public.start_analysis(uuid, uuid, text, public.analysis_kind[], date, integer, jsonb) to service_role;
 grant execute on function public.finish_analysis(uuid, jsonb, jsonb) to service_role;
+
+-- ===== Hypotheses of a Research =====
+
+-- A sentence of the PM that the feedback can confirm or refute. At most 5 per Research.
+create table public.research_hypotheses (
+  id uuid primary key default gen_random_uuid(),
+  workspace_id uuid not null,
+  research_id uuid not null,
+  text text not null check (char_length(btrim(text)) between 1 and 200),
+  -- Set by the trigger: after the last one of the Research.
+  position smallint not null default 0,
+  -- Moves to now whenever the text changes: the feedback "arrived after" count stays honest.
+  written_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  unique (workspace_id, id),
+  foreign key (workspace_id, research_id) references public.research (workspace_id, id) on delete cascade
+);
+create index research_hypotheses_research_idx on public.research_hypotheses (research_id, position);
+
+alter table public.research_hypotheses enable row level security;
+
+create policy "Members read their hypotheses" on public.research_hypotheses
+  for select to authenticated using (workspace_id in (select private.my_workspace_ids()));
+create policy "Members add hypotheses" on public.research_hypotheses
+  for insert to authenticated with check (workspace_id in (select private.my_workspace_ids()));
+create policy "Members update their hypotheses" on public.research_hypotheses
+  for update to authenticated
+  using (workspace_id in (select private.my_workspace_ids()))
+  with check (workspace_id in (select private.my_workspace_ids()));
+create policy "Members delete their hypotheses" on public.research_hypotheses
+  for delete to authenticated using (workspace_id in (select private.my_workspace_ids()));
+
+grant select, delete on public.research_hypotheses to authenticated;
+grant insert (workspace_id, research_id, text), update (text) on public.research_hypotheses to authenticated;
+
+-- ===== Verdicts: written only by the database (finish_verdict, in a later part) =====
+
+create type public.hypothesis_verdict as enum ('confirmed', 'refuted', 'to_review');
+create type public.verdict_stance as enum ('for', 'against');
+
+-- The last verdict of each hypothesis, replaced by every successful one.
+create table public.hypothesis_verdicts (
+  hypothesis_id uuid primary key,
+  workspace_id uuid not null,
+  research_id uuid not null,
+  -- The verdict row of analyses that produced it.
+  analysis_id uuid not null,
+  verdict public.hypothesis_verdict not null,
+  reasoning text not null,
+  feedback_read integer not null check (feedback_read >= 1),
+  arrived_after integer not null check (arrived_after >= 0),
+  created_at timestamptz not null default now(),
+  unique (workspace_id, hypothesis_id),
+  foreign key (workspace_id, hypothesis_id) references public.research_hypotheses (workspace_id, id) on delete cascade,
+  foreign key (workspace_id, research_id) references public.research (workspace_id, id) on delete cascade,
+  foreign key (workspace_id, analysis_id) references public.analyses (workspace_id, id)
+);
+create index hypothesis_verdicts_research_idx on public.hypothesis_verdicts (research_id);
+create index hypothesis_verdicts_analysis_idx on public.hypothesis_verdicts (workspace_id, analysis_id);
+
+-- The verified links of a verdict, like theme_feedback. A feedback sits on one side only.
+create table public.verdict_feedback (
+  hypothesis_id uuid not null,
+  feedback_id uuid not null,
+  workspace_id uuid not null,
+  stance public.verdict_stance not null,
+  -- Only on quotes: 1-3 for, 1-2 against.
+  quote_rank smallint check (quote_rank > 0),
+  -- Exact substring of the feedback text, only on quotes.
+  highlight text,
+  primary key (hypothesis_id, feedback_id),
+  foreign key (workspace_id, hypothesis_id) references public.hypothesis_verdicts (workspace_id, hypothesis_id) on delete cascade,
+  foreign key (workspace_id, feedback_id) references public.feedback (workspace_id, id) on delete cascade
+);
+create index verdict_feedback_workspace_feedback_idx on public.verdict_feedback (workspace_id, feedback_id);
+
+alter table public.hypothesis_verdicts enable row level security;
+alter table public.verdict_feedback enable row level security;
+
+create policy "Members read their verdicts" on public.hypothesis_verdicts
+  for select to authenticated using (workspace_id in (select private.my_workspace_ids()));
+create policy "Members read their verdict links" on public.verdict_feedback
+  for select to authenticated using (workspace_id in (select private.my_workspace_ids()));
+
+-- Read only: no writes for authenticated or anon.
+grant select on public.hypothesis_verdicts, public.verdict_feedback to authenticated;
+
+-- ===== Hypothesis triggers =====
+
+-- Locks the Research, so two tabs adding at once are counted one at a time: at most 5, then the position.
+create function private.before_hypothesis_insert()
+returns trigger
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  perform 1 from public.research r where r.id = new.research_id for no key update;
+  if (select count(*) from public.research_hypotheses h where h.research_id = new.research_id) >= 5 then
+    raise exception 'max_hypotheses';
+  end if;
+  new.position := coalesce(
+    (select max(h.position) from public.research_hypotheses h where h.research_id = new.research_id), 0) + 1;
+  new.written_at := now();
+  return new;
+end
+$$;
+
+create trigger before_hypothesis_insert
+  before insert on public.research_hypotheses
+  for each row execute function private.before_hypothesis_insert();
+
+-- A new text is a new hypothesis: the verdict was on the sentence before (its links go in cascade),
+-- and the time of writing starts again. The same text changes nothing.
+create function private.before_hypothesis_text_update()
+returns trigger
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  if new.text is distinct from old.text then
+    new.written_at := now();
+    delete from public.hypothesis_verdicts v where v.hypothesis_id = old.id;
+  end if;
+  return new;
+end
+$$;
+
+create trigger before_hypothesis_text_update
+  before update of text on public.research_hypotheses
+  for each row execute function private.before_hypothesis_text_update();

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 import { getLocale, getTranslations } from "next-intl/server"
 import { AnalyzeButton } from "@/components/analyze-button"
 import { CollectionPaths } from "@/components/collection-paths"
+import { HypothesisList } from "@/components/hypothesis-list"
 import { LimitWarning } from "@/components/limit-warning"
 import { PageLede, PageMore } from "@/components/page"
 import { Quote } from "@/components/quote"
@@ -18,6 +19,7 @@ import {
   getResearch,
   getResearchStats,
   getUsage,
+  listHypotheses,
   type StatusFilter,
   type Usage,
 } from "@/lib/data"
@@ -35,14 +37,21 @@ const FEW_FEEDBACK = 5
 // The analysis action runs from this page and can take a few minutes.
 export const maxDuration = 300
 
-// The Sintesi tab: without feedback, the ways to collect them; with feedback and no analysis, the first
+// The Sintesi tab: the hypotheses of the PM; without feedback, the ways to collect them; with feedback and no analysis, the first
 // analysis; then the themes of the Research's last analysis and what changed since the one before.
 export default async function SynthesisPage({ params, searchParams }: PageProps<"/research/[id]">) {
   // Rendered alongside the layout, which shows the not-found page: getResearch is cached for the request.
   const research = await getResearch((await params).id)
   if (!research) notFound()
-  const stats = await getResearchStats(research)
-  if (stats.feedbackCount === 0) return <CollectionPaths research={research} origin={await getOrigin()} />
+  const [stats, hypotheses] = await Promise.all([getResearchStats(research), listHypotheses(research)])
+  // Hypotheses can be written before any feedback: then the ways to collect come first.
+  if (stats.feedbackCount === 0)
+    return (
+      <>
+        <CollectionPaths research={research} origin={await getOrigin()} />
+        <HypothesisList researchId={research.id} hypotheses={hypotheses} />
+      </>
+    )
 
   const query = await searchParams
   const kind = KINDS.find((k) => k === query.type)
@@ -89,6 +98,7 @@ export default async function SynthesisPage({ params, searchParams }: PageProps<
   return (
     <>
       {limitReached && <LimitWarning usage={usage} />}
+      <HypothesisList researchId={research.id} hypotheses={hypotheses} />
       <section aria-labelledby="synthesis-title">
         <div className="mb-6 flex items-end justify-between gap-10">
           <div>

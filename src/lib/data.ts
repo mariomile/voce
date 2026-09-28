@@ -47,6 +47,9 @@ export type ThemeSummary = Theme & {
 // A row of /research: the Research with its number of feedback.
 export type ResearchSummary = Pick<Research, "id" | "question" | "formEnabled"> & { feedbackCount: number };
 
+// A hypothesis of the PM in the Sintesi, in the order it was written. hasVerdict: editing its text removes one.
+export type Hypothesis = { id: string; text: string; hasVerdict: boolean };
+
 // The numbers in the header of a Research.
 export type ResearchStats = {
   feedbackCount: number;
@@ -145,6 +148,25 @@ export async function getResearchStats(research: Pick<Research, "id" | "workspac
     firstReceivedAt: row?.first_received_at ?? null,
     lastReceivedAt: row?.last_received_at ?? null,
   };
+}
+
+export async function listHypotheses(research: Pick<Research, "id" | "workspaceId">): Promise<Hypothesis[]> {
+  const supabase = await createClient();
+  const [hypotheses, verdicts] = await Promise.all([
+    supabase
+      .from("research_hypotheses")
+      .select("id, text")
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id)
+      .order("position"),
+    supabase
+      .from("hypothesis_verdicts")
+      .select("hypothesis_id")
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id),
+  ]);
+  const withVerdict = new Set(unwrap(verdicts).map((v) => v.hypothesis_id));
+  return unwrap(hypotheses).map((h) => ({ id: h.id, text: h.text, hasVerdict: withVerdict.has(h.id) }));
 }
 
 export const getUsage = cache(async (workspaceId: string, now = new Date()): Promise<Usage> => {

@@ -290,3 +290,87 @@ test("the analyze button keeps the focus through the analysis and announces the 
   await expect(page.getByRole("status").filter({ hasText: "Analisi finita: 1 tema." })).toBeVisible()
   await expect(page.getByRole("button", { name: "Analizza 2 feedback" })).toBeFocused()
 })
+
+test("hypotheses: write, edit and delete from the keyboard, with the focus where the design puts it", async ({ page }) => {
+  const user = await signedInUser(page, "ipotesi")
+  await insertFeedback(user, ["Il prezzo per utente è troppo alto per noi."])
+  await page.goto(`/research/${user.researchId}`)
+  const section = page.getByRole("region", { name: "Ipotesi" })
+  await expect(section.getByText("Hai un'idea da mettere alla prova?", { exact: false })).toBeVisible()
+
+  // Scrivi un'ipotesi: the field opens with the focus; Annulla gives the button back.
+  await section.getByRole("button", { name: "Scrivi un'ipotesi" }).click()
+  const field = section.getByLabel("Nuova ipotesi")
+  await expect(field).toBeFocused()
+  await section.getByRole("button", { name: "Annulla" }).click()
+  await expect(section.getByRole("button", { name: "Scrivi un'ipotesi" })).toBeFocused()
+  await page.keyboard.press("Enter")
+  await expect(field).toBeFocused()
+
+  // H1 on an empty hypothesis: the focus back in the field.
+  await page.keyboard.press("Enter")
+  await expect(section.getByText("Scrivi l'ipotesi come una frase", { exact: false })).toBeVisible()
+  await expect(field).toHaveAttribute("aria-invalid", "true")
+  await expect(field).toBeFocused()
+
+  await page.keyboard.type("I team piccoli non passano a Pro per il prezzo.")
+  await page.keyboard.press("Enter")
+  await expect(section.getByRole("heading", { level: 3, name: "I team piccoli non passano a Pro per il prezzo." })).toBeVisible()
+  await expect(section.getByText("Nessun verdetto ancora. Arriva con la prossima analisi.")).toBeVisible()
+  await expect(section.getByRole("status").filter({ hasText: "Ipotesi aggiunta." })).toBeVisible()
+  await expect(field).toHaveValue("")
+  await expect(field).toBeFocused()
+
+  // Modifica: Esc cancels and gives the focus back to Modifica; Enter saves.
+  const edit = section.getByRole("button", { name: "Modifica l'ipotesi: I team piccoli non passano a Pro per il prezzo." })
+  await edit.click()
+  const editing = section.getByLabel("Testo dell'ipotesi")
+  await expect(editing).toBeFocused()
+  await page.keyboard.press("Escape")
+  await expect(edit).toBeFocused()
+  await page.keyboard.press("Enter")
+  await expect(editing).toBeFocused()
+  await editing.fill("I team piccoli non passano a Pro perché il prezzo è per utente.")
+  await page.keyboard.press("Enter")
+  const renamed = "I team piccoli non passano a Pro perché il prezzo è per utente."
+  await expect(section.getByRole("heading", { level: 3, name: renamed })).toBeVisible()
+  await expect(section.getByRole("button", { name: `Modifica l'ipotesi: ${renamed}` })).toBeFocused()
+
+  // Elimina: H6 in the row with the focus on Annulla; Esc cancels; confirming lands on the h2.
+  const remove = section.getByRole("button", { name: `Elimina l'ipotesi: ${renamed}` })
+  await remove.click()
+  await expect(section.getByText("Elimini l'ipotesi e il suo verdetto. Non si può annullare.")).toBeVisible()
+  await expect(section.getByRole("button", { name: "Annulla" })).toBeFocused()
+  await page.keyboard.press("Escape")
+  await expect(remove).toBeFocused()
+  await page.keyboard.press("Enter")
+  await page.keyboard.press("Tab")
+  await expect(section.getByRole("button", { name: "Elimina l'ipotesi", exact: true })).toBeFocused()
+  await page.keyboard.press("Enter")
+  await expect(section.getByRole("heading", { level: 2, name: "Ipotesi" })).toBeFocused()
+  await expect(section.getByRole("heading", { level: 3 })).toHaveCount(0)
+})
+
+test("hypotheses: 5 at most, H3 in place of the field, and E-SESS with the text kept", async ({ page, context }) => {
+  const user = await signedInUser(page, "ipotesi-max")
+  const { error } = await admin.from("research_hypotheses").insert(
+    [1, 2, 3, 4].map((n) => ({ workspace_id: user.workspaceId, research_id: user.researchId, text: `Ipotesi ${n}` }))
+  )
+  if (error) throw error
+  await page.goto(`/research/${user.researchId}`)
+  const section = page.getByRole("region", { name: "Ipotesi" })
+  const field = section.getByLabel("Nuova ipotesi")
+  await field.fill("La quinta")
+  await page.keyboard.press("Enter")
+  await expect(section.getByText("Questa Research ha già 5 ipotesi, il massimo. Eliminane una per scriverne un'altra.")).toBeVisible()
+  await expect(field).toHaveCount(0)
+  await expect(section.getByRole("heading", { level: 2, name: "Ipotesi" })).toBeFocused()
+
+  await section.getByRole("button", { name: "Modifica l'ipotesi: La quinta" }).click()
+  await context.clearCookies()
+  await section.getByLabel("Testo dell'ipotesi").fill("La quinta, cambiata")
+  await page.keyboard.press("Enter")
+  await expect(section.getByText("La sessione è scaduta.", { exact: false })).toBeVisible()
+  await expect(section.getByRole("link", { name: "Accedi" })).toHaveAttribute("href", "/login")
+  await expect(section.getByLabel("Testo dell'ipotesi")).toHaveValue("La quinta, cambiata")
+})

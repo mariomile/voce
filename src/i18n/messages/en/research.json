@@ -99,5 +99,37 @@
       "themeDelta": "+{count} since {date}",
       "newTheme": "New"
     }
+  },
+  "hypotheses": {
+    "title": "Hypotheses",
+    "emptyText": "Have an idea to put to the test? Write it as a hypothesis: the feedback will tell whether they confirm it.",
+    "write": "Write a hypothesis",
+    "label": "New hypothesis",
+    "hint": "A sentence that can be confirmed or refuted.",
+    "add": "Add the hypothesis",
+    "adding": "Adding…",
+    "cancel": "Cancel",
+    "added": "Hypothesis added. The verdict comes with the next analysis.",
+    "noVerdict": "No verdict yet. It comes with the next analysis.",
+    "maxReached": "This Research already has 5 hypotheses, the maximum. Delete one to write another.",
+    "edit": "Edit",
+    "editName": "Edit the hypothesis: {text}",
+    "editLabel": "Text of the hypothesis",
+    "editWarning": "If you change the text, the current verdict is removed: it was about the previous sentence. The new one comes with the next analysis.",
+    "save": "Save",
+    "saving": "Saving…",
+    "delete": "Delete",
+    "deleteName": "Delete the hypothesis: {text}",
+    "deleteConfirm": "You are deleting the hypothesis and its verdict. This cannot be undone.",
+    "deleteConfirmAction": "Delete the hypothesis",
+    "deleting": "Deleting…",
+    "errors": {
+      "empty": "Write the hypothesis as a sentence the feedback can confirm or refute. For example: small teams do not move to Pro because the price is per user.",
+      "tooLong": "The hypothesis is over 200 characters: keep it to a single claim.",
+      "failed": "I couldn't save the hypothesis. Try again shortly: your text is still here.",
+      "deleteFailed": "I couldn't delete the hypothesis. Try again shortly.",
+      "session": "Your session has expired. Sign in again to continue: copy the text you wrote first, it won't stay here.",
+      "sessionLink": "Sign in"
+    }
   }
 }

@@ -3,6 +3,7 @@
 import { NoObjectGeneratedError } from "ai"
 import { revalidatePath } from "next/cache"
 import { getLocale } from "next-intl/server"
+import { z } from "zod"
 import {
   ANALYSIS_MAX_FEEDBACK,
   analysisInstructions,
@@ -17,6 +18,7 @@ import {
 import { trackEvent, trackMilestone } from "@/lib/analytics"
 import { getResearch } from "@/lib/data"
 import { isoDateOf } from "@/lib/format"
+import { HYPOTHESIS_MAX_LENGTH } from "@/lib/plans"
 import { failAnalysis, finishAnalysis, startAnalysis } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
 
@@ -148,4 +150,81 @@ export async function synthesize(researchId: string): Promise<SynthesizeResult> 
 function errorMessage(error: unknown) {
   const text = error instanceof Error ? `${error.name}: ${error.message}` : String(error)
   return text.slice(0, 2000)
+}
+
+export type HypothesisResult =
+  | { ok: true }
+  | { ok: false; reason: "invalid" | "too_long" | "max_reached" | "failed" | "session" }
+
+// The text of a hypothesis as the database will keep it, or why not.
+function cleanHypothesis(text: unknown): { ok: true; text: string } | { ok: false; reason: "invalid" | "too_long" } {
+  const parsed = z.string().safeParse(text)
+  // Postgres text cannot hold NUL characters.
+  const clean = parsed.success ? parsed.data.replaceAll("\0", "").trim() : ""
+  if (!clean) return { ok: false, reason: "invalid" }
+  // Counted like char_length in the database: characters, not UTF-16 units.
+  if ([...clean].length > HYPOTHESIS_MAX_LENGTH) return { ok: false, reason: "too_long" }
+  return { ok: true, text: clean }
+}
+
+// Writes run as the signed-in user: RLS keeps them to their workspace, and the database trigger counts
+// the hypotheses of the Research one writer at a time (at most 5) and sets position and written_at.
+export async function addHypothesis(researchId: string, text: string): Promise<HypothesisResult> {
+  const clean = cleanHypothesis(text)
+  if (!clean.ok) return clean
+  const supabase = await createClient()
+  const { data: auth } = await supabase.auth.getClaims()
+  if (!auth?.claims) return { ok: false, reason: "session" }
+  const research = await getResearch(researchId)
+  if (!research) return { ok: false, reason: "failed" }
+
+  const { error } = await supabase
+    .from("research_hypotheses")
+    .insert({ workspace_id: research.workspaceId, research_id: research.id, text: clean.text })
+  if (error) {
+    if (error.message === "max_hypotheses") return { ok: false, reason: "max_reached" }
+    console.error("addHypothesis failed", error.code)
+    return { ok: false, reason: "failed" }
+  }
+  revalidatePath(`/research/${research.id}`)
+  return { ok: true }
+}
+
+// A new text removes the verdict and restarts written_at: the database trigger does both.
+export async function updateHypothesis(hypothesisId: string, text: string): Promise<HypothesisResult> {
+  const clean = cleanHypothesis(text)
+  if (!clean.ok) return clean
+  const supabase = await createClient()
+  const { data: auth } = await supabase.auth.getClaims()
+  if (!auth?.claims) return { ok: false, reason: "session" }
+  if (!z.uuid().safeParse(hypothesisId).success) return { ok: false, reason: "failed" }
+
+  const { data, error } = await supabase
+    .from("research_hypotheses")
+    .update({ text: clean.text })
+    .eq("id", hypothesisId)
+    .select("research_id")
+    .maybeSingle()
+  if (error) console.error("updateHypothesis failed", error.code)
+  if (error || !data) return { ok: false, reason: "failed" }
+  revalidatePath(`/research/${data.research_id}`)
+  return { ok: true }
+}
+
+export async function deleteHypothesis(hypothesisId: string): Promise<{ ok: true } | { ok: false; reason: "failed" | "session" }> {
+  const supabase = await createClient()
+  const { data: auth } = await supabase.auth.getClaims()
+  if (!auth?.claims) return { ok: false, reason: "session" }
+  if (!z.uuid().safeParse(hypothesisId).success) return { ok: false, reason: "failed" }
+
+  const { data, error } = await supabase
+    .from("research_hypotheses")
+    .delete()
+    .eq("id", hypothesisId)
+    .select("research_id")
+    .maybeSingle()
+  if (error) console.error("deleteHypothesis failed", error.code)
+  if (error || !data) return { ok: false, reason: "failed" }
+  revalidatePath(`/research/${data.research_id}`)
+  return { ok: true }
 }

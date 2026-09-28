@@ -99,5 +99,37 @@
       "themeDelta": "+{count} dal {date}",
       "newTheme": "Nuovo"
     }
+  },
+  "hypotheses": {
+    "title": "Ipotesi",
+    "emptyText": "Hai un'idea da mettere alla prova? Scrivila come ipotesi: i feedback diranno se la confermano.",
+    "write": "Scrivi un'ipotesi",
+    "label": "Nuova ipotesi",
+    "hint": "Una frase che si può confermare o smentire.",
+    "add": "Aggiungi l'ipotesi",
+    "adding": "Aggiungo…",
+    "cancel": "Annulla",
+    "added": "Ipotesi aggiunta. Il verdetto arriva con la prossima analisi.",
+    "noVerdict": "Nessun verdetto ancora. Arriva con la prossima analisi.",
+    "maxReached": "Questa Research ha già 5 ipotesi, il massimo. Eliminane una per scriverne un'altra.",
+    "edit": "Modifica",
+    "editName": "Modifica l'ipotesi: {text}",
+    "editLabel": "Testo dell'ipotesi",
+    "editWarning": "Se cambi il testo, il verdetto attuale si toglie: era sulla frase di prima. Il nuovo arriva con la prossima analisi.",
+    "save": "Salva",
+    "saving": "Salvo…",
+    "delete": "Elimina",
+    "deleteName": "Elimina l'ipotesi: {text}",
+    "deleteConfirm": "Elimini l'ipotesi e il suo verdetto. Non si può annullare.",
+    "deleteConfirmAction": "Elimina l'ipotesi",
+    "deleting": "Elimino…",
+    "errors": {
+      "empty": "Scrivi l'ipotesi come una frase che i feedback possono confermare o smentire. Per esempio: i team piccoli non passano a Pro perché il prezzo è per utente.",
+      "tooLong": "L'ipotesi supera i 200 caratteri: tienila a un'affermazione sola.",
+      "failed": "Non sono riuscito a salvare l'ipotesi. Riprova tra poco: il testo è ancora qui.",
+      "deleteFailed": "Non sono riuscito a eliminare l'ipotesi. Riprova tra poco.",
+      "session": "La sessione è scaduta. Accedi di nuovo per continuare: copia prima il testo che hai scritto, qui non resta.",
+      "sessionLink": "Accedi"
+    }
   }
 }

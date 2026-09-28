@@ -28,6 +28,17 @@ describe("the research migration", () => {
     const sql = readFileSync(`supabase/migrations/${creating[0]}`, "utf8")
     expect(sql).toMatch(/alter table public\.research enable row level security;/)
   })
+
+  it("enables RLS on research_hypotheses, hypothesis_verdicts and verdict_feedback in the file that creates them", () => {
+    const sql = readFileSync("supabase/migrations/20261001090000_research.sql", "utf8")
+    for (const table of ["research_hypotheses", "hypothesis_verdicts", "verdict_feedback"]) {
+      const creating = migrations.filter((f) =>
+        new RegExp(`create table public\\.${table}\\b`).test(readFileSync(`supabase/migrations/${f}`, "utf8"))
+      )
+      expect(creating, table).toEqual(["20261001090000_research.sql"])
+      expect(sql).toContain(`alter table public.${table} enable row level security;`)
+    }
+  })
 })
 
 describe("the Research page", () => {

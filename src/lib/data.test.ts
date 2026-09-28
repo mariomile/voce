@@ -16,6 +16,7 @@ const {
   getTheme,
   getUsage,
   listFeedback,
+  listHypotheses,
   listResearch,
 } = await import("./data")
 
@@ -84,6 +85,42 @@ describe("the Research of the seed", () => {
     expect(stats.feedbackCount).toBe(orto.feedbackCount)
     expect(stats.channelCount).toBeGreaterThan(0)
     expect(stats.firstReceivedAt! <= stats.lastReceivedAt!).toBe(true)
+  })
+})
+
+describe("listHypotheses", () => {
+  it("lists the hypotheses of the Research by position, with whether each has a verdict", async () => {
+    const user = await createTestUser("hypotheses-list")
+    try {
+      const rows = await admin
+        .from("research_hypotheses")
+        .insert([1, 2].map((n) => ({ workspace_id: user.workspaceId, research_id: user.researchId, text: `Ipotesi ${n}` })))
+        .select("id, text")
+      const second = rows.data!.find((h) => h.text === "Ipotesi 2")!
+      const analysis = await admin
+        .from("analyses")
+        .insert({ workspace_id: user.workspaceId, research_id: user.researchId, kind: "verdict", period_start: "2026-10-01", feedback_count: 1, status: "done" })
+        .select("id")
+        .single()
+      await admin.from("hypothesis_verdicts").insert({
+        hypothesis_id: second.id,
+        workspace_id: user.workspaceId,
+        research_id: user.researchId,
+        analysis_id: analysis.data!.id,
+        verdict: "to_review",
+        reasoning: "Nessuno ne parla.",
+        feedback_read: 1,
+        arrived_after: 0,
+      })
+      session.client = user.client
+      const list = await listHypotheses({ id: user.researchId, workspaceId: user.workspaceId })
+      expect(list.map(({ text, hasVerdict }) => ({ text, hasVerdict }))).toEqual([
+        { text: "Ipotesi 1", hasVerdict: false },
+        { text: "Ipotesi 2", hasVerdict: true },
+      ])
+    } finally {
+      await deleteTestUsers([user])
+    }
   })
 })
 

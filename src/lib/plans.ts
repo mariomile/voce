@@ -11,6 +11,9 @@ export const FEEDBACK_MAX_LENGTH = 2000;
 export const NOTES_MAX_LENGTH = 10000;
 // Same as the check on research.question and in create_research.
 export const RESEARCH_QUESTION_MAX_LENGTH = 200;
+// Same as the check on research_hypotheses.text and its insert trigger.
+export const HYPOTHESIS_MAX_LENGTH = 200;
+export const MAX_HYPOTHESES = 5;
 export const FORM_QUESTION_MAX_LENGTH = 140;
 export const CHANNEL_MAX_LENGTH = 60;
 export const CUSTOMER_MAX_LENGTH = 200;
