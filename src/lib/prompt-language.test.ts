@@ -6,7 +6,8 @@ import { analysisInstructions, runAnalysis } from "./analysis"
 import { questionInstructions, questionOutputSchemaFor, runQuestion } from "./questions"
 
 // The model answers in the language of the interface at request time. Italian is byte for byte the
-// prompt that was evaluated before English existed (hashes of the texts at 4ecc5db).
+// prompt that was evaluated before English existed (hashes of the texts at 4ecc5db), except the question
+// prompt, which asks for shorter answers since then (hashes updated with that change).
 const sha = (text: string) => createHash("sha256").update(text).digest("hex")
 const feedback = [{ id: "f1", text: "La banca si scollega.", channel: "Supporto", receivedAt: "2026-09-01" }]
 
@@ -33,9 +34,9 @@ describe("the analysis prompt", () => {
 
 describe("the question prompt", () => {
   it("in Italian is unchanged, schema included", () => {
-    expect(sha(questionInstructions("it"))).toBe("524db758a9d1c75fdc1b4a1f0c68148c490d10a4993f5c110cfe379b7e7fd627")
+    expect(sha(questionInstructions("it"))).toBe("ff2babd6009b5072e1ef7195c07a530b95f25deaa702de02559d668d2cf7207a")
     expect(sha(JSON.stringify(z.toJSONSchema(questionOutputSchemaFor("it"))))).toBe(
-      "96a0855e6c188606be32eba2d335bc5ed0e600d426d27ee4d6d56733b770c85e"
+      "635fa784bc6cafb2e3b82df7d3a5f45e5ebe748c4dc9e96eabe3961072fe95eb"
     )
   })
 
