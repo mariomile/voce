@@ -45,7 +45,8 @@ export default async function ResearchLayout({ children, params }: LayoutProps<"
         label={t("tabs.label")}
         className="mb-10 flex h-12 gap-6 border-b border-line"
         tabs={[
-          { href: path, label: t("tabs.synthesis"), exact: true },
+          // The Sintesi holds the themes: it stays current on the page of a theme.
+          { href: path, label: t("tabs.synthesis"), exact: true, also: [`${path}/themes/`] },
           { href: `${path}/feedback`, label: t("tabs.feedback") },
           { href: `${path}/collect`, label: t("tabs.collect") },
         ]}

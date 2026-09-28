@@ -35,6 +35,13 @@ function as(name: keyof typeof users) {
   return workspaceIds[name]
 }
 
+// The first Research of a seed workspace, signed in as its owner: the one with the feedback and analyses.
+async function initial(name: keyof typeof users) {
+  const workspaceId = as(name)
+  const list = await listResearch(workspaceId)
+  return { id: list.at(-1)!.id, workspaceId }
+}
+
 describe("getCurrentWorkspace", () => {
   it("is the signed-in user's workspace", async () => {
     as("orto")
@@ -82,7 +89,7 @@ describe("the Research of the seed", () => {
 
 describe("getDashboard", () => {
   it("shows open themes by default, sorted by feedback count", async () => {
-    const { themes } = await getDashboard(as("fatturino"))
+    const { themes } = await getDashboard(await initial("fatturino"))
     expect(themes.length).toBeGreaterThan(0)
     expect(themes.every((t) => t.status === "to_review" || t.status === "roadmap")).toBe(true)
     const counts = themes.map((t) => t.feedbackCount)
@@ -90,7 +97,7 @@ describe("getDashboard", () => {
   })
 
   it("counts come from the linked feedback, trend covers 13 weeks", async () => {
-    const { themes, analysisThemeCount } = await getDashboard(as("fatturino"), { status: "all" })
+    const { themes, analysisThemeCount } = await getDashboard(await initial("fatturino"), { status: "all" })
     expect(themes).toHaveLength(analysisThemeCount)
     for (const t of themes) {
       const { count } = await admin.from("theme_feedback").select("*", { count: "exact", head: true }).eq("theme_id", t.id)
@@ -102,7 +109,7 @@ describe("getDashboard", () => {
   })
 
   it("filters by kind and status", async () => {
-    const id = as("fatturino")
+    const id = await initial("fatturino")
     const all = await getDashboard(id, { status: "all" })
     const problems = await getDashboard(id, { status: "all", kind: "problem" })
     expect(problems.themes.every((t) => t.kind === "problem")).toBe(true)
@@ -113,7 +120,7 @@ describe("getDashboard", () => {
   })
 
   it("shows the latest analysis and the 6 most recent feedback", async () => {
-    const { analysis, recentFeedback, feedbackCount } = await getDashboard(as("fatturino"))
+    const { analysis, recentFeedback, feedbackCount } = await getDashboard(await initial("fatturino"))
     const { data: latest } = await admin
       .from("analyses")
       .select("id")
@@ -128,8 +135,16 @@ describe("getDashboard", () => {
     expect(dates).toEqual([...dates].sort().reverse())
   })
 
+  it("has no analysis for a Research that never ran one, even when another Research of the workspace did", async () => {
+    const fatturino = await initial("fatturino")
+    const [second] = await listResearch(fatturino.workspaceId)
+    const empty = await getDashboard({ id: second.id, workspaceId: fatturino.workspaceId })
+    expect(empty.analysis).toBeNull()
+    expect(empty.feedbackCount).toBe(0)
+  })
+
   it("has no analysis for a workspace that never ran one", async () => {
-    const dashboard = await getDashboard(as("orto"))
+    const dashboard = await getDashboard(await initial("orto"))
     expect(dashboard.analysis).toBeNull()
     expect(dashboard.themes).toEqual([])
     expect(dashboard.feedbackCount).toBeGreaterThan(0)
@@ -147,7 +162,7 @@ describe("quotes", () => {
 
 describe("getTheme", () => {
   it("returns the theme with all its linked feedback", async () => {
-    const id = as("fatturino")
+    const id = await initial("fatturino")
     const { themes } = await getDashboard(id, { status: "all" })
     const theme = await getTheme(id, themes[0].id)
     expect(theme!.title).toBe(themes[0].title)
@@ -157,11 +172,84 @@ describe("getTheme", () => {
   })
 
   it("is null for another workspace's theme and for ids that are not uuids", async () => {
-    const { themes } = await getDashboard(as("fatturino"), { status: "all" })
-    expect(await getTheme(as("orto"), themes[0].id)).toBeNull()
-    // Even passing the owner's workspace id: RLS answers for the signed-in user.
-    expect(await getTheme(workspaceIds.fatturino, themes[0].id)).toBeNull()
-    expect(await getTheme(as("fatturino"), "th_fatturino_1")).toBeNull()
+    const fatturino = await initial("fatturino")
+    const { themes } = await getDashboard(fatturino, { status: "all" })
+    expect(await getTheme(await initial("orto"), themes[0].id)).toBeNull()
+    // Even passing the owner's Research: RLS answers for the signed-in user.
+    as("orto")
+    expect(await getTheme(fatturino, themes[0].id)).toBeNull()
+    expect(await getTheme(await initial("fatturino"), "th_fatturino_1")).toBeNull()
+  })
+
+  it("is null for a theme of another Research of the same workspace", async () => {
+    const fatturino = await initial("fatturino")
+    const { themes } = await getDashboard(fatturino, { status: "all" })
+    const [second] = await listResearch(fatturino.workspaceId)
+    expect(await getTheme({ id: second.id, workspaceId: fatturino.workspaceId }, themes[0].id)).toBeNull()
+  })
+})
+
+describe("what changed since the previous analysis", () => {
+  it("what changed compares with the previous themes analysis of the same Research", async () => {
+    const user = await createTestUser("changes")
+    try {
+      const other = await user.client.rpc("create_research", { ws: user.workspaceId, question: "Altra?" })
+      const ago = (hours: number) => new Date(Date.now() - hours * 60 * 60 * 1000).toISOString()
+      const r = { workspace_id: user.workspaceId, research_id: user.researchId }
+      const { data: fb } = await admin
+        .from("feedback")
+        .insert([
+          { ...r, text: "Uno", channel: "Supporto", created_at: ago(72) },
+          { ...r, text: "Due", channel: "Supporto", created_at: ago(72) },
+          { ...r, text: "Tre", channel: "Supporto", created_at: ago(24) },
+          { workspace_id: user.workspaceId, research_id: other.data!, text: "Altrove", channel: "Supporto", created_at: ago(24) },
+        ])
+        .select("id, text")
+      const id = (text: string) => fb!.find((f) => f.text === text)!.id
+      const analysis = async (researchId: string, createdAt: string, kind: "themes" | "verdict" = "themes") =>
+        (
+          await admin
+            .from("analyses")
+            .insert({ workspace_id: user.workspaceId, research_id: researchId, kind, period_start: "2026-09-01", feedback_count: 2, created_at: createdAt })
+            .select("id, created_at")
+            .single()
+        ).data!
+      const theme = async (analysisId: string, researchId: string, title: string, feedback: string[]) => {
+        const { data } = await admin
+          .from("themes")
+          .insert({ workspace_id: user.workspaceId, research_id: researchId, analysis_id: analysisId, kind: "problem", title, summary: "S", sentiment: "negative" })
+          .select("id")
+          .single()
+        await admin.from("theme_feedback").insert(feedback.map((f) => ({ workspace_id: user.workspaceId, theme_id: data!.id, feedback_id: f })))
+      }
+      const first = await analysis(user.researchId, ago(48))
+      await theme(first.id, user.researchId, "Banca", [id("Uno")])
+      await theme(first.id, user.researchId, "Vecchio", [id("Due")])
+      session.client = user.client
+      const research = { id: user.researchId, workspaceId: user.workspaceId }
+
+      const once = await getDashboard(research, { status: "all" })
+      expect(once.changes).toBeNull()
+      expect(once.themes.map((t) => t.change)).toEqual([null, null])
+
+      // Newer rows that must not count as the previous analysis: another Research's, and a verdict.
+      const elsewhere = await analysis(other.data!, ago(36))
+      await theme(elsewhere.id, other.data!, "Banca", [id("Altrove")])
+      await analysis(user.researchId, ago(12), "verdict")
+      const second = await analysis(user.researchId, ago(1))
+      await theme(second.id, user.researchId, "banca", [id("Uno"), id("Tre")])
+      await theme(second.id, user.researchId, "Nuovo", [id("Due")])
+
+      const twice = await getDashboard(research, { status: "all" })
+      expect(twice.analysis!.id).toBe(second.id)
+      expect(twice.changes).toEqual({ since: first.created_at, newFeedback: 1, newThemes: 1 })
+      expect(twice.themes.map((t) => [t.title, t.change])).toEqual([
+        ["banca", { kind: "more", count: 1, since: first.created_at }],
+        ["Nuovo", { kind: "new" }],
+      ])
+    } finally {
+      await deleteTestUsers([user])
+    }
   })
 })
 

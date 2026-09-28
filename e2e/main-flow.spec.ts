@@ -32,7 +32,7 @@ test("sign up, create a Research, add feedback and get the first themes", async 
     await expect(page.getByText("Aggiunte a questa Research. Le trovi in Feedback.")).toBeVisible()
   }
 
-  await page.goto("/themes")
+  await page.getByRole("link", { name: "Sintesi", exact: true }).click()
   await page.getByRole("button", { name: "Analizza 2 feedback" }).click()
   await expect(page.getByText("I clienti chiedono l'esportazione in PDF").first()).toBeVisible()
   await expect(page.getByText(feedback[0]).first()).toBeVisible()

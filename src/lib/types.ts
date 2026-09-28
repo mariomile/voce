@@ -52,6 +52,7 @@ export type Analysis = {
 export type Theme = {
   id: string;
   workspaceId: string;
+  researchId: string;
   analysisId: string;
   kind: ThemeKind;
   title: string;

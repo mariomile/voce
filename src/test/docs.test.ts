@@ -30,6 +30,13 @@ describe("the research migration", () => {
   })
 })
 
+describe("the Research page", () => {
+  it("the Research page exports maxDuration 300: the analysis runs from it", () => {
+    const page = readFileSync("src/app/(app)/research/[id]/page.tsx", "utf8")
+    expect(page).toMatch(/^export const maxDuration = 300$/m)
+  })
+})
+
 describe("the question quota", () => {
   it("PLAN_LIMITS mirrors private.questions_limit", () => {
     const sql = readFileSync("supabase/migrations/20260927120000_questions.sql", "utf8")

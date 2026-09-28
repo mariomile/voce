@@ -71,7 +71,7 @@ test("the list shows each Research with its count and form state", async ({ page
   )
 })
 
-test("the app bar has Research and Piano, and Sintesi is current on the Research but not on Feedback and Raccolta", async ({ page }) => {
+test("the app bar has Research and Piano, and Sintesi is current on the Research and on a theme but not on Feedback and Raccolta", async ({ page }) => {
   const user = await signedInUser(page, "schede")
   const bar = page.getByRole("navigation", { name: "Sezioni dell'app" })
   await expect(bar.getByRole("link")).toHaveText(["Research", "Piano"])
@@ -93,6 +93,17 @@ test("the app bar has Research and Piano, and Sintesi is current on the Research
   await expect(page).toHaveURL(`/research/${user.researchId}/feedback`)
   await expect(tabs.getByRole("link", { name: "Feedback" })).toHaveAttribute("aria-current", "page")
   await expect(tabs.getByRole("link", { name: "Sintesi" })).not.toHaveAttribute("aria-current", "page")
+
+  // A theme of the Research belongs to the Sintesi.
+  await insertFeedback(user, ["Vorrei il report in PDF.", "Mi serve il PDF del report."])
+  await tabs.getByRole("link", { name: "Sintesi" }).click()
+  await page.getByRole("button", { name: "Analizza 2 feedback" }).click()
+  await page.getByRole("link", { name: "I clienti chiedono l'esportazione in PDF" }).click()
+  await expect(page).toHaveURL(new RegExp(`/research/${user.researchId}/themes/[0-9a-f-]{36}$`))
+  await expect(tabs.getByRole("link", { name: "Sintesi" })).toHaveAttribute("aria-current", "page")
+  await expect(page.getByRole("heading", { level: 2, name: "I clienti chiedono l'esportazione in PDF" })).toBeVisible()
+  await page.getByRole("link", { name: "Tutti i temi" }).click()
+  await expect(page).toHaveURL(`/research/${user.researchId}`)
 })
 
 test("every path under /research without a session goes to /login", async ({ page }) => {
@@ -102,6 +113,7 @@ test("every path under /research without a session goes to /login", async ({ pag
     "/research/new",
     `/research/${id}`,
     `/research/${id}/feedback`,
+    `/research/${id}/themes/${crypto.randomUUID()}`,
     `/research/${id}/collect`,
     `/research/${id}/sala`,
   ]) {
@@ -110,9 +122,9 @@ test("every path under /research without a session goes to /login", async ({ pag
   }
 })
 
-test("the feedback, collection and room routes of today answer 404", async ({ page, request }) => {
+test("the themes, feedback, collection and room routes of today answer 404", async ({ page, request }) => {
   await signedInUser(page, "vecchie")
-  for (const path of ["/feedback", "/collect", "/collect/qr", "/sala", "/sala/status"]) {
+  for (const path of ["/themes", `/themes/${crypto.randomUUID()}`, "/feedback", "/collect", "/collect/qr", "/sala", "/sala/status"]) {
     const response = await page.goto(path)
     expect(response?.status(), path).toBe(404)
   }
@@ -240,4 +252,41 @@ test("the Feedback tab of an empty Research points to the Raccolta", async ({ pa
     "href",
     `/research/${user.researchId}/collect#notes`
   )
+})
+
+test("the Sintesi analyzes the Research and says what changed since the analysis before", async ({ page }) => {
+  const user = await signedInUser(page, "sintesi")
+  const other = await createResearch(user.workspaceId, "sintesi-altra")
+  await insertFeedback(other, ["Di un'altra Research, da non leggere."])
+  await insertFeedback(user, ["Vorrei il report in PDF.", "Mi serve il PDF del report."])
+  await page.goto(`/research/${user.researchId}`)
+  await expect(page.getByRole("heading", { level: 2, name: "2 feedback, ancora nessun tema" })).toBeVisible()
+  await expect(page.getByText("Con meno di 5 feedback i temi dicono poco", { exact: false })).toBeVisible()
+
+  const button = page.getByRole("button", { name: "Analizza 2 feedback" })
+  await button.click()
+  await expect(page.getByRole("status").filter({ hasText: "Analisi finita: 1 tema." })).toBeVisible()
+  await expect(page.getByRole("heading", { level: 2, name: "Temi" })).toBeVisible()
+  const theme = page.getByRole("heading", { level: 3, name: "I clienti chiedono l'esportazione in PDF" })
+  await expect(theme).toBeVisible()
+  // The first analysis of the Research: nothing to compare with.
+  await expect(page.getByText("Dall'analisi del", { exact: false })).toHaveCount(0)
+  await expect(page.getByText("Di un'altra Research", { exact: false })).toHaveCount(0)
+
+  await insertFeedback(user, ["Il PDF lo aspetto da mesi."])
+  await page.reload()
+  await page.getByRole("button", { name: "Analizza 3 feedback" }).click()
+  await expect(page.getByText("Dall'analisi del", { exact: false })).toContainText("1 feedback in più, 0 temi nuovi.")
+  await expect(page.getByRole("article").filter({ has: theme })).toContainText("+1 dal")
+})
+
+test("the analyze button keeps the focus through the analysis and announces the result", async ({ page }) => {
+  const user = await signedInUser(page, "sintesi-focus")
+  await insertFeedback(user, ["Vorrei il report in PDF.", "Mi serve il PDF del report."])
+  await page.goto(`/research/${user.researchId}`)
+  const button = page.getByRole("button", { name: "Analizza 2 feedback" })
+  await button.focus()
+  await page.keyboard.press("Enter")
+  await expect(page.getByRole("status").filter({ hasText: "Analisi finita: 1 tema." })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Analizza 2 feedback" })).toBeFocused()
 })

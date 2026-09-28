@@ -20,10 +20,14 @@ export type Milestone =
   | { event: "first_research_collected"; properties: Record<string, never> }
 
 // Repeatable events: sent every time, without analytics_milestones.
-export type RepeatedEvent = {
-  event: "question_answered"
-  properties: { citation_count: number; outcome: "answered" | "no_evidence" }
-}
+export type RepeatedEvent =
+  | { event: "question_answered"; properties: { citation_count: number; outcome: "answered" | "no_evidence" } }
+  // Every synthesis with a part done: the feedback the model read, the verified quotes saved in that run,
+  // the hypotheses that got a verdict in it (0 without the verdict).
+  | {
+      event: "research_synthesized"
+      properties: { feedback_count: number; citation_count: number; hypothesis_count: number }
+    }
 
 type Event = Milestone | RepeatedEvent
 

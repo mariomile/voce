@@ -19,13 +19,14 @@ async function seedWorkspace(user: TestUser, label: string) {
     .single()
   const { data: analysis } = await admin
     .from("analyses")
-    .insert({ workspace_id: user.workspaceId, period_start: "2026-07-01", feedback_count: 1 })
+    .insert({ workspace_id: user.workspaceId, research_id: user.researchId, period_start: "2026-07-01", feedback_count: 1 })
     .select("id")
     .single()
   const { data: theme } = await admin
     .from("themes")
     .insert({
       workspace_id: user.workspaceId,
+      research_id: user.researchId,
       analysis_id: analysis!.id,
       kind: "problem",
       title: `Tema di ${label}`,
@@ -450,10 +451,12 @@ describe("AI analysis functions and log", () => {
   it("only the server reserves, saves or fails an analysis", async () => {
     const start = {
       ws: a.workspaceId,
+      research: a.researchId,
       model: "finto",
+      kinds: ["themes" as const],
       period_start: "2026-07-01",
       feedback_count: 1,
-      input: {},
+      inputs: {},
     }
     const finish = {
       analysis: aIds.analysis,

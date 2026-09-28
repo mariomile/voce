@@ -49,7 +49,7 @@ export default async function AskPage() {
 }
 
 // In place of the field: a question without feedback would spend the quota for nothing.
-function NothingToAsk({ t, olderCount }: { t: Awaited<ReturnType<typeof getTranslations>>; olderCount: number }) {
+function NothingToAsk({ t, olderCount }: { t: Awaited<ReturnType<typeof getTranslations<"ask">>>; olderCount: number }) {
   return (
     <div className="py-6">
       <h2 className="mb-4 max-w-[24ch] font-serif text-5xl leading-snug font-normal tracking-snug">

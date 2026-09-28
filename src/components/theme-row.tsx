@@ -10,12 +10,15 @@ import type { ThemeSummary } from "@/lib/data"
 import { formatDate } from "@/lib/format"
 
 // Kit: .theme, three columns (number and trend, content, controls).
-// Compact from the fourth theme on: no summary, one quote.
+// Compact from the fourth theme on: no summary, one quote. Under the number, how the theme moved since
+// the previous analysis of the Research: "+{k} dal {data}" or "Nuovo".
 export function ThemeRow({ theme, compact = false }: { theme: ThemeSummary; compact?: boolean }) {
   const t = useTranslations("themes")
   const tCommon = useTranslations("common")
+  const tChanges = useTranslations("research.synthesis.changes")
   const locale = useLocale()
   const quotes = theme.quotes.slice(0, compact ? 1 : 2)
+  const href = `/research/${theme.researchId}/themes/${theme.id}`
   return (
     <article
       className={cn(
@@ -25,6 +28,16 @@ export function ThemeRow({ theme, compact = false }: { theme: ThemeSummary; comp
     >
       <div>
         <Stat value={theme.feedbackCount} label={compact ? undefined : t("row.feedbackLabel")} compact={compact} />
+        {theme.change?.kind === "more" && (
+          <div className="mt-1 text-sm text-ink-muted tabular-nums">
+            {tChanges("themeDelta", { count: theme.change.count, date: formatDate(theme.change.since, locale) })}
+          </div>
+        )}
+        {theme.change?.kind === "new" && (
+          <Badge className="mt-2">
+            {tChanges("newTheme")}
+          </Badge>
+        )}
         <Trend weeks={theme.trend} compact={compact} />
         {!compact && <TrendNote />}
       </div>
@@ -33,16 +46,16 @@ export function ThemeRow({ theme, compact = false }: { theme: ThemeSummary; comp
           <Badge variant={theme.kind}>{tCommon(`kind.${theme.kind}`)}</Badge>
           <span className="text-sm text-ink-muted">{tCommon(`sentiment.${theme.sentiment}`)}</span>
         </div>
-        <h2
+        <h3
           className={cn(
             "my-2 leading-snug font-bold tracking-snug",
             compact ? "text-2xl" : "text-3xl"
           )}
         >
-          <Link href={`/themes/${theme.id}`} className="hover:underline">
+          <Link href={href} className="hover:underline">
             {theme.title}
           </Link>
-        </h2>
+        </h3>
         {!compact && (
           <p className="mb-5 max-w-[64ch] text-base leading-relaxed text-ink-muted">
             {theme.summary}
@@ -60,7 +73,7 @@ export function ThemeRow({ theme, compact = false }: { theme: ThemeSummary; comp
           ))}
         </div>
         {!compact && (
-          <Link href={`/themes/${theme.id}`} className={buttonVariants({ variant: "link" })}>
+          <Link href={href} className={buttonVariants({ variant: "link" })}>
             {t("row.readAll", { count: theme.feedbackCount })}
           </Link>
         )}

@@ -1,7 +1,10 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import type { RawOutput } from "@/lib/analysis"
+import { fakeModel } from "@/test/fake-model"
 import { admin, createTestUser, deleteTestUsers, type TestUser } from "@/test/supabase"
 
-// first_research_collected with the real trackMilestone and the real database: only PostHog is fake.
+// first_research_collected, research_synthesized and first_analysis_completed with the real trackMilestone,
+// trackEvent and database: only PostHog and the model are fake.
 // after() runs the callback at once, and the test waits for it.
 const session = vi.hoisted(() => ({ client: null as unknown }))
 const pending = vi.hoisted(() => ({ tasks: [] as Promise<unknown>[] }))
@@ -9,8 +12,14 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: async () => session.clie
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }))
 vi.mock("next/server", () => ({ after: (task: () => Promise<unknown>) => pending.tasks.push(task()) }))
 vi.mock("next/headers", () => ({ headers: async () => new Headers({ "x-real-ip": crypto.randomUUID() }) }))
+const ai = vi.hoisted(() => ({ model: null as unknown }))
+vi.mock("@/lib/analysis", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/analysis")>()),
+  analysisLanguageModel: () => ai.model,
+}))
 
 const { addNotes, importCsv } = await import("./collect/actions")
+const { synthesize } = await import("./actions")
 const { submitFeedback } = await import("@/app/actions")
 
 const realFetch = globalThis.fetch
@@ -35,6 +44,7 @@ beforeEach(async () => {
   pending.tasks = []
   session.client = user.client
   await admin.from("feedback").delete().eq("workspace_id", user.workspaceId)
+  await admin.from("analyses").delete().eq("workspace_id", user.workspaceId)
   await admin.from("analytics_milestones").delete().eq("workspace_id", user.workspaceId)
 })
 
@@ -42,10 +52,11 @@ async function settle() {
   await Promise.all(pending.tasks)
 }
 
-const collected = () =>
+const sentEvents = (event: string) =>
   posthog.mock.calls
     .map(([, init]) => JSON.parse((init as RequestInit).body as string))
-    .filter((body) => body.event === "first_research_collected")
+    .filter((body) => body.event === event)
+const collected = () => sentEvents("first_research_collected")
 
 async function fill(researchId: string, count: number) {
   const rows = Array.from({ length: count }, (_, i) => ({
@@ -148,5 +159,118 @@ describe("first_research_collected", () => {
       .select("event", { count: "exact", head: true })
       .eq("workspace_id", user.workspaceId)
     expect(count).toBe(0)
+  })
+})
+
+// Five feedback in the Research; the model finds two themes with three verified quotes and one made up.
+const themes: RawOutput = {
+  themes: [
+    {
+      title: `La banca si scollega ${MARKER}`,
+      summary: `Sintesi ${MARKER}`,
+      kind: "problem",
+      sentiment: "negative",
+      feedback: [1, 2],
+      quotes: [
+        { feedback: 1, text: "Feedback 1" },
+        { feedback: 2, text: "Feedback 2" },
+      ],
+    },
+    {
+      title: "Fatture dal telefono",
+      summary: "Piace.",
+      kind: "praise",
+      sentiment: "positive",
+      feedback: [3, 4],
+      quotes: [
+        { feedback: 3, text: "Feedback 3" },
+        { feedback: 4, text: "inventata" },
+      ],
+    },
+  ],
+}
+
+async function fiveFeedback(researchId = user.researchId) {
+  const rows = [1, 2, 3, 4, 5].map((n) => ({
+    workspace_id: user.workspaceId,
+    research_id: researchId,
+    text: `Feedback ${n} ${MARKER}`,
+    channel: "Supporto",
+  }))
+  const { error } = await admin.from("feedback").insert(rows)
+  if (error) throw error
+}
+
+describe("research_synthesized", () => {
+  it("one per synthesize with a done part, with exactly its properties", async () => {
+    await fiveFeedback()
+    ai.model = fakeModel(themes)
+    expect(await synthesize(user.researchId)).toMatchObject({ ok: true })
+    await settle()
+    expect(sentEvents("research_synthesized")).toEqual([
+      {
+        api_key: "phc_test",
+        event: "research_synthesized",
+        distinct_id: user.workspaceId,
+        timestamp: expect.any(String),
+        // What the model read, the verified quotes saved, no hypothesis with a verdict in this part.
+        properties: {
+          feedback_count: 5,
+          citation_count: 3,
+          hypothesis_count: 0,
+          $process_person_profile: false,
+          $geoip_disable: true,
+        },
+      },
+    ])
+  })
+
+  it("none when the themes part fails or finds no theme, nor when nothing ran", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {})
+    await fiveFeedback()
+    ai.model = fakeModel("non è JSON")
+    expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "failed" })
+    ai.model = fakeModel({ themes: [] })
+    expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "no_themes" })
+    await admin.from("analyses").insert({ workspace_id: user.workspaceId, research_id: user.researchId, period_start: "2026-09-01", feedback_count: 1, status: "running" })
+    expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "busy" })
+    log.mockRestore()
+    await settle()
+    expect(sentEvents("research_synthesized")).toEqual([])
+  })
+
+  it("no question, feedback or theme text reaches PostHog", async () => {
+    await fiveFeedback()
+    ai.model = fakeModel(themes)
+    await synthesize(user.researchId)
+    await settle()
+    expect(posthog).toHaveBeenCalled()
+    expect(JSON.stringify(posthog.mock.calls)).not.toContain(MARKER)
+  })
+})
+
+describe("first_analysis_completed", () => {
+  it("the first themes analysis with a theme in any Research sends it once", async () => {
+    const second = await user.client.rpc("create_research", { ws: user.workspaceId, question: "Seconda?" })
+    try {
+      await admin.from("subscriptions").update({ plan: "pro" }).eq("workspace_id", user.workspaceId)
+      await fiveFeedback()
+      await fiveFeedback(second.data!)
+      ai.model = fakeModel(themes)
+      await synthesize(user.researchId)
+      await synthesize(second.data!)
+      await synthesize(user.researchId)
+      await settle()
+      expect(sentEvents("first_analysis_completed")).toEqual([
+        expect.objectContaining({
+          distinct_id: user.workspaceId,
+          properties: { feedback_count: 5, theme_count: 2, $process_person_profile: false, $geoip_disable: true },
+        }),
+      ])
+      expect(sentEvents("research_synthesized")).toHaveLength(3)
+    } finally {
+      await admin.from("subscriptions").update({ plan: "free" }).eq("workspace_id", user.workspaceId)
+      await admin.from("research").delete().eq("id", second.data!)
+    }
   })
 })

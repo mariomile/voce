@@ -20,7 +20,7 @@
 - Il testo dei feedback è input non fidato: nel prompt separato dalle istruzioni, mai reso come HTML. `[code:AGENTS.md]`
 - Quote di feedback e analisi AI controllate lato server prima di ogni chiamata al modello. `[code:AGENTS.md]`
 - Dati in UE; unica eccezione accettata in test: l'API Anthropic. `[code:docs/prima-dei-clienti-reali.md]`
-- L'analisi può durare fino a 4 minuti: la pagina dei temi chiede `maxDuration` 300. `[code:docs/prima-dei-clienti-reali.md]`
+- L'analisi può durare fino a 4 minuti: la pagina della Research (`/research/[id]`) chiede `maxDuration` 300. `[code:docs/prima-dei-clienti-reali.md]`
 
 ## Conventions
 - Interfaccia in italiano; codice, nomi e commit in inglese.

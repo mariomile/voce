@@ -74,5 +74,30 @@
       "session": "La sessione è scaduta. Accedi di nuovo per continuare: copia prima il testo che hai scritto, qui non resta.",
       "sessionLink": "Accedi"
     }
+  },
+  "synthesis": {
+    "themesTitle": "Temi",
+    "lede": "<b>{count} feedback</b> dal {start} al {end}, raggruppati in <b>{themes} temi</b>.",
+    "analyze": {
+      "label": "Analizza {count} feedback",
+      "labelPartial": "Analizza i {count} feedback più recenti",
+      "partialNote": "su {total} di questa Research",
+      "running": "Analisi in corso…",
+      "runningNote": "Può volerci qualche minuto. Temi e verdetti compaiono qui appena è finita.",
+      "slowNote": "Ci vuole più del solito. Temi e verdetti compaiono qui: puoi lasciare la pagina e tornare.",
+      "announcement": "Analisi finita: {count, plural, one {1 tema} other {# temi}}.",
+      "network": "Non riesco a raggiungere Voce. Se l'analisi era già partita, il risultato compare qui quando è finita: ricarica la pagina tra qualche minuto.",
+      "sessionLink": "Accedi",
+      "lowFeedbackNote": "Con meno di 5 feedback i temi dicono poco: puoi analizzarli lo stesso.",
+      "cost": {
+        "one": "Userai 1 delle {limit} analisi di {month}.",
+        "left": "Ti restano {remaining} analisi di {month}."
+      }
+    },
+    "changes": {
+      "line": "Dall'analisi del {date}: {feedback, plural, one {1 feedback in più} other {# feedback in più}}, {themes, plural, one {1 tema nuovo} other {# temi nuovi}}.",
+      "themeDelta": "+{count} dal {date}",
+      "newTheme": "Nuovo"
+    }
   }
 }

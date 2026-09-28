@@ -39,7 +39,9 @@ export type Database = {
           created_at: string
           feedback_count: number
           id: string
+          kind: Database["public"]["Enums"]["analysis_kind"]
           period_start: string
+          research_id: string | null
           status: Database["public"]["Enums"]["analysis_status"]
           workspace_id: string
         }
@@ -47,7 +49,9 @@ export type Database = {
           created_at?: string
           feedback_count: number
           id?: string
+          kind?: Database["public"]["Enums"]["analysis_kind"]
           period_start: string
+          research_id?: string | null
           status?: Database["public"]["Enums"]["analysis_status"]
           workspace_id: string
         }
@@ -55,11 +59,20 @@ export type Database = {
           created_at?: string
           feedback_count?: number
           id?: string
+          kind?: Database["public"]["Enums"]["analysis_kind"]
           period_start?: string
+          research_id?: string | null
           status?: Database["public"]["Enums"]["analysis_status"]
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "analyses_research_fkey"
+            columns: ["workspace_id", "research_id"]
+            isOneToOne: false
+            referencedRelation: "research"
+            referencedColumns: ["workspace_id", "id"]
+          },
           {
             foreignKeyName: "analyses_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -441,6 +454,7 @@ export type Database = {
           id: string
           kind: Database["public"]["Enums"]["theme_kind"]
           priority: Database["public"]["Enums"]["theme_priority"] | null
+          research_id: string
           sentiment: Database["public"]["Enums"]["theme_sentiment"]
           status: Database["public"]["Enums"]["theme_status"]
           summary: string
@@ -453,6 +467,7 @@ export type Database = {
           id?: string
           kind: Database["public"]["Enums"]["theme_kind"]
           priority?: Database["public"]["Enums"]["theme_priority"] | null
+          research_id: string
           sentiment: Database["public"]["Enums"]["theme_sentiment"]
           status?: Database["public"]["Enums"]["theme_status"]
           summary: string
@@ -465,6 +480,7 @@ export type Database = {
           id?: string
           kind?: Database["public"]["Enums"]["theme_kind"]
           priority?: Database["public"]["Enums"]["theme_priority"] | null
+          research_id?: string
           sentiment?: Database["public"]["Enums"]["theme_sentiment"]
           status?: Database["public"]["Enums"]["theme_status"]
           summary?: string
@@ -472,6 +488,13 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "themes_research_fkey"
+            columns: ["workspace_id", "research_id"]
+            isOneToOne: false
+            referencedRelation: "research"
+            referencedColumns: ["workspace_id", "id"]
+          },
           {
             foreignKeyName: "themes_workspace_id_analysis_id_fkey"
             columns: ["workspace_id", "analysis_id"]
@@ -613,7 +636,7 @@ export type Database = {
       }
       finish_analysis: {
         Args: { analysis: string; run: Json; themes: Json }
-        Returns: undefined
+        Returns: number
       }
       finish_question: {
         Args: {
@@ -647,13 +670,16 @@ export type Database = {
       start_analysis: {
         Args: {
           feedback_count: number
-          input: Json
+          inputs: Json
+          kinds: Database["public"]["Enums"]["analysis_kind"][]
           model: string
           period_start: string
+          research: string
           ws: string
         }
         Returns: {
           analysis_id: string
+          kind: Database["public"]["Enums"]["analysis_kind"]
           outcome: string
         }[]
       }
@@ -680,6 +706,7 @@ export type Database = {
       }
     }
     Enums: {
+      analysis_kind: "themes" | "verdict"
       analysis_status: "running" | "done" | "failed"
       member_role: "owner" | "member"
       plan: "free" | "pro"
@@ -819,6 +846,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      analysis_kind: ["themes", "verdict"],
       analysis_status: ["running", "done", "failed"],
       member_role: ["owner", "member"],
       plan: ["free", "pro"],

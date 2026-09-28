@@ -1,8 +1,5 @@
 {
   "page": {
-    "title": "What customers say about {name}",
-    "lede": "<b>{count} feedback</b> from {start} to {end}, grouped into <b>{themes, plural, one {# theme} other {# themes}}</b>.",
-    "newAnalysis": "New analysis",
     "filterAll": "All",
     "noThemesFiltered": "No themes match these filters.",
     "showOpenThemes": "Show open themes",
@@ -24,10 +21,7 @@
       "title": "{count} feedback, no themes yet",
       "lede": "One by one, they say little. The analysis groups them into problems, opportunities and praise, with the quotes that represent them best.",
       "readyTitle": "Ready for the first analysis",
-      "channelLine": "{count} from {name}",
-      "quotaFirst": "You'll use 1 of the {limit} analyses for {month}.",
-      "quotaRemaining": "{remaining, plural, one {You have 1 analysis left for {month}.} other {You have {remaining} analyses left for {month}.}}",
-      "analyzeLabel": "Analyze {count} feedback"
+      "channelLine": "{count} from {name}"
     }
   },
   "statusMenu": {
@@ -53,14 +47,14 @@
     "unset": "Not set"
   },
   "analyzeButton": {
-    "running": "Analysis running…",
-    "runningNote": "It can take a few minutes. The themes appear here as soon as it's done.",
     "failures": {
-      "no_feedback": "There's no feedback to analyze from the last 90 days.",
-      "busy": "An analysis is already running. Reload the page in a minute.",
+      "no_feedback": "There's no feedback to analyze in this Research.",
+      "busy": "An analysis is already running, maybe in another Research or another tab. Reload the page in a minute.",
       "limit": "You've used all your analyses for this month, or too many attempts have failed.",
       "no_themes": "The analysis found no theme with at least 2 feedback and doesn't count against this month's limit. Nothing changed.",
-      "failed": "The analysis failed and doesn't count against this month's limit. Nothing changed: try again shortly."
+      "failed": "The analysis failed and doesn't count against this month's limit. Nothing changed: try again shortly.",
+      "session": "Your session has expired. Sign in again to continue.",
+      "not_found": "I can't find this Research."
     }
   },
   "limitWarning": {

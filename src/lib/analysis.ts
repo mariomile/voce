@@ -10,8 +10,12 @@ import type { Sentiment, ThemeKind } from "./types"
 
 export const DEFAULT_MODEL = "claude-sonnet-5"
 export const ANALYSIS_TIMEOUT_MS = 240_000
+// Chiedi still reads the last 90 days of the workspace until it moves inside the Research.
 export const ANALYSIS_WINDOW_DAYS = 90
+// What one call reads of a Research: its most recent feedback, at most 500 and at most 1,000,000
+// characters of text (the most a themes prompt could reach before notes of 10,000 characters existed).
 export const ANALYSIS_MAX_FEEDBACK = 500
+export const ANALYSIS_MAX_CHARS = 1_000_000
 export const MAX_THEMES_PER_FEEDBACK = 3
 export const MIN_FEEDBACK_PER_THEME = 2
 export const MAX_QUOTES = 3
@@ -45,6 +49,21 @@ export const MODEL_OPTIONS = {
 }
 
 export type AnalysisFeedback = { id: string; text: string; channel: string; receivedAt: string }
+
+// rows: the feedback of the Research, newest first (received_at, then created_at). Keeps them in order
+// until 500 or until the next one would pass 1,000,000 characters. No time window.
+export function selectFeedback<T extends { text: string }>(rows: T[]): T[] {
+  const selected: T[] = []
+  let chars = 0
+  for (const row of rows) {
+    // Characters, like char_length in the database, not UTF-16 units.
+    const length = [...row.text].length
+    if (selected.length >= ANALYSIS_MAX_FEEDBACK || chars + length > ANALYSIS_MAX_CHARS) break
+    selected.push(row)
+    chars += length
+  }
+  return selected
+}
 
 export type CheckedTheme = {
   title: string

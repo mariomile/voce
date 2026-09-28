@@ -213,7 +213,7 @@ function formDataOf(file: File) {
 
 // ". Left out: 3 already there, 2 invalid rows and 40 over the plan limit."
 function ignoredSummary(
-  t: ReturnType<typeof useTranslations>,
+  t: ReturnType<typeof useTranslations<"collect.csvImport">>,
   locale: Locale,
   duplicates: number,
   invalid: number,

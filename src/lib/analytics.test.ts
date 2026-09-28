@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, expectTypeOf, it, vi } from "vitest"
-import type { Milestone } from "./analytics"
+import type { Milestone, RepeatedEvent } from "./analytics"
 import { admin, createTestUser, deleteTestUsers, type TestUser } from "@/test/supabase"
 
 // The milestones are recorded for real in the local database; only PostHog is fake.
@@ -100,6 +100,23 @@ describe("trackMilestone", () => {
 })
 
 describe("trackEvent", () => {
+  it("RepeatedEvent carries research_synthesized with its three counts", async () => {
+    expectTypeOf<Extract<RepeatedEvent, { event: "research_synthesized" }>["properties"]>().toEqualTypeOf<{
+      feedback_count: number
+      citation_count: number
+      hypothesis_count: number
+    }>()
+    trackEvent(user.workspaceId, {
+      event: "research_synthesized",
+      properties: { feedback_count: 12, citation_count: 4, hypothesis_count: 0 },
+    })
+    await settle()
+    expect(sent()[0]).toMatchObject({
+      event: "research_synthesized",
+      properties: { feedback_count: 12, citation_count: 4, hypothesis_count: 0, $process_person_profile: false, $geoip_disable: true },
+    })
+  })
+
   it("sends question_answered with only citation_count and outcome", async () => {
     trackEvent(user.workspaceId, { event: "question_answered", properties: { citation_count: 3, outcome: "answered" } })
     await settle()

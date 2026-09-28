@@ -37,24 +37,33 @@ export async function sendPublicFeedback(input: {
 }
 
 // The workspace id must come from the signed-in user's session: this call does not check membership.
+// The Research must be of that workspace: the database refuses another one. One analysis per kind,
+// reserved together; inputs holds the log of each kind's run.
+export type AnalysisKind = Database["public"]["Enums"]["analysis_kind"]
 export async function startAnalysis(input: {
   workspaceId: string
+  researchId: string
   model: string
+  kinds: AnalysisKind[]
   periodStart: string
   feedbackCount: number
-  input: Json
-}): Promise<{ outcome: "ok"; analysisId: string } | { outcome: "busy" | "limit" }> {
+  inputs: Partial<Record<AnalysisKind, Json>>
+}): Promise<{ outcome: "ok"; analyses: Partial<Record<AnalysisKind, string>> } | { outcome: "busy" | "limit" }> {
   const { data, error } = await adminClient().rpc("start_analysis", {
     ws: input.workspaceId,
+    research: input.researchId,
     model: input.model,
+    kinds: input.kinds,
     period_start: input.periodStart,
     feedback_count: input.feedbackCount,
-    input: input.input,
+    inputs: input.inputs,
   })
   if (error) throw error
-  const row = data[0]
-  if (row?.outcome === "ok" && row.analysis_id) return { outcome: "ok", analysisId: row.analysis_id }
-  if (row?.outcome === "busy" || row?.outcome === "limit") return { outcome: row.outcome }
+  if (data.length > 0 && data.every((row) => row.outcome === "ok" && row.kind && row.analysis_id)) {
+    return { outcome: "ok", analyses: Object.fromEntries(data.map((row) => [row.kind, row.analysis_id])) }
+  }
+  const outcome = data[0]?.outcome
+  if (data.length === 1 && (outcome === "busy" || outcome === "limit")) return { outcome }
   throw new Error(`Unexpected start_analysis result: ${JSON.stringify(data)}`)
 }
 
@@ -67,8 +76,9 @@ export type RunLog = {
   cost_usd?: number | null
 }
 
-export async function finishAnalysis(analysisId: string, themes: CheckedTheme[], run: RunLog) {
-  const { error } = await adminClient().rpc("finish_analysis", {
+// Returns the number of verified quotes the database saved.
+export async function finishAnalysis(analysisId: string, themes: CheckedTheme[], run: RunLog): Promise<number> {
+  const { data, error } = await adminClient().rpc("finish_analysis", {
     analysis: analysisId,
     themes: themes.map((t) => ({
       title: t.title,
@@ -81,6 +91,7 @@ export async function finishAnalysis(analysisId: string, themes: CheckedTheme[],
     run,
   })
   if (error) throw error
+  return data
 }
 
 export async function failAnalysis(analysisId: string, message: string, run: RunLog) {

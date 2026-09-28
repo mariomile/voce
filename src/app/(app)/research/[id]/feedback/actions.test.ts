@@ -30,7 +30,7 @@ async function seed(user: TestUser) {
   )
   const { data: analysis } = await admin
     .from("analyses")
-    .insert({ workspace_id: user.workspaceId, period_start: "2026-07-01", feedback_count: 3 })
+    .insert({ workspace_id: user.workspaceId, research_id: user.researchId, period_start: "2026-07-01", feedback_count: 3 })
     .select("id")
     .single()
   const { data: themes } = await admin
@@ -38,6 +38,7 @@ async function seed(user: TestUser) {
     .insert(
       ["Banca", "Offensivo"].map((title) => ({
         workspace_id: user.workspaceId,
+        research_id: user.researchId,
         analysis_id: analysis!.id,
         kind: "problem" as const,
         title,
@@ -56,6 +57,8 @@ async function seed(user: TestUser) {
   ])
   return { first, second, third, bank, other }
 }
+
+const researchOf = (user: TestUser) => ({ id: user.researchId, workspaceId: user.workspaceId })
 
 let aIds: Awaited<ReturnType<typeof seed>>
 let bIds: Awaited<ReturnType<typeof seed>>
@@ -84,12 +87,12 @@ describe("deleteFeedback", () => {
     expect(await deleteFeedback(aIds.first)).toEqual({ ok: true })
     expect(await feedbackCount(a.workspaceId)).toBe(2)
 
-    const { themes } = await getDashboard(a.workspaceId, { status: "all" })
+    const { themes } = await getDashboard(researchOf(a), { status: "all" })
     const bank = themes.find((t) => t.title === "Banca")!
     expect(bank.feedbackCount).toBe(2)
     expect(bank.quotes.map((q) => q.feedbackId)).toEqual([aIds.second])
 
-    const detail = await getTheme(a.workspaceId, aIds.bank)
+    const detail = await getTheme(researchOf(a), aIds.bank)
     expect(detail!.feedbackCount).toBe(2)
     expect(detail!.feedback.map((f) => f.feedbackId).sort()).toEqual([aIds.second, aIds.third].sort())
   })
@@ -97,11 +100,11 @@ describe("deleteFeedback", () => {
   it("hides a theme once all its feedback are deleted", async () => {
     session.client = a.client
     expect(await deleteFeedback(aIds.third)).toEqual({ ok: true })
-    const { themes, analysisThemeCount } = await getDashboard(a.workspaceId, { status: "all" })
+    const { themes, analysisThemeCount } = await getDashboard(researchOf(a), { status: "all" })
     expect(themes.map((t) => [t.title, t.feedbackCount])).toEqual([["Banca", 1]])
     expect(analysisThemeCount).toBe(1)
     // Its page answers "not found" too: the page calls notFound() when getTheme returns null.
-    expect(await getTheme(a.workspaceId, aIds.other)).toBeNull()
+    expect(await getTheme(researchOf(a), aIds.other)).toBeNull()
   })
 
   it("a feedback already deleted, for example in another tab, is still a success", async () => {
@@ -124,7 +127,7 @@ describe("deleteFeedback", () => {
   it("left the other workspace as it was", async () => {
     session.client = b.client
     expect(await feedbackCount(b.workspaceId)).toBe(3)
-    const { themes } = await getDashboard(b.workspaceId, { status: "all" })
+    const { themes } = await getDashboard(researchOf(b), { status: "all" })
     expect(themes.map((t) => [t.title, t.feedbackCount])).toEqual([
       ["Banca", 3],
       ["Offensivo", 1],

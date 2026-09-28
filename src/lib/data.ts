@@ -5,7 +5,7 @@ import { cache } from "react";
 import { z } from "zod";
 
 import type { Tables } from "./database.types";
-import { ANALYSIS_WINDOW_DAYS } from "./analysis";
+import { ANALYSIS_MAX_FEEDBACK, ANALYSIS_WINDOW_DAYS, selectFeedback } from "./analysis";
 import { isoDateOf, monthOf } from "./format";
 import { FORM_SLUG_PATTERN, PLAN_LIMITS } from "./plans";
 import { formState, PUBLIC_FORM_CHANNEL, type RoomStatus } from "./room";
@@ -32,8 +32,13 @@ export type Quote = {
   receivedAt: string;
 };
 
+// How a theme moved since the previous themes analysis of the same Research, matched by title.
+export type ThemeChange = { kind: "new" } | { kind: "more"; count: number; since: string };
+
 export type ThemeSummary = Theme & {
   feedbackCount: number;
+  // Null on the first analysis of the Research, or when the theme did not grow.
+  change: ThemeChange | null;
   // Feedback per week, oldest first, ending with the analysis week.
   trend: number[];
   quotes: Quote[];
@@ -171,6 +176,22 @@ export const getUsage = cache(async (workspaceId: string, now = new Date()): Pro
   };
 });
 
+// How many feedback "Analizza" would send now: the same selection the analysis makes on the server.
+export async function getAnalysisPerimeter(research: Pick<Research, "id" | "workspaceId">) {
+  const supabase = await createClient();
+  const rows = unwrap(
+    await supabase
+      .from("feedback")
+      .select("text")
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id)
+      .order("received_at", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(ANALYSIS_MAX_FEEDBACK)
+  );
+  return selectFeedback(rows).length;
+}
+
 // For the room screen of a Research, polled every few seconds: counts only, never feedback text.
 // The responses are those of its public form; the Free limit counts the whole workspace.
 export async function getRoomStatus(research: Pick<Research, "id" | "workspaceId" | "formEnabled">): Promise<RoomStatus> {
@@ -241,37 +262,72 @@ export async function getBilling(workspaceId: string): Promise<Billing> {
   };
 }
 
+// The Sintesi of a Research: the themes of its last done themes analysis, and what changed since the one before.
 export async function getDashboard(
-  workspaceId: string,
+  research: Pick<Research, "id" | "workspaceId">,
   filters: { kind?: ThemeKind; status?: StatusFilter } = {}
 ) {
   const supabase = await createClient();
-  const [latest, feedbackCount, channels, recent] = await Promise.all([
+  const [latestTwo, feedbackCount, channels, recent] = await Promise.all([
     supabase
       .from("analyses")
       .select("*")
-      .eq("workspace_id", workspaceId)
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id)
+      .eq("kind", "themes")
       // A running or failed analysis has no themes to show: the last finished one stays.
       .eq("status", "done")
       .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase.from("feedback").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId),
-    channelCounts(workspaceId),
+      .limit(2),
+    supabase
+      .from("feedback")
+      .select("id", { count: "exact", head: true })
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id),
+    channelCounts(research.workspaceId, research.id),
     supabase
       .from("feedback")
       .select(FEEDBACK_COLUMNS)
-      .eq("workspace_id", workspaceId)
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id)
       .order("received_at", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(RECENT_FEEDBACK),
   ]);
-  const analysisRow = unwrap(latest);
+  const [analysisRow, previousRow] = unwrap(latestTwo);
   const analysis = analysisRow ? toAnalysis(analysisRow) : null;
+  const previous = previousRow ? toAnalysis(previousRow) : null;
   // A theme whose feedback were all deleted has nothing left to show.
-  const allThemes = analysis
-    ? (await summarizeAnalysis(workspaceId, analysis)).filter((t) => t.feedbackCount > 0)
-    : [];
+  const [current, before] = await Promise.all([
+    analysis ? summarizeAnalysis(research.workspaceId, analysis) : [],
+    previous ? summarizeAnalysis(research.workspaceId, previous) : [],
+  ]);
+  const titleKey = (title: string) => title.trim().toLowerCase();
+  const allThemes = current
+    .filter((t) => t.feedbackCount > 0)
+    .map((t): ThemeSummary => {
+      if (!previous) return t;
+      const old = before.find((o) => titleKey(o.title) === titleKey(t.title));
+      if (!old) return { ...t, change: { kind: "new" } };
+      const count = t.feedbackCount - old.feedbackCount;
+      return { ...t, change: count > 0 ? { kind: "more", count, since: previous.createdAt } : null };
+    });
+
+  let changes: { since: string; newFeedback: number; newThemes: number } | null = null;
+  if (analysis && previous) {
+    const arrived = await supabase
+      .from("feedback")
+      .select("id", { count: "exact", head: true })
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id)
+      .gt("created_at", previous.createdAt)
+      .lte("created_at", analysis.createdAt);
+    changes = {
+      since: previous.createdAt,
+      newFeedback: countOf(arrived),
+      newThemes: allThemes.filter((t) => t.change?.kind === "new").length,
+    };
+  }
 
   const status = filters.status ?? "open";
   const byStatus = allThemes.filter((t) =>
@@ -284,6 +340,7 @@ export async function getDashboard(
 
   return {
     analysis,
+    changes,
     themes,
     themeTotal: byStatus.length,
     analysisThemeCount: allThemes.length,
@@ -320,12 +377,20 @@ export async function listFeedback(
   return { total, channels, feedback, page, pageCount };
 }
 
-export async function getTheme(workspaceId: string, themeId: string) {
+// A theme of this Research. Null for a theme of another Research or workspace, or a wrong id.
+export async function getTheme(research: Pick<Research, "id" | "workspaceId">, themeId: string) {
   // Theme ids come from the URL: anything that is not a uuid cannot exist.
   if (!z.uuid().safeParse(themeId).success) return null;
+  const workspaceId = research.workspaceId;
   const supabase = await createClient();
   const themeRow = unwrap(
-    await supabase.from("themes").select("*").eq("workspace_id", workspaceId).eq("id", themeId).maybeSingle()
+    await supabase
+      .from("themes")
+      .select("*")
+      .eq("workspace_id", workspaceId)
+      .eq("research_id", research.id)
+      .eq("id", themeId)
+      .maybeSingle()
   );
   if (!themeRow) return null;
   const [analysisRow, links] = await Promise.all([
@@ -350,6 +415,7 @@ export async function getTheme(workspaceId: string, themeId: string) {
   return {
     ...toTheme(themeRow),
     feedbackCount: linked.length,
+    change: null,
     trend: weeklyTrend(linked.map((l) => l.feedback.receivedAt), analysis.createdAt),
     quotes,
     analysis,
@@ -391,6 +457,7 @@ async function summarizeAnalysis(workspaceId: string, analysis: Analysis): Promi
     return {
       ...toTheme(row),
       feedbackCount: stat?.feedback_count ?? 0,
+      change: null,
       trend: weeklyTrend(stat?.received_dates ?? [], analysis.createdAt),
       quotes: quoteRows
         .filter((q) => q.theme_id === row.id)
@@ -456,6 +523,7 @@ function toTheme(row: Tables<"themes">): Theme {
   return {
     id: row.id,
     workspaceId: row.workspace_id,
+    researchId: row.research_id,
     analysisId: row.analysis_id,
     kind: row.kind,
     title: row.title,

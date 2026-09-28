@@ -8,7 +8,7 @@ const session = vi.hoisted(() => ({ client: null as unknown }))
 const ai = vi.hoisted(() => ({ model: null as unknown }))
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => session.client }))
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }))
-vi.mock("@/lib/analytics", () => ({ trackMilestone: vi.fn() }))
+vi.mock("@/lib/analytics", () => ({ trackMilestone: vi.fn(), trackEvent: vi.fn() }))
 vi.mock("@/lib/analysis", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/analysis")>()),
   analysisLanguageModel: () => ai.model,
@@ -16,7 +16,7 @@ vi.mock("@/lib/analysis", async (importOriginal) => ({
 
 const { roomThemes } = await import("./actions")
 const { GET } = await import("./status/route")
-const { analyze } = await import("@/app/(app)/themes/actions")
+const { synthesize } = await import("@/app/(app)/research/[id]/actions")
 const { getRoomStatus } = await import("@/lib/data")
 
 let owner: TestUser
@@ -100,18 +100,24 @@ describe("roomThemes", () => {
         },
       ],
     } satisfies RawOutput)
-    expect(await analyze()).toEqual({ ok: true })
-    const themes = await roomThemes()
+    expect(await synthesize(owner.researchId)).toEqual({ ok: true, themeCount: 1 })
+    const themes = await roomThemes(owner.researchId)
     expect(themes).toEqual([{ id: expect.any(String), kind: "problem", title: "La banca si scollega", feedbackCount: 2 }])
     expect(JSON.stringify(themes)).not.toContain("scollega.")
   })
 
-  it("is empty before any analysis", async () => {
-    expect(await roomThemes()).toEqual([])
+  it("is empty before any analysis, and for a wrong id", async () => {
+    expect(await roomThemes(owner.researchId)).toEqual([])
+    expect(await roomThemes("non-un-uuid")).toEqual([])
   })
 
-  it("never shows another workspace's themes", async () => {
+  it("never shows another workspace's themes, even given its Research", async () => {
+    await addFeedback(["La banca si scollega.", "Devo ricollegare la banca."], "Modulo pubblico")
+    ai.model = fakeModel({
+      themes: [{ title: "Banca", summary: "S", kind: "problem", sentiment: "negative", feedback: [1, 2], quotes: [] }],
+    } satisfies RawOutput)
+    expect(await synthesize(owner.researchId)).toMatchObject({ ok: true })
     session.client = other.client
-    expect(await roomThemes()).toEqual([])
+    expect(await roomThemes(owner.researchId)).toEqual([])
   })
 })

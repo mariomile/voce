@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 import { LOCALE_COOKIE, pinnedLocale } from "@/i18n/locale"
 
-const APP_PATHS = ["/research", "/themes", "/ask", "/billing"]
+const APP_PATHS = ["/research", "/ask", "/billing"]
 const AUTH_PATHS = ["/login", "/signup"]
 
 // Refreshes the Supabase session on every request and keeps signed-out users out of the app.

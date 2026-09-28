@@ -5,7 +5,7 @@ import Link from "next/link"
 import { cn } from "cn"
 import { useLocale, useTranslations } from "next-intl"
 import { roomThemes } from "@/app/research/[id]/sala/actions"
-import { analyze } from "@/app/(app)/themes/actions"
+import { synthesize } from "@/app/(app)/research/[id]/actions"
 import { failureMessage, type AnalysisFailure } from "@/components/analyze-button"
 import { Logo } from "@/components/logo"
 import { RoomDots } from "@/components/room-dots"
@@ -96,9 +96,9 @@ export function RoomScreen({
   function runAnalysis() {
     setScreen({ act: "pile", failure: null })
     startTransition(async () => {
-      const result = await analyze()
+      const result = await synthesize(researchId)
       if (!result.ok) return setScreen({ act: "pile", failure: result.reason })
-      const themes = await roomThemes()
+      const themes = await roomThemes(researchId)
       const responses = responsesRef.current
       setScreen(
         themes.length === 0

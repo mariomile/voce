@@ -74,5 +74,30 @@
       "session": "Your session has expired. Sign in again to continue: copy the text you wrote first, it won't stay here.",
       "sessionLink": "Sign in"
     }
+  },
+  "synthesis": {
+    "themesTitle": "Themes",
+    "lede": "<b>{count} feedback</b> from {start} to {end}, grouped into <b>{themes} themes</b>.",
+    "analyze": {
+      "label": "Analyze {count} feedback",
+      "labelPartial": "Analyze the {count} most recent feedback",
+      "partialNote": "of {total} in this Research",
+      "running": "Analysis running…",
+      "runningNote": "It can take a few minutes. Themes and verdicts show up here as soon as it's done.",
+      "slowNote": "This is taking longer than usual. Themes and verdicts will show up here: you can leave the page and come back.",
+      "announcement": "Analysis done: {count, plural, one {1 theme} other {# themes}}.",
+      "network": "I can't reach Voce. If the analysis had already started, the result shows up here when it's done: reload the page in a few minutes.",
+      "sessionLink": "Sign in",
+      "lowFeedbackNote": "With fewer than 5 feedback the themes say little: you can analyze them anyway.",
+      "cost": {
+        "one": "You'll use 1 of your {limit} analyses for {month}.",
+        "left": "You have {remaining} analyses left for {month}."
+      }
+    },
+    "changes": {
+      "line": "Since the analysis of {date}: {feedback, plural, one {1 more feedback} other {# more feedback}}, {themes, plural, one {1 new theme} other {# new themes}}.",
+      "themeDelta": "+{count} since {date}",
+      "newTheme": "New"
+    }
   }
 }

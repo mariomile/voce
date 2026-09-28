@@ -17,12 +17,12 @@ let otherThemeId: string
 async function addTheme(u: TestUser) {
   const { data: analysis } = await admin
     .from("analyses")
-    .insert({ workspace_id: u.workspaceId, period_start: "2026-07-01", feedback_count: 0 })
+    .insert({ workspace_id: u.workspaceId, research_id: u.researchId, period_start: "2026-07-01", feedback_count: 0 })
     .select("id")
     .single()
   const { data: theme } = await admin
     .from("themes")
-    .insert({ workspace_id: u.workspaceId, analysis_id: analysis!.id, kind: "problem", title: "Tema", summary: "Sintesi", sentiment: "negative" })
+    .insert({ workspace_id: u.workspaceId, research_id: u.researchId, analysis_id: analysis!.id, kind: "problem", title: "Tema", summary: "Sintesi", sentiment: "negative" })
     .select("id")
     .single()
   return theme!.id
