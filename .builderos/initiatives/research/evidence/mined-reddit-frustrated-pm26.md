@@ -14,3 +14,11 @@ Estratto verbatim:
 "We had a shared google sheet, a tagged slack channel, and a notion board - all supposedly collecting feedback. Nobody ever went back and read any of it when writing specs. What actually happened was someone would remember like 2-3 conversations that stuck with them, write the spec around that, and call it customer-informed. Meanwhile the actual #1 complaint from the last quarter was something totally different buried in support tickets that nobody had time to go through. Its not a collection problem imo, everyone has tons of feedback. Its that actually synthesizing it into something useful takes so long that people just skip it and go with whatever they remember."
 
 Nota: La descrizione più vicina al gradino 3 del frame: si decide su 2-3 conversazioni ricordate. Ma parla di scrittura di specifiche, non di una domanda arrivata in riunione. Il thread (post di _yanited_, "I work with a PM team") ha l'aspetto di una ricerca di mercato di un fornitore: il post originale non conta come evidenza.
+
+**Primaria o secondaria:** secondaria, pratica ricorrente di un team descritta in generale, senza un episodio datato; thread con aspetto di ricerca di mercato di un fornitore.
+
+Rilettura per l'iniziativa research (2026-09-28):
+- ICP (PM senza ricercatore dedicato): non verificabile.
+- Rispetto alla credenza rischiosa di research (ipotesi nominabile, confronto sistematico saltato o fatto a metà per tempo o sfiducia): conferma il confronto saltato: si scrive la specifica su 2-3 conversazioni ricordate perché sintetizzare costa troppo; ma non nomina un'ipotesi di partenza.
+
+Nota sulla copia: copiato il 2026-09-28 da chiedi-ai-feedback/evidence senza modificare l'originale; nella copia ogni trattino lungo è sostituito con " - " o "->", e sono aggiunte solo la classificazione e la rilettura qui sopra. Citazione originale riletta sulla pagina nella fase 1 di chiedi il 2026-09-26 (URL di verifica sopra).

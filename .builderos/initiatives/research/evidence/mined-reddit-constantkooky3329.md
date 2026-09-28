@@ -14,3 +14,11 @@ Estratto verbatim:
 "Do you have transcripts/videos, notes of your customer interviews? Is there a structure or agenda to guide these conversations? If you do, I would load these up into notebookLM or Claude, create a skill to produce a report that synthesizes the findings from each interview. It saved me hours."
 
 Nota: NotebookLM o Claude usati sulle interviste, con risparmio dichiarato di ore. Nessun episodio né domanda puntuale.
+
+**Primaria o secondaria:** secondaria, consiglio basato su un uso proprio non raccontato come episodio.
+
+Rilettura per l'iniziativa research (2026-09-28):
+- ICP (PM senza ricercatore dedicato): non verificabile.
+- Rispetto alla credenza rischiosa di research (ipotesi nominabile, confronto sistematico saltato o fatto a metà per tempo o sfiducia): smentisce: NotebookLM o Claude sulle interviste, ore risparmiate.
+
+Nota sulla copia: copiato il 2026-09-28 da chiedi-ai-feedback/evidence senza modificare l'originale; nella copia ogni trattino lungo è sostituito con " - " o "->", e sono aggiunte solo la classificazione e la rilettura qui sopra. Citazione originale riletta sulla pagina nella fase 1 di chiedi il 2026-09-26 (URL di verifica sopra).

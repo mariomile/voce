@@ -1,17 +1,41 @@
 # priorart-notebooklm
 
 **Class:** doc
-**Captured:** 2026-09-26 · **By:** Claude Code (problem-framer, ricerca web) · **Where:** https://en.wikipedia.org/wiki/NotebookLM
+**Captured:** 2026-09-28 · **By:** Claude Code (research-planner, verifica prior art) · **Where:** https://notebooklm.google/ (redirect 301 a https://notebook.google/) , https://gemini.google/subscriptions/
 
-"Gemini Notebook (previously Google NotebookLM; LM short for 'Language Model') is an online research and note-taking retrieval-augmented generation tool developed by Google Labs that uses artificial intelligence (AI), specifically Google Gemini, to assist users in interacting with their documents."
-https://en.wikipedia.org/wiki/NotebookLM
+- Prodotto: NotebookLM, rinominato "Gemini Notebook" (redirect permanente dal dominio storico notebooklm.google al nuovo notebook.google, confermato dal metadato "og:site_name" = "Gemini Notebook" e "Product name: Gemini Notebook" nella pagina rinominata)
+- Unità centrale: "notebook", con "sources" (fonti) caricate al suo interno; da fonti terze coerenti col naming ufficiale: piano Free = 100 notebook, 50 fonti per notebook, 50 domande chat al giorno
+- Ipotesi con verdetto come oggetto del prodotto: no. Nessuna occorrenza di "hypothesis", "assumption" o "verdict" nelle pagine ufficiali raggiunte. Il prodotto è un assistente di ricerca/scrittura general-purpose su documenti caricati dall'utente ("Assistente di ricerca e scrittura"), senza un concetto di ipotesi o verdetto strutturato.
+- Prezzo: non più un abbonamento standalone. Gemini Notebook è incluso nei piani Google AI: piano gratuito con Account Google (€0/mese, verificato sulla pagina ufficiale gemini.google/subscriptions il 2026-09-28), Google AI Plus a €4,99/mese ("Ottieni limiti di utilizzo 2 volte superiori rispetto al piano senza costi", include "Gemini Notebook: Assistente di ricerca e scrittura con più overview audio, notebook e altro"), Google AI Pro a €21,99/mese ("limiti di utilizzo 4 volte superiori", include "un numero quintuplicato di overview audio, notebook e altro")
+- Piano gratuito: sì, incluso in ogni Account Google gratuito
+- Acquirente e target: consumer/prosumer generico (studenti, professionisti), non un acquirente PM dichiarato; il prodotto è posizionato come utility trasversale di Google AI, non come strumento di ricerca clienti per team di prodotto
+- Date rilevanti: rebrand da NotebookLM a Gemini Notebook confermato dal redirect 301 permanente del dominio storico; una fonte terza (ricerca web) colloca il rebrand al 16 luglio 2026, con "stesso strumento e stessi limiti nella nuova sede notebook.google.com" (fonte terza, non verificata sulla pagina ufficiale per la data esatta, ma il redirect stesso è verificato)
+- Accesso: 2026-09-28
 
-"Gemini Notebook was first introduced in May 2023 under the experimental name Project Tailwind [...]. In 2024, Google rebranded the tool as NotebookLM and began rolling it out more broadly to researchers, students, and enterprise testers. On October 17, 2024, Google removed the software's 'experimental' status, signaling its transition into a stable product. In December 2024, the company launched a paid tier named NotebookLM Plus for enterprise customers and Gemini Advanced subscribers via Google Workspace and Google Cloud."
-https://en.wikipedia.org/wiki/NotebookLM
+Estratti verbatim:
 
-"On July 16, 2026, Google rebranded NotebookLM to Gemini Notebook, and introduced a secure cloud computer for each notebook that enables native code execution for data analysis."
-https://en.wikipedia.org/wiki/NotebookLM
+"Gemini Notebook
 
-"NotebookLM Standard is free forever with 100 notebooks, 50 sources per notebook and 50 daily chats. [...] Google AI Plus costs $4.99/month (as of June 2026) and includes NotebookLM's Plus-tier limits. Google AI Pro runs around $19.99/month and raises NotebookLM limits to 500 notebooks, 300 sources per notebook, 500 chats a day, and 20 Audio Overviews a day." (secondary source aggregated via WebSearch from googally.com/sourclip.com pricing trackers, not Google's own pricing page, not independently re-fetched)
+Assistente di ricerca e scrittura"
+https://gemini.google/subscriptions/
 
-Nota: NotebookLM (ora rinominato Gemini Notebook, luglio 2026) è il workaround generico più citato per "carica le fonti, fai domande, ricevi risposte con citazioni": non è verticalizzato sul customer feedback, è un tool generico RAG su documenti caricati dall'utente. Primo lancio (come Project Tailwind) maggio 2023, uscita da stato "experimental" ottobre 2024. Gratuito nel piano Standard; piani a pagamento a partire da $4.99/mese (Google AI Plus) tramite abbonamenti Google più ampi, non un prezzo NotebookLM-specifico. Nessuna evidenza di focus italiano (il prodotto è multilingua generico, non localizzato per l'Italia) né di targeting su team prodotto: è un tool per singoli utenti/ricercatori, non un prodotto per team.
+"€4,99 EUR/mese"
+https://gemini.google/subscriptions/
+
+"Ottieni limiti di utilizzo 2 volte superiori rispetto al piano senza costi"
+https://gemini.google/subscriptions/
+
+"Gemini Notebook
+
+Assistente di ricerca e scrittura con più overview audio, notebook e altro"
+https://gemini.google/subscriptions/
+
+"€21,99 EUR/mese"
+https://gemini.google/subscriptions/
+
+"Assistente di ricerca e scrittura con un numero quintuplicato di overview audio, notebook e altro"
+https://gemini.google/subscriptions/
+
+**Primaria o secondaria:** secondaria, pagina del fornitore: descrive il prodotto, non il comportamento dei PM.
+
+Nota: cambio nome rilevante da segnalare a Mario: NotebookLM ora si chiama "Gemini Notebook" e il dominio storico reindirizza permanentemente. Non esiste più come acquisto standalone: è una feature bundlata dentro Google AI Plus/Pro. Resta un tool documenti-in/risposte-out, non un tool di ricerca clienti con ipotesi e verdetto: irrilevante come concorrente diretto, utile solo come "quello che i PM già usano per sintetizzare appunti" senza struttura di ricerca dedicata.

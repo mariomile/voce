@@ -1,15 +1,28 @@
 # priorart-enjoyhq
 
 **Class:** doc
-**Captured:** 2026-09-28 · **By:** Claude Code (problem-framer, ricerca web) · **Where:** https://techcrunch.com/2021/04/15/userzoom-raises-100m-acquires-enjoyhq-to-grow-its-platform-to-improve-ux-and-other-interactive-design-elements , https://www.usertesting.com/company/newsroom/press-releases/usertesting-and-userzoom-merge-help-organizations-build-human , https://www.usertesting.com/enjoyhq-homepage
+**Captured:** 2026-09-28 · **By:** Claude Code (research-planner, verifica prior art) · **Where:** https://www.usertesting.com/pricing (redirect da https://www.usertesting.com/products/enjoyhq, restituisce 404) , https://www.usertesting.com/enjoyhq-homepage , WebSearch (help.usertesting.com)
 
-"UserZoom has also made an acquisition, of another experience insights company called EnjoyHQ, to expand its research operations."
-https://techcrunch.com/2021/04/15/userzoom-raises-100m-acquires-enjoyhq-to-grow-its-platform-to-improve-ux-and-other-interactive-design-elements
+- Prodotto: EnjoyHQ, ora "Insights Hub" dentro UserTesting (UserZoom + EnjoyHQ si sono fusi e rebrandizzati)
+- Unità centrale: workspace → progetto ("project") → storia ("story"); confermato dalla documentazione: "project and story cards are arranged by most recently edited on the homepage"
+- Ipotesi con verdetto come oggetto del prodotto: no. La pagina prodotto EnjoyHQ standalone non esiste più (404 diretto su /products/enjoyhq); nessuna occorrenza di "hypothesis", "assumption" o "verdict" trovata nella documentazione Insights Hub consultata.
+- Prezzo: nessuna cifra pubblica. La pagina pricing di UserTesting (che ora include Insights Hub) mostra solo modelli di fatturazione ("Test-based Consumption" e "Team-based Unlimited") senza numeri, con edizioni Advanced/Ultimate/Enterprise tutte dietro "Book a demo" (verificato sulla pagina ufficiale il 2026-09-28: nessuna cifra presente)
+- Piano gratuito: non presente/non dichiarato
+- Acquirente e target: enterprise ("3,000+ enterprise customers in 40+ countries"), esplicitamente rivolto a organizzazioni con certificazioni di sicurezza (SOC2, ISO 27001, GDPR, HIPAA), non a PM singoli
+- Date rilevanti: fusione UserZoom + EnjoyHQ avvenuta storicamente (fonte terza LinkedIn cita l'annuncio "UserZoom and UserTesting merge"); rebrand del prodotto standalone EnjoyHQ in "Insights Hub" all'interno di UserTesting confermato dal 404 sulla URL prodotto originale e dall'esistenza della sola pagina "Insights Hub Overview" nel centro assistenza
+- Accesso: 2026-09-28
 
-"UserTesting, a leader in video-based human insight, and UserZoom, a leader in UX insights, today announced their merger. The new company will use the UserTesting company name [...] The merger follows the previously announced acquisitions of UserZoom and UserTesting by Thoma Bravo, a leading software investment firm."
-https://www.usertesting.com/company/newsroom/press-releases/usertesting-and-userzoom-merge-help-organizations-build-human (San Francisco, 3 aprile 2023)
+Estratti verbatim:
+
+"Content tabs: By default, project and story cards are arranged by most recently edited on the homepage. View your team's activity on the Team Activity tab."
+https://www.usertesting.com/enjoyhq-homepage
 
 "Adding data: Add data directly to your workspace using this button on the homepage. You'll see the same upload options for the formats that EnjoyHQ is compatible with."
 https://www.usertesting.com/enjoyhq-homepage
 
-Nota: EnjoyHQ è stata acquisita da UserZoom il 15 aprile 2021; UserZoom si è poi fusa con UserTesting il 3 aprile 2023, con il nome del gruppo unificato sotto il brand UserTesting. EnjoyHQ non risulta chiusa: al 2026 la documentazione ufficiale (pagina usertesting.com/enjoyhq-homepage, dominio documentation.getenjoyhq.com ancora linkato) descrive EnjoyHQ come un tipo di workspace attivo dentro l'ecosistema UserTesting, con supporto via support@userzoom.com, quindi assorbita nel prodotto piuttosto che dismessa. Non è emerso alcun concetto esplicito di "hypothesis" o "assumption validation" nelle fonti consultate. Target storico: team di ricerca UX enterprise che centralizzano dati qualitativi; oggi confluito nell'offerta enterprise UserTesting rivolta a ricerca, design, prodotto e marketing. Prezzo pubblico non verificato in questa sessione (EnjoyHQ non ha più una pagina di pricing separata; è parte del pacchetto UserTesting).
+"Plans determine how your team uses and pays for UserTesting. Each plan gives you access to your edition's capabilities, with differences in usage, scale, and feature access."
+https://www.usertesting.com/pricing
+
+**Primaria o secondaria:** secondaria, pagina del fornitore: descrive il prodotto, non il comportamento dei PM.
+
+Nota: EnjoyHQ come prodotto standalone con pagina e prezzo pubblici non esiste più: è confluito in UserTesting come "Insights Hub", venduto solo su preventivo enterprise. Nessuna traccia di ipotesi con verdetto; l'unità resta project/story dentro un repository condiviso. Irrilevante come concorrente diretto di un tool da 19 EUR/mese per PM singoli: il posizionamento e il pricing sono interamente enterprise.

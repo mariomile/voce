@@ -12,3 +12,5 @@ Publication date: nessuna data "Published" esplicita su questa pagina hub; il te
 "While those numbers might seem high, data shows UXRs were not disproportionately affected: the average prevalence of layoffs by department was 20%, with UXRs slightly below Product/UX Design (26%), Engineering (24%), and Product Management (21%)."
 
 Nota: stessa indagine 2025 di User Interviews (n=485, raccolta luglio-agosto 2025). Mostra un trend pluriennale (2019 -> 2022 -> 2025) sulla quota di aziende senza UXR dedicato, utile per dimensionare quante organizzazioni non hanno un ricercatore dedicato. Fonte primaria con dati longitudinali: forte, ma il campione 2025 e sceso del 36% rispetto al 2024 (dichiarato nel report) e i rispondenti sono soprattutto UXR ancora impiegati, quindi la fotografia puo sottostimare chi ha perso il ruolo.
+
+**Primaria o secondaria:** secondaria, report o pagina di un fornitore: aggrega risposte a un sondaggio o descrive un prodotto, non è il racconto di un episodio vissuto da chi scrive. Mai primaria per il comportamento dei PM.

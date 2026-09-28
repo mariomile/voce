@@ -12,3 +12,5 @@ Publication date: letta dal metadato della pagina, "datePublished":"2025-09-24T1
 Dalla pagina prodotto collegata (https://maze.co/features/ai-moderator/, senza data propria, consultata lo stesso giorno): "When PMs need to run research but lack the confidence or bandwidth, AI moderator turns goals into structured conversations. Concepts get validated, ideas get pressure tested, no researcher required."
 
 Nota: annuncio ufficiale del lancio di Maze AI Moderator (24 settembre 2025), una funzione di intervista moderata da IA integrata nella piattaforma di ricerca utenti di Maze, con framing esplicito rivolto ai PM che devono fare ricerca "senza un ricercatore". Fonte primaria aziendale, data verificata nel markup della pagina: forte come prova di tempismo/mercato, ma e comunicazione di marketing del prodotto stesso, non dato indipendente.
+
+**Primaria o secondaria:** secondaria, report o pagina di un fornitore: aggrega risposte a un sondaggio o descrive un prodotto, non è il racconto di un episodio vissuto da chi scrive. Mai primaria per il comportamento dei PM.
