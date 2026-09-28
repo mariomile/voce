@@ -18,7 +18,23 @@ Claude non rientra nel piano gratuito del Gateway e Mario non vuole comprare cre
 
 ## Verifica
 
-VERIFICA_PLACEHOLDER
+**In locale** (worktree `voce-anthropic`):
+- `pnpm typecheck`: exit 0, nessun errore.
+- `pnpm lint`: exit 0, nessun avviso.
+- `pnpm build`: riuscita, tutte le route generate.
+- `src/lib/analysis.test.ts`: prima della modifica 3 test falliti su 12 (default ancora `anthropic/claude-sonnet-5`, costo `null` per `claude-sonnet-5`), dopo 12 su 12.
+- Prova del provider vero (`@ai-sdk/anthropic`) contro `e2e/fake-anthropic.mts` con `runAnalysis`: 1 test passato, un tema restituito.
+- `pnpm test`: 4 file e 49 test passati; gli altri 9 file non partono perché lo stack Supabase locale non è utilizzabile (vedi sotto).
+- **Non eseguiti in locale:** `supabase db reset`, `supabase test db`, i test che usano il database ed E2E. La macchina virtuale Docker (Colima) risponde "input/output error" a ogni `docker exec` e `docker run`, quindi lo stack `voce` condiviso con gli altri worktree è "unhealthy" e `supabase status -o env` fallisce. Serve `colima restart`, che ferma container avviati da altri: non l'ho fatto.
+
+**In CI** (GitHub Actions, run 36360455234, Supabase avviato da zero con migrazioni e seed):
+- Typecheck e lint: passati.
+- Test del database (RLS, `src/test/rls.test.ts`): 1 file, 54 test passati.
+- `supabase test db`: `Files=1, Tests=2`, `Result: PASS`.
+- Unit test: 12 file, 149 test passati.
+- Build: `Compiled successfully`.
+- E2E con la finta API Anthropic: `sign up, add feedback and get the first themes`, 1 passato.
+- Evals col modello vero: non eseguite, nessuna chiave disponibile.
 
 ## Cosa resta
 
