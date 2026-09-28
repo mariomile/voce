@@ -81,12 +81,14 @@ export function pilePlaces(area: Rect, step: number): { radius: number; points: 
   return { radius: pitch * PILE_DOT, points: slots.map(({ x, y }) => ({ x, y })) }
 }
 
-// The pile for a count: the first places of its step, so a new response takes the next place and
-// nothing else moves.
-export function pileLayout(area: Rect, count: number): { radius: number; points: Point[] } {
-  if (count === 0) return { radius: 0, points: [] }
-  const { radius, points } = pilePlaces(area, pileStep(count))
-  return { radius, points: points.slice(0, count) }
+// The pile act: the first places of the step, one ink dot per response. A new response takes the
+// next place and nothing else moves.
+export function pileScene(places: { radius: number; points: Point[] }, responses: number): Scene {
+  return {
+    mode: "pile",
+    dots: places.points.slice(0, responses).map((p) => ({ x: p.x, y: p.y, r: places.radius, color: "ink" })),
+    halos: [],
+  }
 }
 
 // The largest value between low and high for which fits holds, by bisection. fits(low) is assumed.
@@ -146,10 +148,9 @@ export function bubbleLayout(
   area: Rect,
   groups: { count: number; minWidth: number }[],
   gap: number
-): { dotRadius: number; spacing: number; bubbles: Bubble[] } {
+): { spacing: number; bubbles: Bubble[] } {
   if (area.width <= 0 || area.height <= 0)
     return {
-      dotRadius: 0,
       spacing: 0,
       bubbles: groups.map(() => ({ cx: area.x, cy: area.y, radius: 0, dotRadius: 0, column: { x: area.x, width: 0 }, points: [] })),
     }
@@ -183,7 +184,7 @@ export function bubbleLayout(
     cursor += widths[i] + gap
     return bubble
   })
-  return { dotRadius: spacing * BUBBLE_DOT, spacing, bubbles }
+  return { spacing, bubbles }
 }
 
 function bubbleRadius(count: number, spacing: number) {

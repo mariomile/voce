@@ -5,8 +5,8 @@ import {
   dotOrderByX,
   fitSpacing,
   growBubble,
-  pileLayout,
   pilePlaces,
+  pileScene,
   pileStep,
   roomGroups,
   staggerDelays,
@@ -14,6 +14,7 @@ import {
   themesLayout,
   themesScene,
   type Point,
+  type Rect,
 } from "./room-viz"
 import type { RoomTheme } from "./room"
 
@@ -32,12 +33,18 @@ const theme = (id: string, feedbackCount: number, kind: RoomTheme["kind"] = "pro
   feedbackCount,
 })
 
-describe("pileLayout", () => {
+// The pile's dots for a count, as the screen draws them.
+function pileDots(area: Rect, count: number) {
+  const { dots } = pileScene(pilePlaces(area, pileStep(count)), count)
+  return { points: dots.map(({ x, y }) => ({ x, y })), radius: dots[0]?.r ?? 0 }
+}
+
+describe("pile", () => {
   const area = { x: 100, y: 200, width: 900, height: 300 }
 
   it("gives one point per response, all inside the area, none overlapping", () => {
     for (const count of [0, 1, 12, 230, 500, 1300]) {
-      const { points, radius } = pileLayout(area, count)
+      const { points, radius } = pileDots(area, count)
       expect(points).toHaveLength(count)
       for (const p of points) {
         expect(p.x - radius).toBeGreaterThanOrEqual(area.x - 0.001)
@@ -50,18 +57,18 @@ describe("pileLayout", () => {
   })
 
   it("keeps the same dot size within a step, so a new response does not move the others", () => {
-    const a = pileLayout(area, 40)
-    const b = pileLayout(area, 41)
+    const a = pileDots(area, 40)
+    const b = pileDots(area, 41)
     expect(b.radius).toBe(a.radius)
     expect(b.points.slice(0, 40)).toEqual(a.points)
   })
 
   it("makes the dots smaller as the room fills up", () => {
-    expect(pileLayout(area, 300).radius).toBeLessThan(pileLayout(area, 12).radius)
+    expect(pileDots(area, 300).radius).toBeLessThan(pileDots(area, 12).radius)
   })
 
   it("heaps up over the count, on the left, resting on the floor", () => {
-    const { points, radius } = pileLayout(area, 12)
+    const { points, radius } = pileDots(area, 12)
     const floor = area.y + area.height
     const lowest = Math.max(...points.map((p) => p.y))
     expect(lowest + radius).toBeGreaterThan(floor - 2 * radius)
@@ -69,7 +76,7 @@ describe("pileLayout", () => {
   })
 
   it("stays a heap, not a block, even when a step is almost full", () => {
-    const { points } = pileLayout(area, 250)
+    const { points } = pileDots(area, 250)
     const top = Math.min(...points.map((p) => p.y))
     const topRow = points.filter((p) => p.y < top + 1)
     const bottomRow = points.filter((p) => p.y > Math.max(...points.map((q) => q.y)) - 1)
@@ -77,13 +84,13 @@ describe("pileLayout", () => {
   })
 
   it("is empty for an area with no room", () => {
-    expect(pileLayout({ x: 0, y: 0, width: 0, height: 0 }, 10).points).toHaveLength(0)
+    expect(pileDots({ x: 0, y: 0, width: 0, height: 0 }, 10).points).toHaveLength(0)
   })
 
   it("never shows fewer dots than responses, even in a cramped area", () => {
     for (const cramped of [{ x: 0, y: 0, width: 120, height: 30 }, { x: 5, y: 5, width: 40, height: 12 }]) {
       for (const count of [61, 500, 2400]) {
-        const { points, radius } = pileLayout(cramped, count)
+        const { points, radius } = pileDots(cramped, count)
         expect(points).toHaveLength(count)
         expect(radius).toBeGreaterThan(0)
         for (const p of points) {
@@ -108,10 +115,20 @@ describe("pileStep and pilePlaces", () => {
     const places = pilePlaces(area, pileStep(41))
     expect(places.points.length).toBeGreaterThanOrEqual(60)
     for (const count of [1, 41, 60]) {
-      const pile = pileLayout(area, count)
+      const pile = pileDots(area, count)
       expect(pile.radius).toBe(places.radius)
       expect(pile.points).toEqual(places.points.slice(0, count))
     }
+  })
+})
+
+describe("pileScene", () => {
+  it("draws the first places of the step as ink dots, one per response, with no halos", () => {
+    const places = pilePlaces({ x: 100, y: 200, width: 900, height: 300 }, pileStep(41))
+    const scene = pileScene(places, 41)
+    expect(scene.mode).toBe("pile")
+    expect(scene.halos).toEqual([])
+    expect(scene.dots).toEqual(places.points.slice(0, 41).map((p) => ({ x: p.x, y: p.y, r: places.radius, color: "ink" })))
   })
 })
 
@@ -180,7 +197,8 @@ describe("bubbleLayout", () => {
 
   it("fits the area, rests the bubbles on the same floor and never overlaps columns", () => {
     for (const size of [area, { x: 20, y: 60, width: 800, height: 200 }]) {
-      const { bubbles, dotRadius } = bubbleLayout(size, groups, 24)
+      const { bubbles } = bubbleLayout(size, groups, 24)
+      const dotRadius = bubbles[0].dotRadius
       const floor = size.y + size.height
       for (const b of bubbles) {
         expect(b.cx - b.radius).toBeGreaterThanOrEqual(size.x - 0.001)
@@ -209,7 +227,8 @@ describe("growBubble", () => {
   const groups = [60, 45, 0].map((count) => ({ count, minWidth: 220 }))
 
   it("grows one bubble in place: same center line, same floor, one dot more per response", () => {
-    const { bubbles, spacing, dotRadius } = bubbleLayout(area, groups, 24)
+    const { bubbles, spacing } = bubbleLayout(area, groups, 24)
+    const dotRadius = bubbles[0].dotRadius
     const other = bubbles[2]
     const floor = other.cy + other.radius
     let previous = other.radius
