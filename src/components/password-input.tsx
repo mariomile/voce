@@ -2,11 +2,13 @@
 
 import { useState } from "react"
 import { Eye, EyeOff } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { Input } from "@/components/ui/input"
 
 // A password field with a button that shows what was typed, and a warning while Caps Lock is on.
 // The button never submits, and a click leaves the cursor in the field.
 export function PasswordInput({ id, "aria-describedby": describedBy, ...props }: React.ComponentProps<"input"> & { id: string }) {
+  const t = useTranslations("auth.password")
   const [visible, setVisible] = useState(false)
   const [capsLock, setCapsLock] = useState(false)
   const capsId = `${id}-caps`
@@ -27,7 +29,7 @@ export function PasswordInput({ id, "aria-describedby": describedBy, ...props }:
         />
         <button
           type="button"
-          aria-label={visible ? "Nascondi password" : "Mostra password"}
+          aria-label={visible ? t("hide") : t("show")}
           aria-pressed={visible}
           aria-controls={id}
           onMouseDown={(e) => e.preventDefault()}
@@ -38,7 +40,7 @@ export function PasswordInput({ id, "aria-describedby": describedBy, ...props }:
         </button>
       </div>
       <p id={capsId} aria-live="polite" className="text-sm leading-normal text-ink-muted empty:hidden">
-        {capsLock ? "Bloc Maiusc è attivo." : ""}
+        {capsLock ? t("capsLock") : ""}
       </p>
     </>
   )
