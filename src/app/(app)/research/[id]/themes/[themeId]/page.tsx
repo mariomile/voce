@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { getLocale, getTranslations } from "next-intl/server"
@@ -9,6 +10,13 @@ import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import { getResearch, getTheme } from "@/lib/data"
 import { formatDate } from "@/lib/format"
+
+export async function generateMetadata({ params }: PageProps<"/research/[id]/themes/[themeId]">): Promise<Metadata> {
+  const { id, themeId } = await params
+  const research = await getResearch(id)
+  const theme = research ? await getTheme(research, themeId) : null
+  return theme ? { title: theme.title } : {}
+}
 
 // A theme of the Research, with every feedback linked to it. Part of the Sintesi tab.
 export default async function ThemePage({ params }: PageProps<"/research/[id]/themes/[themeId]">) {
