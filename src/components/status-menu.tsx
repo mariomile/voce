@@ -42,7 +42,8 @@ export function StatusMenu({ value }: { value: string }) {
       <DropdownMenuContent className="w-auto">
         <DropdownMenuRadioGroup value={value} onValueChange={(v) => select(String(v))}>
           {Object.entries(options).map(([key, label]) => (
-            <DropdownMenuRadioItem key={key} value={key}>
+            // Radio items keep the menu open by default: a filter closes it, like choosing a link.
+            <DropdownMenuRadioItem key={key} value={key} closeOnClick>
               {label.charAt(0).toUpperCase() + label.slice(1)}
             </DropdownMenuRadioItem>
           ))}
