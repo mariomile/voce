@@ -299,7 +299,7 @@ Riallineata in S12 ai nomi veri dei test (controllo automatico: ogni nome tra vi
 | 61 | Dopo il cambio del perimetro, evals di analisi e Chiedi non sotto l'ultimo risultato di prima, must-pass di Chiedi passati | S0, S12. Eval `evals/analysis.eval.ts` ed `evals/questions.eval.ts`: run su `edac3cf` (S0), rilancio dopo S3 e S4 (S12), confronto dei due file in `evals/results/` | non eseguito: manca `ANTHROPIC_API_KEY`, e manca il run di partenza su `edac3cf` (S0) |
 | 62 | Il feedback che porta una Research a 5 manda una sola `first_research_collected`, da modulo, note o CSV; il sesto e il quinto di un'altra no | S2. `src/app/(app)/research/[id]/analytics.test.ts`: "the feedback that brings a Research to 5 sends it once, from the notes", "... from the public form", "... from the CSV", "the sixth and a second Research's fifth send nothing" | passa |
 | 63 | Una sola `research_synthesized` per `synthesize` con una parte `done`, proprietà esatte; nessuna se falliscono entrambe | S3, S6, S10. `research/[id]/analytics.test.ts`: "one per synthesize with a done part, with exactly its properties", "none when the themes part fails or finds no theme, nor when nothing ran", "none when both parts fail" | passa |
-| 64 | `feedback_count`, `citation_count`, `hypothesis_count` (0 per temi soli, sala e S4) | S3, S6, S10. `research/[id]/analytics.test.ts`: "citation_count adds the verdict quotes saved, hypothesis_count the hypotheses with a saved verdict", "a failed verdict counts no hypothesis and none of its quotes", "the room with hypotheses: one research_synthesized with the themes' quotes and hypothesis_count 0" | passa |
+| 64 | `feedback_count`, `citation_count`, `hypothesis_count` (0 per temi soli, sala e S4) | S3, S6, S10. `research/[id]/analytics.test.ts`: "citation_count adds the verdict quotes saved, hypothesis_count the hypotheses with a saved verdict", "a failed verdict counts no hypothesis and none of its quotes", "the room with hypotheses: one research_synthesized with the themes' quotes and hypothesis_count 0", "one analysis left with hypotheses (S4): the themes alone, hypothesis_count 0" (aggiunto in revisione, `c19db6a`) | passa |
 | 65 | `first_analysis_completed` alla prima analisi dei temi con un tema, una volta per workspace; non per il solo verdetto | S3, S9. `research/[id]/analytics.test.ts`: "the first themes analysis with a theme in any Research sends it once", "a verdict-only synthesis does not send it, and sends research_synthesized with its hypotheses", "themes failed and verdict done: one research_synthesized, no first_analysis_completed" | passa |
 | 66 | Vincolo delle milestone con `first_research_collected`; `Milestone` e `RepeatedEvent` con i due eventi | S2, S3. `research.test.sql`: "analytics_milestones accepts first_research_collected"; `src/lib/analytics.test.ts`: "Milestone carries first_research_collected, with no properties", "RepeatedEvent carries research_synthesized with its three counts" | passa |
 | 67 | Marcatore in domanda, ipotesi, feedback e ragionamento assente dal corpo verso PostHog | S2, S6. `research/[id]/analytics.test.ts`: "no question, hypothesis, feedback or reasoning text reaches PostHog" | passa |
@@ -589,3 +589,115 @@ Emerse costruendo (S12):
 - **S6 ha una seconda frase** (S12, difetto di S9): quando "Solo il verdetto" non compare (ogni ipotesi ha un verdetto e nessun feedback è arrivato dopo), S6 finisce con "Arriva con la prossima analisi." invece di "Riprova con «Solo il verdetto»." (`research.synthesis.analyze.verdictFailedNextAnalysis`). La regola di AC 45 non cambia.
 - **Nel seed ogni feedback entra in Voce alle 9:00 del giorno in cui è arrivato** (S12), non al momento del reset: così "feedback nuovi da analizzare", "arrivati dopo" e l'ordine dell'elenco hanno senso nella demo. Il seed ha tre Research di Fatturino (una con 2 ipotesi e i loro verdetti, una con 5 note di intervista e nessuna ipotesi, una con un'ipotesi e nessun feedback); AC 72 ne chiede almeno due.
 - **`src/lib/data.test.ts` e un test di `verdicts.test.sql` riallineati al seed** (S12): leggevano il seed com'era (una sola Research con feedback, nessun verdetto nel database).
+
+## Review
+
+Revisione indipendente (build-reviewer) del 2026-09-29, sul diff `185a057..HEAD` senza `.builderos` (S1-S12, 160 file), base `f075af4`, più le due correzioni della revisione (`c19db6a`, `f938fc8`). Stack isolato `voce-research`, porte 3000 e 4010 libere prima di ogni E2E. Nessuna chiamata al modello vero, nessuna chiave cercata.
+
+### Comandi rilanciati dal revisore
+
+Su `f075af4`, prima delle correzioni:
+
+```
+$ pnpm typecheck        -> EXIT 0
+$ pnpm lint             -> EXIT 0
+$ pnpm exec vitest run
+ Test Files  46 passed (46)
+      Tests  572 passed (572)
+$ /Users/mariomiletta/.cache/voce-research-db.sh reset
+Applying migration 20261001090000_research.sql...
+Seeding data from supabase/seed.sql...
+Finished supabase db reset on branch main.
+$ /Users/mariomiletta/.cache/voce-research-db.sh test
+All tests successful.
+Files=6, Tests=185,  1 wallclock secs
+Result: PASS
+$ /Users/mariomiletta/.cache/voce-research-db.sh migration-test
+Resetting local database to version: 20260927120000
+/Users/mariomiletta/.cache/voce-research-db/supabase/migration-tests/research_after.test.sql .. ok
+All tests successful.
+Files=1, Tests=12
+Result: PASS
+$ pnpm build            -> Compiled successfully, EXIT 0 (solo rotte /research, nessuna /themes, /ask, /feedback, /collect, /sala)
+$ caffeinate -i pnpm test:e2e
+Running 63 tests using 6 workers
+  63 passed (1.9m)
+```
+
+Dopo `c19db6a` (validazione di `mode` e test di S4), un secondo giro E2E ha fallito un test:
+
+```
+$ caffeinate -i pnpm test:e2e
+Running 63 tests using 6 workers
+  ✘ e2e/main-flow.spec.ts:18:5 › sign up, create a Research, paste 5 notes, write a hypothesis, analyze and read the verdict from the keyboard
+    Error: expect(locator).toBeVisible() failed
+    Locator: getByText('Aggiunte a questa Research. Le trovi in Feedback.')
+  1 failed
+  62 passed (1.2m)
+```
+
+Causa: alla terza nota il campo era vuoto e in errore N1. La conferma "Aggiunte a questa Research." compariva mentre la transizione era ancora in corso e i campi erano in sola lettura, quindi i tasti battuti subito dopo si perdevano. Vale anche per un PM veloce, non solo per il test. Corretto in `f938fc8` (la conferma compare solo quando i campi accettano di nuovo testo). Giro finale, sul codice di `f938fc8`:
+
+```
+$ pnpm typecheck        -> EXIT 0
+$ pnpm lint             -> EXIT 0
+$ pnpm exec vitest run
+ Test Files  46 passed (46)
+      Tests  574 passed (574)
+$ pnpm build
+✓ Compiled successfully in 1348ms
+✓ Generating static pages using 11 workers (11/11) in 125ms
+EXIT build 0
+$ caffeinate -i pnpm test:e2e
+Running 63 tests using 6 workers
+  63 passed (1.1m)
+EXIT e2e 0
+```
+
+Un altro giro completo subito prima, sullo stesso codice: 63 passati (1.3m). Il flake è stato visto una volta su tre giri: due giri verdi dopo la correzione non bastano a escluderlo. Le correzioni non toccano la migrazione: i tre comandi del database valgono per `f938fc8`. `pnpm evals`: non eseguito, manca `ANTHROPIC_API_KEY`.
+
+### Asse 1: qualità del codice
+
+**Migrazione (`20261001090000_research.sql`), letta per intero.** Nessun percorso perde dati: nessun `delete` o `truncate` su dati esistenti; le colonne del modulo si copiano in `research` prima del `drop`; `feedback.research_id` diventa `not null` solo dopo l'`update`, quindi un feedback non collegato annullerebbe l'intera transazione invece di sparire. Una Research iniziale per workspace, con `created_at` del workspace; le analisi, i temi e le domande sono collegati alla Research. La milestone di AC 7 si inserisce con `having count(*) >= 5` e `on conflict do nothing`. RLS e grant stanno nello stesso file per le quattro tabelle nuove; `hypothesis_verdicts` e `verdict_feedback` sono in sola lettura per `authenticated`; `start_analysis`, `finish_analysis`, `finish_verdict` e `start_question` sono solo per `service_role`; le chiavi composte `(workspace_id, research_id)` impediscono i collegamenti tra workspace diversi. Il test della migrazione copre 4 workspace (con modulo di default, con domanda propria e modulo spento, con 5 e con 4 feedback).
+
+**Sicurezza, letta da un secondo revisore sui percorsi completi.** Nessun difetto critico o alto. Il proxy lascia passare le action di `/research/[id]` senza sessione; ogni action che scrive o chiama il modello controlla `getClaims`, e le altre falliscono chiuse per i grant. Il client con la chiave segreta riceve id di workspace e Research solo da letture sotto RLS. Istruzioni e dati sono separati nei prompt (`<hypotheses_data>`, `<feedback_data>`, `<` codificato). Non c'è `dangerouslySetInnerHTML` in `src`. Negli analytics finiscono solo conteggi.
+
+Difetti trovati, per gravità:
+
+| Gravità | Dove | Difetto | Esito |
+|---|---|---|---|
+| media | `src/components/manual-feedback-form.tsx` | La conferma delle note compariva con i campi ancora in sola lettura, e i tasti battuti subito dopo si perdevano. Ha fatto fallire l'E2E di AC 70 in un giro su tre | corretto in `f938fc8` |
+| bassa | `src/app/(app)/research/[id]/actions.ts`, `synthesize` | `mode` arrivava dal browser senza schema: un valore sconosciuto faceva l'analisi completa. AGENTS.md chiede la validazione di ogni input | corretto in `c19db6a`, con il test "a mode other than full, verdict and room is failed and makes no call" visto fallire prima della correzione |
+| bassa | `actions.ts`, `verdictPart` | La rilettura di `hypothesis_verdicts` dopo `finish_verdict` sta fuori dal `try`. Con un errore transitorio del database a verdetto già salvato, `synthesize` lancia: il browser mostra S10 anche se le due analisi sono salvate e contate, e `research_synthesized` non parte | non corretto: la correzione semplice (dentro il `try`) proverebbe a far fallire una riga già `done`. Da decidere in fase 6 |
+| bassa | `collect/actions.ts`, `addNotes` | Con la Research eliminata da un'altra scheda l'insert viola la chiave esterna e la action lancia un errore non gestito, invece di dare `not_found` | non corretto |
+| bassa | `src/lib/analytics.ts` | Senza `POSTHOG_KEY` `first_research_collected` non si reclama, come vuole la spec. Se la chiave arriva in Production dopo che una Research ha già 5 feedback, l'evento parte al feedback successivo con un `t0` in ritardo | rischio di fase 6: la chiave va messa prima del rilascio |
+| bassa | `actions.ts:99` | "Solo il verdetto" senza ipotesi risponde `failed` (già registrato tra le deviazioni di S9) | nessuna azione |
+
+Rischio di rilascio, non di codice: la migrazione toglie le colonne e le firme delle funzioni che il codice di `main` usa. Tra migrazione e deploy l'app in produzione si rompe. Ordine e finestra vanno decisi in fase 6.
+
+### Asse 2: conformità alla spec
+
+**AC campionati: 32 su 73** (2, 3, 6, 7, 9, 11, 17, 18, 20, 21, 25, 27, 28, 32, 33, 35, 37, 39, 40, 41, 43, 44, 45, 52, 54, 56, 58, 62, 63, 64, 67, 69). Ogni test nominato esiste e verifica il criterio. Tre coperture parziali:
+
+- **AC 64**: `hypothesis_count = 0` in S4 non era provato. Aggiunto in `c19db6a` il test "one analysis left with hypotheses (S4): the themes alone, hypothesis_count 0". Il test è stato visto fallire con la definizione di fase 3 (`hypotheses.length`) e passare col codice vero.
+- **AC 32**: si prova che le due righe esistono e che le chiamate sono due, non che la riserva sia atomica. L'atomicità viene dalla funzione SQL (un solo `plpgsql`, `limit` prima di ogni insert), letta nel codice. Nessun test aggiunto.
+- **AC 43**: il caso "29 di 37, 8 dopo" si prova in due metà (`data.test.ts` legge `arrived_after`, `hypothesis-list.test.tsx` rende 8). Il calcolo `created_at > written_at` sta in `synthesize` ed è provato altrove. Accettabile.
+
+**Deviazioni.** Tutte vere e motivate, nessuna silenziosa. Quattro voci sono storiche e già superate nel codice: "S6 sotto il pulsante, da spostare in S7" (ora in `hypothesis-list.tsx`), "Fino a S9 e S10", "`ANALYSIS_WINDOW_DAYS` resta fino a S4" (non esiste più in `src` né in `evals`), "E-SESS dell'eliminazione non si vede dalla Raccolta (S11)" (corretto in S12). Tre cambiano il contratto dei dati della spec senza che `04-spec.md` sia stato emendato: `finish_verdict` riceve il testo dell'ipotesi e restituisce due numeri, `analysis_runs.input` e `question_runs.input` diventano nullabili, `synthesize` ha la modalità `room`. Sono registrate qui, con il motivo: da riportare nel Data model della spec alla prossima modifica.
+
+### Controllo dello scope
+
+Rifatto sulle 22 voci, con ricerche nel diff: nessun `redirects` o `rewrites` in `next.config.ts`; `src/app/(app)` contiene solo `billing` e `research`; nessun `pg_cron` o `pg_net` nella migrazione; nessun `localStorage` o `sessionStorage` in `src`; nessun "voci" nei cataloghi; nessun `embedding` o `vector`; nessun inviti o condivisione; nessun `MediaRecorder` o `getUserMedia`; la sala non legge `hypothesis_verdicts` né `verdict_feedback`; `PUBLIC_FORM_LOCALE` costante; `create_research` non conta le Research; nessuna classe responsive nuova. La tabella "Scope check" sopra è confermata: nessuna voce costruita.
+
+### Strumentazione
+
+Confermata come **evidenza di codice, più debole di un arrivo reale**: `POSTHOG_KEY` non c'è e PostHog non è stato toccato, perché mandare eventi di prova al progetto vero sporcherebbe la metrica. I corpi catturati da `analytics.test.ts` hanno le proprietà esatte della spec (`toEqual` sull'intero oggetto `properties`). Nei tre eventi nessun testo, provato col marcatore. `first_research_collected` si reclama con un upsert atomico, quindi due invii insieme ne mandano uno. L'arrivo in PostHog UE resta da vedere in fase 6.
+
+### Esito
+
+Il gate 5 non passa, per due motivi fuori dal codice:
+
+- AC 60 e 61 non sono eseguiti, quindi il 5.2 conta due criteri non passati.
+- Non c'è un tasso di superamento delle evals, quindi il 5.5 fallisce.
+
+Il 5.3 passa sul formato con tag `code`, ma resta evidenza da codice. Il blocco è uno solo: manca `ANTHROPIC_API_KEY` in `.env.local` di questo worktree, per il run di partenza su `edac3cf` e per `pnpm evals`. Nessun override scritto.
