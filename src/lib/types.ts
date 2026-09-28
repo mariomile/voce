@@ -9,10 +9,19 @@ export type Sentiment = "positive" | "neutral" | "negative" | "mixed";
 export type Workspace = {
   id: string;
   name: string;
+};
+
+// A question of the PM with its own collection: every feedback belongs to one Research.
+export type Research = {
+  id: string;
+  workspaceId: string;
+  // The PM's question, max 200 characters: the name of the Research.
+  question: string;
   formSlug: string;
   formEnabled: boolean;
-  // Chosen by the PM, max 140 characters. Null means the default question.
+  // Shown on the public form, max 140 characters. Null means the default question.
   formQuestion: string | null;
+  createdAt: string;
 };
 
 // Written only by the Stripe webhook, never by the user.
@@ -43,6 +52,7 @@ export type Analysis = {
 export type Theme = {
   id: string;
   workspaceId: string;
+  researchId: string;
   analysisId: string;
   kind: ThemeKind;
   title: string;

@@ -3,7 +3,7 @@
 import { useLocale, useTranslations } from "next-intl"
 import Link from "next/link"
 import { useRef, useState, useTransition } from "react"
-import { importCsv, previewCsv, type CsvImportResult, type CsvPreview } from "@/app/(app)/collect/actions"
+import { importCsv, previewCsv, type CsvImportResult, type CsvPreview } from "@/app/(app)/research/[id]/collect/actions"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardText, CardTitle } from "@/components/ui/card"
 import { FieldError } from "@/components/ui/field"
@@ -15,7 +15,7 @@ import { CSV_MAX_BYTES, CSV_MAX_ROWS } from "@/lib/plans"
 const VISIBLE_INVALID = 50
 
 // Pick a file → the server reads it and says what would happen → import. Nothing is saved before.
-export function CsvImport() {
+export function CsvImport({ researchId }: { researchId: string }) {
   const t = useTranslations("collect.csvImport")
   const locale = useLocale()
   const input = useRef<HTMLInputElement>(null)
@@ -42,7 +42,7 @@ export function CsvImport() {
     }
     setFile(chosen)
     startTransition(async () => {
-      const response = await previewCsv(formDataOf(chosen))
+      const response = await previewCsv(researchId, formDataOf(chosen))
       if (response.ok) setPreview(response)
       else setError(response.error)
     })
@@ -51,7 +51,7 @@ export function CsvImport() {
   function save() {
     if (!file) return
     startTransition(async () => {
-      const response = await importCsv(formDataOf(file))
+      const response = await importCsv(researchId, formDataOf(file))
       if (response.ok) {
         setPreview(null)
         setResult(response)
@@ -78,7 +78,7 @@ export function CsvImport() {
           {ignoredSummary(t, locale, result.duplicateCount, result.invalidCount, result.overLimitCount)}
         </p>
         <div className="flex gap-3">
-          <Link href="/feedback" className={buttonVariants()}>
+          <Link href={`/research/${researchId}/feedback`} className={buttonVariants()}>
             {t("seeFeedback")}
           </Link>
           <Button variant="secondary" onClick={() => input.current?.click()}>
@@ -213,7 +213,7 @@ function formDataOf(file: File) {
 
 // ". Left out: 3 already there, 2 invalid rows and 40 over the plan limit."
 function ignoredSummary(
-  t: ReturnType<typeof useTranslations>,
+  t: ReturnType<typeof useTranslations<"collect.csvImport">>,
   locale: Locale,
   duplicates: number,
   invalid: number,

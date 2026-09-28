@@ -50,15 +50,13 @@ test.describe("an Italian browser", () => {
 })
 
 test("/f/phc26 stays in Italian for an English browser that chose English", async ({ page, browser, baseURL }) => {
-  // The masterclass form: a workspace answering at /f/phc26 (claimed for the test when no one has it).
-  const { data: existing } = await admin.from("workspaces").select("id").eq("form_slug", "phc26").maybeSingle()
+  // The masterclass form: a Research answering at /f/phc26 (claimed for the test when no one has it).
+  const { data: existing } = await admin.from("research").select("id").eq("form_slug", "phc26").maybeSingle()
   let claimed: { id: string; slug: string } | null = null
   if (!existing) {
-    const { workspaceId } = await signedInUser(page, "phc26")
-    const { data, error } = await admin.from("workspaces").select("form_slug").eq("id", workspaceId).single()
-    if (error) throw error
-    claimed = { id: workspaceId, slug: data.form_slug as string }
-    const update = await admin.from("workspaces").update({ form_slug: "phc26", form_question: null }).eq("id", workspaceId)
+    const { researchId, formSlug } = await signedInUser(page, "phc26")
+    claimed = { id: researchId, slug: formSlug }
+    const update = await admin.from("research").update({ form_slug: "phc26", form_question: null }).eq("id", researchId)
     if (update.error) throw update.error
   }
   try {
@@ -78,6 +76,9 @@ test("/f/phc26 stays in Italian for an English browser that chose English", asyn
       await phone.getByLabel(/^Email/).fill("")
       await phone.getByRole("button", { name: "Invia" }).click()
       await expect(phone.getByText("Ricevuto. Grazie.")).toBeVisible()
+      // The response lands in the Research that owns the slug.
+      const { data } = await admin.from("feedback").select("channel").eq("research_id", claimed.id)
+      expect(data).toEqual([{ channel: "Modulo pubblico" }])
     }
     await english.close()
 
@@ -88,6 +89,20 @@ test("/f/phc26 stays in Italian for an English browser that chose English", asyn
     await expect(landing.locator("html")).toHaveAttribute("lang", "en")
     await other.close()
   } finally {
-    if (claimed) await admin.from("workspaces").update({ form_slug: claimed.slug }).eq("id", claimed.id)
+    if (claimed) await admin.from("research").update({ form_slug: claimed.slug }).eq("id", claimed.id)
   }
+})
+
+test("the form shows the Research form question, or the default when null", async ({ page, browser, baseURL }) => {
+  const { researchId, formSlug } = await signedInUser(page, "domanda-modulo")
+  const english = await browser.newContext({ locale: "en-US", baseURL })
+  await english.addCookies([{ name: "NEXT_LOCALE", value: "en", url: baseURL! }])
+  const phone = await english.newPage()
+  await phone.goto(`/f/${formSlug}`)
+  await expect(phone.getByRole("heading", { name: "Cosa vuoi dire al team di Prova domanda-modulo?" })).toBeVisible()
+  await admin.from("research").update({ form_question: "Come usi il report in PDF?" }).eq("id", researchId)
+  await phone.reload()
+  await expect(phone.getByRole("heading", { name: "Come usi il report in PDF?" })).toBeVisible()
+  await expect(phone.locator("html")).toHaveAttribute("lang", "it")
+  await english.close()
 })

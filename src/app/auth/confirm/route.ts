@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       const userId = data.user?.id
       if (userId && (type === "email" || type === "signup"))
         trackMilestone(() => workspaceOfUser(userId), { event: "signed_up", properties: { method: "email" } })
-      redirect("/themes")
+      redirect("/research")
     }
   }
   redirect("/login?error=link")

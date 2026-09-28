@@ -39,7 +39,9 @@ export type Database = {
           created_at: string
           feedback_count: number
           id: string
+          kind: Database["public"]["Enums"]["analysis_kind"]
           period_start: string
+          research_id: string | null
           status: Database["public"]["Enums"]["analysis_status"]
           workspace_id: string
         }
@@ -47,7 +49,9 @@ export type Database = {
           created_at?: string
           feedback_count: number
           id?: string
+          kind?: Database["public"]["Enums"]["analysis_kind"]
           period_start: string
+          research_id?: string | null
           status?: Database["public"]["Enums"]["analysis_status"]
           workspace_id: string
         }
@@ -55,11 +59,20 @@ export type Database = {
           created_at?: string
           feedback_count?: number
           id?: string
+          kind?: Database["public"]["Enums"]["analysis_kind"]
           period_start?: string
+          research_id?: string | null
           status?: Database["public"]["Enums"]["analysis_status"]
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "analyses_research_fkey"
+            columns: ["workspace_id", "research_id"]
+            isOneToOne: false
+            referencedRelation: "research"
+            referencedColumns: ["workspace_id", "id"]
+          },
           {
             foreignKeyName: "analyses_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -77,7 +90,7 @@ export type Database = {
           duration_ms: number | null
           error: string | null
           finished_at: string | null
-          input: Json
+          input: Json | null
           input_tokens: number | null
           issues: Json | null
           model: string
@@ -92,7 +105,7 @@ export type Database = {
           duration_ms?: number | null
           error?: string | null
           finished_at?: string | null
-          input: Json
+          input?: Json | null
           input_tokens?: number | null
           issues?: Json | null
           model: string
@@ -107,7 +120,7 @@ export type Database = {
           duration_ms?: number | null
           error?: string | null
           finished_at?: string | null
-          input?: Json
+          input?: Json | null
           input_tokens?: number | null
           issues?: Json | null
           model?: string
@@ -166,6 +179,7 @@ export type Database = {
           email: string | null
           id: string
           received_at: string
+          research_id: string
           text: string
           workspace_id: string
         }
@@ -176,6 +190,7 @@ export type Database = {
           email?: string | null
           id?: string
           received_at?: string
+          research_id: string
           text: string
           workspace_id: string
         }
@@ -186,16 +201,82 @@ export type Database = {
           email?: string | null
           id?: string
           received_at?: string
+          research_id?: string
           text?: string
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "feedback_research_fkey"
+            columns: ["workspace_id", "research_id"]
+            isOneToOne: false
+            referencedRelation: "research"
+            referencedColumns: ["workspace_id", "id"]
+          },
           {
             foreignKeyName: "feedback_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      hypothesis_verdicts: {
+        Row: {
+          analysis_id: string
+          arrived_after: number
+          created_at: string
+          feedback_read: number
+          hypothesis_id: string
+          reasoning: string
+          research_id: string
+          verdict: Database["public"]["Enums"]["hypothesis_verdict"]
+          workspace_id: string
+        }
+        Insert: {
+          analysis_id: string
+          arrived_after: number
+          created_at?: string
+          feedback_read: number
+          hypothesis_id: string
+          reasoning: string
+          research_id: string
+          verdict: Database["public"]["Enums"]["hypothesis_verdict"]
+          workspace_id: string
+        }
+        Update: {
+          analysis_id?: string
+          arrived_after?: number
+          created_at?: string
+          feedback_read?: number
+          hypothesis_id?: string
+          reasoning?: string
+          research_id?: string
+          verdict?: Database["public"]["Enums"]["hypothesis_verdict"]
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hypothesis_verdicts_workspace_id_analysis_id_fkey"
+            columns: ["workspace_id", "analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analyses"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "hypothesis_verdicts_workspace_id_hypothesis_id_fkey"
+            columns: ["workspace_id", "hypothesis_id"]
+            isOneToOne: false
+            referencedRelation: "research_hypotheses"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "hypothesis_verdicts_workspace_id_research_id_fkey"
+            columns: ["workspace_id", "research_id"]
+            isOneToOne: false
+            referencedRelation: "research"
+            referencedColumns: ["workspace_id", "id"]
           },
         ]
       }
@@ -206,7 +287,7 @@ export type Database = {
           duration_ms: number | null
           error: string | null
           finished_at: string | null
-          input: Json
+          input: Json | null
           input_tokens: number | null
           issues: Json | null
           model: string
@@ -221,7 +302,7 @@ export type Database = {
           duration_ms?: number | null
           error?: string | null
           finished_at?: string | null
-          input: Json
+          input?: Json | null
           input_tokens?: number | null
           issues?: Json | null
           model: string
@@ -236,7 +317,7 @@ export type Database = {
           duration_ms?: number | null
           error?: string | null
           finished_at?: string | null
-          input?: Json
+          input?: Json | null
           input_tokens?: number | null
           issues?: Json | null
           model?: string
@@ -270,6 +351,7 @@ export type Database = {
           feedback_count: number | null
           id: string
           outcome: Database["public"]["Enums"]["question_outcome"] | null
+          research_id: string | null
           status: Database["public"]["Enums"]["question_status"]
           workspace_id: string
         }
@@ -280,6 +362,7 @@ export type Database = {
           feedback_count?: number | null
           id?: string
           outcome?: Database["public"]["Enums"]["question_outcome"] | null
+          research_id?: string | null
           status?: Database["public"]["Enums"]["question_status"]
           workspace_id: string
         }
@@ -290,16 +373,100 @@ export type Database = {
           feedback_count?: number | null
           id?: string
           outcome?: Database["public"]["Enums"]["question_outcome"] | null
+          research_id?: string | null
           status?: Database["public"]["Enums"]["question_status"]
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "questions_research_fkey"
+            columns: ["workspace_id", "research_id"]
+            isOneToOne: false
+            referencedRelation: "research"
+            referencedColumns: ["workspace_id", "id"]
+          },
           {
             foreignKeyName: "questions_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      research: {
+        Row: {
+          created_at: string
+          form_enabled: boolean
+          form_question: string | null
+          form_slug: string
+          id: string
+          question: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          form_enabled?: boolean
+          form_question?: string | null
+          form_slug: string
+          id?: string
+          question: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          form_enabled?: boolean
+          form_question?: string | null
+          form_slug?: string
+          id?: string
+          question?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      research_hypotheses: {
+        Row: {
+          created_at: string
+          id: string
+          position: number
+          research_id: string
+          text: string
+          workspace_id: string
+          written_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          position?: number
+          research_id: string
+          text: string
+          workspace_id: string
+          written_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          position?: number
+          research_id?: string
+          text?: string
+          workspace_id?: string
+          written_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_hypotheses_workspace_id_research_id_fkey"
+            columns: ["workspace_id", "research_id"]
+            isOneToOne: false
+            referencedRelation: "research"
+            referencedColumns: ["workspace_id", "id"]
           },
         ]
       }
@@ -393,6 +560,7 @@ export type Database = {
           id: string
           kind: Database["public"]["Enums"]["theme_kind"]
           priority: Database["public"]["Enums"]["theme_priority"] | null
+          research_id: string
           sentiment: Database["public"]["Enums"]["theme_sentiment"]
           status: Database["public"]["Enums"]["theme_status"]
           summary: string
@@ -405,6 +573,7 @@ export type Database = {
           id?: string
           kind: Database["public"]["Enums"]["theme_kind"]
           priority?: Database["public"]["Enums"]["theme_priority"] | null
+          research_id: string
           sentiment: Database["public"]["Enums"]["theme_sentiment"]
           status?: Database["public"]["Enums"]["theme_status"]
           summary: string
@@ -417,6 +586,7 @@ export type Database = {
           id?: string
           kind?: Database["public"]["Enums"]["theme_kind"]
           priority?: Database["public"]["Enums"]["theme_priority"] | null
+          research_id?: string
           sentiment?: Database["public"]["Enums"]["theme_sentiment"]
           status?: Database["public"]["Enums"]["theme_status"]
           summary?: string
@@ -425,11 +595,60 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "themes_research_fkey"
+            columns: ["workspace_id", "research_id"]
+            isOneToOne: false
+            referencedRelation: "research"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
             foreignKeyName: "themes_workspace_id_analysis_id_fkey"
             columns: ["workspace_id", "analysis_id"]
             isOneToOne: false
             referencedRelation: "analyses"
             referencedColumns: ["workspace_id", "id"]
+          },
+        ]
+      }
+      verdict_feedback: {
+        Row: {
+          feedback_id: string
+          highlight: string | null
+          hypothesis_id: string
+          quote_rank: number | null
+          stance: Database["public"]["Enums"]["verdict_stance"]
+          workspace_id: string
+        }
+        Insert: {
+          feedback_id: string
+          highlight?: string | null
+          hypothesis_id: string
+          quote_rank?: number | null
+          stance: Database["public"]["Enums"]["verdict_stance"]
+          workspace_id: string
+        }
+        Update: {
+          feedback_id?: string
+          highlight?: string | null
+          hypothesis_id?: string
+          quote_rank?: number | null
+          stance?: Database["public"]["Enums"]["verdict_stance"]
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verdict_feedback_workspace_id_feedback_id_fkey"
+            columns: ["workspace_id", "feedback_id"]
+            isOneToOne: false
+            referencedRelation: "feedback"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "verdict_feedback_workspace_id_hypothesis_id_fkey"
+            columns: ["workspace_id", "hypothesis_id"]
+            isOneToOne: false
+            referencedRelation: "hypothesis_verdicts"
+            referencedColumns: ["workspace_id", "hypothesis_id"]
           },
         ]
       }
@@ -465,25 +684,16 @@ export type Database = {
       workspaces: {
         Row: {
           created_at: string
-          form_enabled: boolean
-          form_question: string | null
-          form_slug: string
           id: string
           name: string
         }
         Insert: {
           created_at?: string
-          form_enabled?: boolean
-          form_question?: string | null
-          form_slug: string
           id?: string
           name: string
         }
         Update: {
           created_at?: string
-          form_enabled?: boolean
-          form_question?: string | null
-          form_slug?: string
           id?: string
           name?: string
         }
@@ -495,9 +705,44 @@ export type Database = {
         Row: {
           channel: string | null
           feedback_count: number | null
+          research_id: string | null
           workspace_id: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "feedback_research_fkey"
+            columns: ["workspace_id", "research_id"]
+            isOneToOne: false
+            referencedRelation: "research"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "feedback_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      research_feedback_stats: {
+        Row: {
+          channel_count: number | null
+          feedback_count: number | null
+          first_received_at: string | null
+          last_created_at: string | null
+          last_received_at: string | null
+          research_id: string | null
+          workspace_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_research_fkey"
+            columns: ["workspace_id", "research_id"]
+            isOneToOne: false
+            referencedRelation: "research"
+            referencedColumns: ["workspace_id", "id"]
+          },
           {
             foreignKeyName: "feedback_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -526,6 +771,10 @@ export type Database = {
       }
     }
     Functions: {
+      create_research: {
+        Args: { question: string; ws: string }
+        Returns: string
+      }
       fail_analysis: {
         Args: { analysis: string; error: string; run?: Json }
         Returns: undefined
@@ -536,7 +785,7 @@ export type Database = {
       }
       finish_analysis: {
         Args: { analysis: string; run: Json; themes: Json }
-        Returns: undefined
+        Returns: number
       }
       finish_question: {
         Args: {
@@ -547,6 +796,13 @@ export type Database = {
         }
         Returns: Json
       }
+      finish_verdict: {
+        Args: { analysis: string; run: Json; verdicts: Json }
+        Returns: {
+          quotes_saved: number
+          verdicts_saved: number
+        }[]
+      }
       get_public_form: {
         Args: { slug: string }
         Returns: {
@@ -556,7 +812,7 @@ export type Database = {
         }[]
       }
       import_feedback: {
-        Args: { dry_run?: boolean; rows: Json; ws: string }
+        Args: { dry_run?: boolean; research: string; rows: Json; ws: string }
         Returns: string[]
       }
       question_usage: {
@@ -566,17 +822,20 @@ export type Database = {
           used: number
         }[]
       }
-      regenerate_form_link: { Args: { ws: string }; Returns: string }
+      regenerate_form_link: { Args: { research: string }; Returns: string }
       start_analysis: {
         Args: {
           feedback_count: number
-          input: Json
+          inputs: Json
+          kinds: Database["public"]["Enums"]["analysis_kind"][]
           model: string
           period_start: string
+          research: string
           ws: string
         }
         Returns: {
           analysis_id: string
+          kind: Database["public"]["Enums"]["analysis_kind"]
           outcome: string
         }[]
       }
@@ -585,6 +844,7 @@ export type Database = {
           feedback_considered: number
           input: Json
           model: string
+          research: string
           ws: string
         }
         Returns: {
@@ -603,7 +863,9 @@ export type Database = {
       }
     }
     Enums: {
+      analysis_kind: "themes" | "verdict"
       analysis_status: "running" | "done" | "failed"
+      hypothesis_verdict: "confirmed" | "refuted" | "to_review"
       member_role: "owner" | "member"
       plan: "free" | "pro"
       question_outcome: "answered" | "no_evidence"
@@ -612,6 +874,7 @@ export type Database = {
       theme_priority: "high" | "medium" | "low"
       theme_sentiment: "positive" | "neutral" | "negative" | "mixed"
       theme_status: "to_review" | "roadmap" | "done" | "discarded"
+      verdict_stance: "for" | "against"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -742,7 +1005,9 @@ export const Constants = {
   },
   public: {
     Enums: {
+      analysis_kind: ["themes", "verdict"],
       analysis_status: ["running", "done", "failed"],
+      hypothesis_verdict: ["confirmed", "refuted", "to_review"],
       member_role: ["owner", "member"],
       plan: ["free", "pro"],
       question_outcome: ["answered", "no_evidence"],
@@ -751,6 +1016,7 @@ export const Constants = {
       theme_priority: ["high", "medium", "low"],
       theme_sentiment: ["positive", "neutral", "negative", "mixed"],
       theme_status: ["to_review", "roadmap", "done", "discarded"],
+      verdict_stance: ["for", "against"],
     },
   },
 } as const

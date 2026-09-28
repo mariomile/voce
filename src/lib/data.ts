@@ -5,13 +5,13 @@ import { cache } from "react";
 import { z } from "zod";
 
 import type { Tables } from "./database.types";
-import { ANALYSIS_WINDOW_DAYS } from "./analysis";
-import { isoDateOf, monthOf } from "./format";
+import { ANALYSIS_MAX_FEEDBACK, selectFeedback } from "./analysis";
+import { monthOf } from "./format";
 import { FORM_SLUG_PATTERN, PLAN_LIMITS } from "./plans";
 import { formState, PUBLIC_FORM_CHANNEL, type RoomStatus } from "./room";
 import { questionUsage } from "./supabase/admin";
 import { createClient } from "./supabase/server";
-import type { Analysis, Feedback, Plan, Theme, ThemeKind, ThemeStatus, Workspace } from "./types";
+import type { Analysis, Feedback, Plan, Research, Theme, ThemeKind, ThemeStatus, Workspace } from "./types";
 
 // The only way pages read data. Every query runs as the signed-in user, so RLS limits it
 // to their workspace; the explicit workspace filters keep the queries readable and indexed.
@@ -32,11 +32,55 @@ export type Quote = {
   receivedAt: string;
 };
 
+// How a theme moved since the previous themes analysis of the same Research, matched by title.
+export type ThemeChange = { kind: "new" } | { kind: "more"; count: number; since: string };
+
 export type ThemeSummary = Theme & {
   feedbackCount: number;
+  // Null on the first analysis of the Research, or when the theme did not grow.
+  change: ThemeChange | null;
   // Feedback per week, oldest first, ending with the analysis week.
   trend: number[];
   quotes: Quote[];
+};
+
+// A row of /research: the Research with its number of feedback and its state. themeCount: the themes of its
+// last done themes analysis; hypotheses: how many, and their verdicts by word; newFeedback: the feedback that
+// entered Voce after that analysis (all of them before the first); lastActivity: the latest of its creation,
+// its last feedback and its last analysis.
+export type ResearchSummary = Pick<Research, "id" | "question" | "formEnabled"> & {
+  feedbackCount: number;
+  themeCount: number;
+  hypotheses: { total: number; confirmed: number; refuted: number; toReview: number };
+  newFeedback: number;
+  lastActivity: string;
+};
+
+// The last verdict of a hypothesis, as the Sintesi shows it. supporting and contradicting count the verified
+// links that still exist; feedbackRead is what the model read; arrivedAfter, the feedback read that entered
+// Voce after the hypothesis was written; arrivedAfterVerdict, the feedback of the Research that entered Voce
+// after the verdict analysis started.
+export type Verdict = {
+  verdict: "confirmed" | "refuted" | "to_review";
+  reasoning: string;
+  feedbackRead: number;
+  arrivedAfter: number;
+  supporting: number;
+  contradicting: number;
+  quotesFor: Quote[];
+  quotesAgainst: Quote[];
+  arrivedAfterVerdict: number;
+};
+
+// A hypothesis of the PM in the Sintesi, in the order it was written, with its verdict or none yet.
+export type Hypothesis = { id: string; text: string; writtenAt: string; verdict: Verdict | null };
+
+// The numbers in the header of a Research.
+export type ResearchStats = {
+  feedbackCount: number;
+  channelCount: number;
+  firstReceivedAt: string | null;
+  lastReceivedAt: string | null;
 };
 
 export type Usage = {
@@ -65,21 +109,200 @@ export const getCurrentWorkspace = cache(async (): Promise<Workspace> => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("workspaces")
-    .select("id, name, form_slug, form_enabled, form_question")
+    .select("id, name")
     .order("created_at")
     .limit(1)
     .maybeSingle();
   if (error) throw error;
   // The proxy already sends signed-out users to /login: a signed-in user without a workspace is a bug.
   if (!data) throw new Error("The signed-in user has no workspace");
+  return { id: data.id, name: data.name };
+});
+
+// Most recent activity first. Cached per request like the workspace.
+export const listResearch = cache(async (workspaceId: string): Promise<ResearchSummary[]> => {
+  const supabase = await createClient();
+  const [research, stats, analyses, hypotheses, verdicts] = await Promise.all([
+    supabase.from("research").select("id, question, form_enabled, created_at").eq("workspace_id", workspaceId),
+    supabase
+      .from("research_feedback_stats")
+      .select("research_id, feedback_count, last_created_at")
+      .eq("workspace_id", workspaceId),
+    // Newest first: the first of each Research is its last.
+    supabase
+      .from("analyses")
+      .select("id, research_id, kind, created_at")
+      .eq("workspace_id", workspaceId)
+      .eq("status", "done")
+      .not("research_id", "is", null)
+      .order("created_at", { ascending: false }),
+    supabase.from("research_hypotheses").select("research_id").eq("workspace_id", workspaceId),
+    supabase.from("hypothesis_verdicts").select("research_id, verdict").eq("workspace_id", workspaceId),
+  ]);
+  const counts = unwrap(stats);
+  const done = unwrap(analyses);
+  const lastThemes = (id: string) => done.find((a) => a.research_id === id && a.kind === "themes");
+  const themeRows = unwrap(
+    await supabase
+      .from("themes")
+      .select("analysis_id")
+      .eq("workspace_id", workspaceId)
+      .in(
+        "analysis_id",
+        unwrap(research).flatMap((r) => lastThemes(r.id)?.id ?? [])
+      )
+  );
+  const hypothesisRows = unwrap(hypotheses);
+  const verdictRows = unwrap(verdicts);
+  const rows = await Promise.all(
+    unwrap(research).map(async (r) => {
+      const stat = counts.find((c) => c.research_id === r.id);
+      const feedbackCount = stat?.feedback_count ?? 0;
+      const themes = lastThemes(r.id);
+      const lastAnalysis = done.find((a) => a.research_id === r.id);
+      const words = verdictRows.filter((v) => v.research_id === r.id).map((v) => v.verdict);
+      const newFeedback =
+        feedbackCount === 0 ? 0 : themes ? await countFeedbackAfter({ id: r.id, workspaceId }, themes.created_at) : feedbackCount;
+      const activity = [r.created_at, stat?.last_created_at, lastAnalysis?.created_at].filter((d): d is string => Boolean(d));
+      return {
+        id: r.id,
+        question: r.question,
+        formEnabled: r.form_enabled,
+        feedbackCount,
+        themeCount: themes ? themeRows.filter((t) => t.analysis_id === themes.id).length : 0,
+        hypotheses: {
+          total: hypothesisRows.filter((h) => h.research_id === r.id).length,
+          confirmed: words.filter((w) => w === "confirmed").length,
+          refuted: words.filter((w) => w === "refuted").length,
+          toReview: words.filter((w) => w === "to_review").length,
+        },
+        newFeedback,
+        lastActivity: activity.reduce((latest, d) => (Date.parse(d) > Date.parse(latest) ? d : latest)),
+      };
+    })
+  );
+  return rows.sort((a, b) => Date.parse(b.lastActivity) - Date.parse(a.lastActivity));
+});
+
+// Null when the id is not a Research the user can read: another workspace's, deleted, or not a uuid.
+// The same answer in every case, so a page cannot tell "someone else's" from "does not exist".
+export const getResearch = cache(async (id: string): Promise<Research | null> => {
+  if (!z.uuid().safeParse(id).success) return null;
+  const supabase = await createClient();
+  const row = unwrap(await supabase.from("research").select("*").eq("id", id).maybeSingle());
+  if (!row) return null;
   return {
-    id: data.id,
-    name: data.name,
-    formSlug: data.form_slug,
-    formEnabled: data.form_enabled,
-    formQuestion: data.form_question,
+    id: row.id,
+    workspaceId: row.workspace_id,
+    question: row.question,
+    formSlug: row.form_slug,
+    formEnabled: row.form_enabled,
+    formQuestion: row.form_question,
+    createdAt: row.created_at,
   };
 });
+
+export async function getResearchStats(research: Pick<Research, "id" | "workspaceId">): Promise<ResearchStats> {
+  const supabase = await createClient();
+  const row = unwrap(
+    await supabase
+      .from("research_feedback_stats")
+      .select("*")
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id)
+      .maybeSingle()
+  );
+  return {
+    feedbackCount: row?.feedback_count ?? 0,
+    channelCount: row?.channel_count ?? 0,
+    firstReceivedAt: row?.first_received_at ?? null,
+    lastReceivedAt: row?.last_received_at ?? null,
+  };
+}
+
+export async function listHypotheses(research: Pick<Research, "id" | "workspaceId">): Promise<Hypothesis[]> {
+  const supabase = await createClient();
+  const [hypotheses, verdicts] = await Promise.all([
+    supabase
+      .from("research_hypotheses")
+      .select("id, text, written_at")
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id)
+      .order("position"),
+    supabase
+      .from("hypothesis_verdicts")
+      .select("hypothesis_id, verdict, reasoning, feedback_read, arrived_after, analyses (created_at)")
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id),
+  ]);
+  const verdictRows = unwrap(verdicts);
+  const hypothesisIds = verdictRows.map((v) => v.hypothesis_id);
+  // Every verdict of a click shares one analysis: usually a single count.
+  const startedAt = [...new Set(verdictRows.map((v) => v.analyses.created_at))];
+  const [links, quotes, arrived] = await Promise.all([
+    supabase.from("verdict_feedback").select("hypothesis_id, stance").eq("workspace_id", research.workspaceId).in("hypothesis_id", hypothesisIds),
+    supabase
+      .from("verdict_feedback")
+      .select(`hypothesis_id, stance, highlight, feedback (${FEEDBACK_COLUMNS})`)
+      .eq("workspace_id", research.workspaceId)
+      .in("hypothesis_id", hypothesisIds)
+      .not("quote_rank", "is", null)
+      .order("quote_rank"),
+    Promise.all(startedAt.map(async (since) => [since, await countFeedbackAfter(research, since)] as const)),
+  ]);
+  const linkRows = unwrap(links);
+  const quoteRows = unwrap(quotes);
+  const arrivedAfter = new Map(arrived);
+  const toVerdict = (row: (typeof verdictRows)[number]): Verdict => {
+    const quotesOf = (stance: "for" | "against") =>
+      quoteRows
+        .filter((q) => q.hypothesis_id === row.hypothesis_id && q.stance === stance)
+        .map((q) => toQuote(toFeedback(q.feedback), q.highlight));
+    const linksOf = (stance: "for" | "against") =>
+      linkRows.filter((l) => l.hypothesis_id === row.hypothesis_id && l.stance === stance).length;
+    return {
+      verdict: row.verdict,
+      reasoning: row.reasoning,
+      feedbackRead: row.feedback_read,
+      arrivedAfter: row.arrived_after,
+      supporting: linksOf("for"),
+      contradicting: linksOf("against"),
+      quotesFor: quotesOf("for"),
+      quotesAgainst: quotesOf("against"),
+      arrivedAfterVerdict: arrivedAfter.get(row.analyses.created_at) ?? 0,
+    };
+  };
+  return unwrap(hypotheses).map((h) => {
+    const row = verdictRows.find((v) => v.hypothesis_id === h.id);
+    return { id: h.id, text: h.text, writtenAt: h.written_at, verdict: row ? toVerdict(row) : null };
+  });
+}
+
+// The feedback of a Research that entered Voce after a moment (created_at, not the date of the feedback).
+// How many hypotheses a Research has, without their text or verdicts: the room screen only says the verdict
+// is elsewhere.
+export async function countHypotheses(research: Pick<Research, "id" | "workspaceId">) {
+  const supabase = await createClient();
+  return countOf(
+    await supabase
+      .from("research_hypotheses")
+      .select("id", { count: "exact", head: true })
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id)
+  );
+}
+
+export async function countFeedbackAfter(research: Pick<Research, "id" | "workspaceId">, since: string) {
+  const supabase = await createClient();
+  return countOf(
+    await supabase
+      .from("feedback")
+      .select("id", { count: "exact", head: true })
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id)
+      .gt("created_at", since)
+  );
+}
 
 export const getUsage = cache(async (workspaceId: string, now = new Date()): Promise<Usage> => {
   const supabase = await createClient();
@@ -110,44 +333,45 @@ export const getUsage = cache(async (workspaceId: string, now = new Date()): Pro
   };
 });
 
-// For the room screen, polled every few seconds: counts only, never feedback text.
-export async function getRoomStatus(workspace: Pick<Workspace, "id" | "formEnabled">): Promise<RoomStatus> {
+// How many feedback "Analizza" would send now: the same selection the analysis makes on the server.
+export async function getAnalysisPerimeter(research: Pick<Research, "id" | "workspaceId">) {
+  const supabase = await createClient();
+  const rows = unwrap(
+    await supabase
+      .from("feedback")
+      .select("text")
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id)
+      .order("received_at", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(ANALYSIS_MAX_FEEDBACK)
+  );
+  return selectFeedback(rows).length;
+}
+
+// For the room screen of a Research, polled every few seconds: counts only, never feedback text.
+// The responses are those of its public form; the Free limit counts the whole workspace.
+export async function getRoomStatus(research: Pick<Research, "id" | "workspaceId" | "formEnabled">): Promise<RoomStatus> {
   const supabase = await createClient();
   const [subscription, total, responses] = await Promise.all([
-    supabase.from("subscriptions").select("plan").eq("workspace_id", workspace.id).maybeSingle(),
-    supabase.from("feedback").select("id", { count: "exact", head: true }).eq("workspace_id", workspace.id),
+    supabase.from("subscriptions").select("plan").eq("workspace_id", research.workspaceId).maybeSingle(),
+    supabase.from("feedback").select("id", { count: "exact", head: true }).eq("workspace_id", research.workspaceId),
     supabase
       .from("feedback")
       .select("id", { count: "exact", head: true })
-      .eq("workspace_id", workspace.id)
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id)
       .eq("channel", PUBLIC_FORM_CHANNEL),
   ]);
   const plan = unwrap(subscription)?.plan ?? "free";
   return {
     responses: countOf(responses),
     form: formState({
-      formEnabled: workspace.formEnabled,
+      formEnabled: research.formEnabled,
       feedbackCount: countOf(total),
       feedbackLimit: PLAN_LIMITS[plan].feedback,
     }),
   };
-}
-
-// For "Chiedi": all the feedback, and those a question reads (the last 90 days, today included).
-export async function getQuestionWindow(workspaceId: string) {
-  const supabase = await createClient();
-  const since = new Date(Date.parse(isoDateOf(new Date())) - (ANALYSIS_WINDOW_DAYS - 1) * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
-  const [total, recent] = await Promise.all([
-    supabase.from("feedback").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId),
-    supabase
-      .from("feedback")
-      .select("id", { count: "exact", head: true })
-      .eq("workspace_id", workspaceId)
-      .gte("received_at", since),
-  ]);
-  return { total: countOf(total), recent: countOf(recent) };
 }
 
 export async function getBilling(workspaceId: string): Promise<Billing> {
@@ -178,37 +402,72 @@ export async function getBilling(workspaceId: string): Promise<Billing> {
   };
 }
 
+// The Sintesi of a Research: the themes of its last done themes analysis, and what changed since the one before.
 export async function getDashboard(
-  workspaceId: string,
+  research: Pick<Research, "id" | "workspaceId">,
   filters: { kind?: ThemeKind; status?: StatusFilter } = {}
 ) {
   const supabase = await createClient();
-  const [latest, feedbackCount, channels, recent] = await Promise.all([
+  const [latestTwo, feedbackCount, channels, recent] = await Promise.all([
     supabase
       .from("analyses")
       .select("*")
-      .eq("workspace_id", workspaceId)
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id)
+      .eq("kind", "themes")
       // A running or failed analysis has no themes to show: the last finished one stays.
       .eq("status", "done")
       .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase.from("feedback").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId),
-    channelCounts(workspaceId),
+      .limit(2),
+    supabase
+      .from("feedback")
+      .select("id", { count: "exact", head: true })
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id),
+    channelCounts(research.workspaceId, research.id),
     supabase
       .from("feedback")
       .select(FEEDBACK_COLUMNS)
-      .eq("workspace_id", workspaceId)
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id)
       .order("received_at", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(RECENT_FEEDBACK),
   ]);
-  const analysisRow = unwrap(latest);
+  const [analysisRow, previousRow] = unwrap(latestTwo);
   const analysis = analysisRow ? toAnalysis(analysisRow) : null;
+  const previous = previousRow ? toAnalysis(previousRow) : null;
   // A theme whose feedback were all deleted has nothing left to show.
-  const allThemes = analysis
-    ? (await summarizeAnalysis(workspaceId, analysis)).filter((t) => t.feedbackCount > 0)
-    : [];
+  const [current, before] = await Promise.all([
+    analysis ? summarizeAnalysis(research.workspaceId, analysis) : [],
+    previous ? summarizeAnalysis(research.workspaceId, previous) : [],
+  ]);
+  const titleKey = (title: string) => title.trim().toLowerCase();
+  const allThemes = current
+    .filter((t) => t.feedbackCount > 0)
+    .map((t): ThemeSummary => {
+      if (!previous) return t;
+      const old = before.find((o) => titleKey(o.title) === titleKey(t.title));
+      if (!old) return { ...t, change: { kind: "new" } };
+      const count = t.feedbackCount - old.feedbackCount;
+      return { ...t, change: count > 0 ? { kind: "more", count, since: previous.createdAt } : null };
+    });
+
+  let changes: { since: string; newFeedback: number; newThemes: number } | null = null;
+  if (analysis && previous) {
+    const arrived = await supabase
+      .from("feedback")
+      .select("id", { count: "exact", head: true })
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id)
+      .gt("created_at", previous.createdAt)
+      .lte("created_at", analysis.createdAt);
+    changes = {
+      since: previous.createdAt,
+      newFeedback: countOf(arrived),
+      newThemes: allThemes.filter((t) => t.change?.kind === "new").length,
+    };
+  }
 
   const status = filters.status ?? "open";
   const byStatus = allThemes.filter((t) =>
@@ -221,6 +480,7 @@ export async function getDashboard(
 
   return {
     analysis,
+    changes,
     themes,
     themeTotal: byStatus.length,
     analysisThemeCount: allThemes.length,
@@ -231,10 +491,13 @@ export async function getDashboard(
   };
 }
 
-// One page of the list, newest first. The channel counts give the totals without another query.
-export async function listFeedback(workspaceId: string, filters: { channel?: string; page?: number } = {}) {
+// One page of the Research's feedback, newest first. The channel counts give the totals without another query.
+export async function listFeedback(
+  research: Pick<Research, "id" | "workspaceId">,
+  filters: { channel?: string; page?: number } = {}
+) {
   const supabase = await createClient();
-  const channels = await channelCounts(workspaceId);
+  const channels = await channelCounts(research.workspaceId, research.id);
   const total = channels.reduce((sum, c) => sum + c.count, 0);
   const matching = filters.channel ? (channels.find((c) => c.name === filters.channel)?.count ?? 0) : total;
   const pageCount = Math.max(1, Math.ceil(matching / FEEDBACK_PAGE_SIZE));
@@ -243,7 +506,8 @@ export async function listFeedback(workspaceId: string, filters: { channel?: str
   let query = supabase
     .from("feedback")
     .select(FEEDBACK_COLUMNS)
-    .eq("workspace_id", workspaceId)
+    .eq("workspace_id", research.workspaceId)
+    .eq("research_id", research.id)
     .order("received_at", { ascending: false })
     .order("created_at", { ascending: false })
     .order("id")
@@ -253,12 +517,20 @@ export async function listFeedback(workspaceId: string, filters: { channel?: str
   return { total, channels, feedback, page, pageCount };
 }
 
-export async function getTheme(workspaceId: string, themeId: string) {
+// A theme of this Research. Null for a theme of another Research or workspace, or a wrong id.
+export async function getTheme(research: Pick<Research, "id" | "workspaceId">, themeId: string) {
   // Theme ids come from the URL: anything that is not a uuid cannot exist.
   if (!z.uuid().safeParse(themeId).success) return null;
+  const workspaceId = research.workspaceId;
   const supabase = await createClient();
   const themeRow = unwrap(
-    await supabase.from("themes").select("*").eq("workspace_id", workspaceId).eq("id", themeId).maybeSingle()
+    await supabase
+      .from("themes")
+      .select("*")
+      .eq("workspace_id", workspaceId)
+      .eq("research_id", research.id)
+      .eq("id", themeId)
+      .maybeSingle()
   );
   if (!themeRow) return null;
   const [analysisRow, links] = await Promise.all([
@@ -283,6 +555,7 @@ export async function getTheme(workspaceId: string, themeId: string) {
   return {
     ...toTheme(themeRow),
     feedbackCount: linked.length,
+    change: null,
     trend: weeklyTrend(linked.map((l) => l.feedback.receivedAt), analysis.createdAt),
     quotes,
     analysis,
@@ -324,6 +597,7 @@ async function summarizeAnalysis(workspaceId: string, analysis: Analysis): Promi
     return {
       ...toTheme(row),
       feedbackCount: stat?.feedback_count ?? 0,
+      change: null,
       trend: weeklyTrend(stat?.received_dates ?? [], analysis.createdAt),
       quotes: quoteRows
         .filter((q) => q.theme_id === row.id)
@@ -332,12 +606,14 @@ async function summarizeAnalysis(workspaceId: string, analysis: Analysis): Promi
   });
 }
 
-export async function channelCounts(workspaceId: string) {
+// The channels of the workspace, or of one of its Research, with their number of feedback.
+export async function channelCounts(workspaceId: string, researchId?: string) {
   const supabase = await createClient();
-  const rows = unwrap(await supabase.from("feedback_channels").select("*").eq("workspace_id", workspaceId));
-  return rows
-    .map((r) => ({ name: r.channel!, count: r.feedback_count! }))
-    .sort((a, b) => b.count - a.count);
+  let query = supabase.from("feedback_channels").select("*").eq("workspace_id", workspaceId);
+  if (researchId) query = query.eq("research_id", researchId);
+  const counts = new Map<string, number>();
+  for (const r of unwrap(await query)) counts.set(r.channel!, (counts.get(r.channel!) ?? 0) + r.feedback_count!);
+  return [...counts].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
 }
 
 function weeklyTrend(receivedDates: string[], end: string) {
@@ -387,6 +663,7 @@ function toTheme(row: Tables<"themes">): Theme {
   return {
     id: row.id,
     workspaceId: row.workspace_id,
+    researchId: row.research_id,
     analysisId: row.analysis_id,
     kind: row.kind,
     title: row.title,

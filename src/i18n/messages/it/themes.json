@@ -1,8 +1,5 @@
 {
   "page": {
-    "title": "Cosa dicono i clienti di {name}",
-    "lede": "<b>{count} feedback</b> dal {start} al {end}, raggruppati in <b>{themes} temi</b>.",
-    "newAnalysis": "Nuova analisi",
     "filterAll": "Tutti",
     "noThemesFiltered": "Nessun tema con questi filtri.",
     "showOpenThemes": "Mostra i temi aperti",
@@ -16,18 +13,15 @@
       "csvTitle": "Importa un CSV",
       "csvText": "Serve una colonna <b>testo</b>. Canale, cliente e data sono facoltativi. Fino a 2.000 righe.",
       "chooseFile": "Scegli il file",
-      "pasteTitle": "Incolla un feedback",
-      "pasteText": "Copiato da un'email, da Slack o dalle tue note, uno alla volta.",
-      "pasteAction": "Incolla un testo"
+      "pasteTitle": "Incolla le note",
+      "pasteText": "Le note di un'intervista, o un messaggio copiato da un'email o da Slack.",
+      "pasteAction": "Incolla le note"
     },
     "emptyNoAnalysis": {
       "title": "{count} feedback, ancora nessun tema",
       "lede": "Letti uno per uno dicono poco. L'analisi li raggruppa in problemi, opportunità e apprezzamenti, con le citazioni che li rappresentano meglio.",
       "readyTitle": "Pronti per la prima analisi",
-      "channelLine": "{count} da {name}",
-      "quotaFirst": "Userai 1 delle {limit} analisi di {month}.",
-      "quotaRemaining": "Ti restano {remaining} analisi di {month}.",
-      "analyzeLabel": "Analizza {count} feedback"
+      "channelLine": "{count} da {name}"
     }
   },
   "statusMenu": {
@@ -53,19 +47,19 @@
     "unset": "Da impostare"
   },
   "analyzeButton": {
-    "running": "Analisi in corso…",
-    "runningNote": "Può volerci qualche minuto. I temi compaiono qui appena è finita.",
     "failures": {
-      "no_feedback": "Negli ultimi 90 giorni non ci sono feedback da analizzare.",
-      "busy": "C'è già un'analisi in corso. Ricarica la pagina tra un minuto.",
+      "no_feedback": "In questa Research non ci sono feedback da analizzare.",
+      "busy": "C'è già un'analisi in corso, forse in un'altra Research o in un'altra scheda. Ricarica la pagina tra un minuto.",
       "limit": "Hai usato tutte le analisi di questo mese, o troppi tentativi non sono riusciti.",
       "no_themes": "L'analisi non ha trovato temi con almeno 2 feedback e non conta nel limite del mese. Non è cambiato nulla.",
-      "failed": "L'analisi non è riuscita e non conta nel limite del mese. Non è cambiato nulla: riprova tra poco."
+      "failed": "L'analisi non è riuscita e non conta nel limite del mese. Non è cambiato nulla: riprova tra poco.",
+      "session": "La sessione è scaduta. Accedi di nuovo per continuare.",
+      "not_found": "Non trovo questa Research."
     }
   },
   "limitWarning": {
     "title": "Hai raggiunto {limit} feedback, il limite del piano Free",
-    "text": "Il modulo pubblico non accetta nuovi feedback. Con Pro i feedback sono illimitati e le analisi diventano 100 al mese.",
+    "text": "Il limite vale per tutte le tue Research: i moduli pubblici non accettano nuovi feedback. Con Pro i feedback sono illimitati e le analisi diventano 100 al mese.",
     "cta": "Passa a Pro"
   },
   "qrCode": {

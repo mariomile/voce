@@ -1,8 +1,9 @@
 {
   "page": {
     "title": "Feedback",
-    "ledeEmpty": "All the feedback you've collected, most recent first, with the channel it came from.",
-    "ledeCount": "<b>{total} feedback</b> {channelCount, plural, one {from 1 channel} other {from {channelCount} channels}}, most recent first."
+    "ledeEmpty": "Every feedback of this Research is here, most recent first, with the channel it came from.",
+    "ledeCount": "<b>{total} feedback</b> {channelCount, plural, one {from 1 channel} other {from {channelCount} channels}}, most recent first.",
+    "addFeedback": "Add feedback"
   },
   "filters": {
     "all": "All"

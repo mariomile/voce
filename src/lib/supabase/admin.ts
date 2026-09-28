@@ -4,11 +4,12 @@ import { createHmac } from "node:crypto"
 import { createClient } from "@supabase/supabase-js"
 import type { Database, Json } from "@/lib/database.types"
 import type { CheckedTheme } from "@/lib/analysis"
+import type { CheckedVerdict } from "@/lib/verdict"
 import type { Milestone } from "@/lib/analytics"
 import type { BillingState } from "@/lib/billing"
 
 // The secret key bypasses RLS, so it does only what the server alone may do: send a public form
-// submission with the visitor IP it sees, reserve, save or fail an AI analysis or a question, and write the billing
+// submission with the visitor IP it sees, reserve, save or fail an AI analysis (themes and verdicts) or a question, and write the billing
 // data from Stripe, and record which analytics events a workspace has sent. If users could do those,
 // they could skip the rate limits, write fake themes and costs, or give themselves Pro.
 
@@ -37,24 +38,33 @@ export async function sendPublicFeedback(input: {
 }
 
 // The workspace id must come from the signed-in user's session: this call does not check membership.
+// The Research must be of that workspace: the database refuses another one. One analysis per kind,
+// reserved together; inputs holds the log of each kind's run.
+export type AnalysisKind = Database["public"]["Enums"]["analysis_kind"]
 export async function startAnalysis(input: {
   workspaceId: string
+  researchId: string
   model: string
+  kinds: AnalysisKind[]
   periodStart: string
   feedbackCount: number
-  input: Json
-}): Promise<{ outcome: "ok"; analysisId: string } | { outcome: "busy" | "limit" }> {
+  inputs: Partial<Record<AnalysisKind, Json>>
+}): Promise<{ outcome: "ok"; analyses: Partial<Record<AnalysisKind, string>> } | { outcome: "busy" | "limit" }> {
   const { data, error } = await adminClient().rpc("start_analysis", {
     ws: input.workspaceId,
+    research: input.researchId,
     model: input.model,
+    kinds: input.kinds,
     period_start: input.periodStart,
     feedback_count: input.feedbackCount,
-    input: input.input,
+    inputs: input.inputs,
   })
   if (error) throw error
-  const row = data[0]
-  if (row?.outcome === "ok" && row.analysis_id) return { outcome: "ok", analysisId: row.analysis_id }
-  if (row?.outcome === "busy" || row?.outcome === "limit") return { outcome: row.outcome }
+  if (data.length > 0 && data.every((row) => row.outcome === "ok" && row.kind && row.analysis_id)) {
+    return { outcome: "ok", analyses: Object.fromEntries(data.map((row) => [row.kind, row.analysis_id])) }
+  }
+  const outcome = data[0]?.outcome
+  if (data.length === 1 && (outcome === "busy" || outcome === "limit")) return { outcome }
   throw new Error(`Unexpected start_analysis result: ${JSON.stringify(data)}`)
 }
 
@@ -67,8 +77,9 @@ export type RunLog = {
   cost_usd?: number | null
 }
 
-export async function finishAnalysis(analysisId: string, themes: CheckedTheme[], run: RunLog) {
-  const { error } = await adminClient().rpc("finish_analysis", {
+// Returns the number of verified quotes the database saved.
+export async function finishAnalysis(analysisId: string, themes: CheckedTheme[], run: RunLog): Promise<number> {
+  const { data, error } = await adminClient().rpc("finish_analysis", {
     analysis: analysisId,
     themes: themes.map((t) => ({
       title: t.title,
@@ -81,6 +92,34 @@ export async function finishAnalysis(analysisId: string, themes: CheckedTheme[],
     run,
   })
   if (error) throw error
+  return data
+}
+
+// The verdicts, already checked by the server. The database checks the quotes again, skips feedback deleted
+// meanwhile and saves a confirmed or refuted left without quotes of its side as to_review.
+// A hypothesis whose text changed since the call keeps its previous verdict.
+// Returns the verified quotes and the verdicts it saved.
+export async function finishVerdict(
+  analysisId: string,
+  verdicts: CheckedVerdict[],
+  run: RunLog
+): Promise<{ quotes: number; verdicts: number }> {
+  const { data, error } = await adminClient().rpc("finish_verdict", {
+    analysis: analysisId,
+    verdicts: verdicts.map((v) => ({
+      hypothesis_id: v.hypothesisId,
+      text: v.hypothesisText,
+      verdict: v.verdict,
+      reasoning: v.reasoning,
+      feedback_read: v.feedbackRead,
+      arrived_after: v.arrivedAfter,
+      links: v.links.map((l) => ({ feedback_id: l.feedbackId, stance: l.stance })),
+      quotes: v.quotes.map((q) => ({ feedback_id: q.feedbackId, stance: q.stance, text: q.text })),
+    })),
+    run,
+  })
+  if (error) throw error
+  return { quotes: data[0].quotes_saved, verdicts: data[0].verdicts_saved }
 }
 
 export async function failAnalysis(analysisId: string, message: string, run: RunLog) {
@@ -92,12 +131,14 @@ export async function failAnalysis(analysisId: string, message: string, run: Run
 // signed-in user's session, and only the server reserves, closes or fails a question.
 export async function startQuestion(input: {
   workspaceId: string
+  researchId: string
   model: string
   feedbackConsidered: number
   input: Json
 }): Promise<{ outcome: "ok"; questionId: string } | { outcome: "busy" | "limit" }> {
   const { data, error } = await adminClient().rpc("start_question", {
     ws: input.workspaceId,
+    research: input.researchId,
     model: input.model,
     feedback_considered: input.feedbackConsidered,
     input: input.input,
@@ -208,8 +249,27 @@ export async function workspaceOfUser(userId: string) {
   return data?.workspace_id ?? null
 }
 
+// The workspace of the Research whose public form has this link.
 export async function workspaceOfForm(slug: string) {
-  const { data, error } = await adminClient().from("workspaces").select("id").eq("form_slug", slug).maybeSingle()
+  const { data, error } = await adminClient().from("research").select("workspace_id").eq("form_slug", slug).maybeSingle()
   if (error) throw error
-  return data?.id ?? null
+  return data?.workspace_id ?? null
+}
+
+// The workspace of a Research (by id, or by the link of its public form) once it has at least 5 feedback.
+// Null before: first_research_collected is not due yet.
+export const COLLECTED_FEEDBACK = 5
+export async function workspaceOfCollectedResearch(research: { id: string } | { slug: string }) {
+  const client = adminClient()
+  const query = client.from("research").select("id, workspace_id")
+  const { data, error } = await ("id" in research ? query.eq("id", research.id) : query.eq("form_slug", research.slug)).maybeSingle()
+  if (error) throw error
+  if (!data) return null
+  const { count, error: countError } = await client
+    .from("feedback")
+    .select("id", { count: "exact", head: true })
+    .eq("workspace_id", data.workspace_id)
+    .eq("research_id", data.id)
+  if (countError) throw countError
+  return (count ?? 0) >= COLLECTED_FEEDBACK ? data.workspace_id : null
 }

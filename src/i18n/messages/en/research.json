@@ -1,0 +1,186 @@
+{
+  "metadata": {
+    "title": "Research"
+  },
+  "list": {
+    "title": "Your Research",
+    "lede": "A Research starts from a question about your customers and collects the feedback you need to answer it.",
+    "newResearch": "New Research",
+    "row": {
+      "feedbackLabel": "feedback",
+      "formOff": "Form off",
+      "noFeedback": "No feedback yet",
+      "themes": "{count, plural, one {# theme} other {# themes}}",
+      "hypotheses": "{count, plural, one {# hypothesis} other {# hypotheses}}",
+      "hypothesesWithVerdicts": "{count, plural, one {# hypothesis} other {# hypotheses}}: {verdicts}",
+      "confirmed": "{count} confirmed",
+      "refuted": "{count} refuted",
+      "toReview": "{count} to review",
+      "newFeedback": "{count} new feedback to analyze"
+    },
+    "deleted": "Research deleted."
+  },
+  "firstRun": {
+    "title": "Here you keep your questions about customers, with their answers.",
+    "lede": "Start from a question you want answered before a decision. Then collect feedback: a form with a QR code, interview notes, a CSV."
+  },
+  "form": {
+    "label": "Your question",
+    "hint": "For example: why don't small teams move to Pro after the trial?",
+    "create": "Create the Research",
+    "creating": "Creating…",
+    "cancel": "Cancel",
+    "count": "{count} / {max}",
+    "errors": {
+      "empty": "Write the question you want to answer. For example: why don't small teams move to Pro after the trial?",
+      "tooLong": "The question is over 200 characters: keep it to a single question.",
+      "failed": "I couldn't save the Research. Try again shortly: your question is still here.",
+      "session": "Your session has expired. Log in again to continue: copy the text you wrote first, it won't stay here.",
+      "sessionLink": "Log in"
+    },
+    "edit": "Edit",
+    "editLabel": "Edit the question",
+    "save": "Save",
+    "saving": "Saving…"
+  },
+  "header": {
+    "back": "All Research",
+    "ledeCount": "{count} feedback from {channels, plural, one {1 channel} other {# channels}}, {start} to {end}.",
+    "ledeEmpty": "No feedback yet. The form is on."
+  },
+  "tabs": {
+    "label": "Research sections",
+    "synthesis": "Summary",
+    "ask": "Ask",
+    "feedback": "Feedback",
+    "collect": "Collect"
+  },
+  "notFound": {
+    "title": "I can't find this Research.",
+    "text": "It may have been deleted, or the link belongs to another account.",
+    "action": "All Research"
+  },
+  "notes": {
+    "title": "Paste the notes of an interview",
+    "lede": "One interview at a time: one person's notes are one feedback. A message copied from an email or Slack works too: change the channel.",
+    "textLabel": "Notes",
+    "textPlaceholder": "The person's words, as you wrote them down",
+    "emptyHint": "Notes are not saved until you add them.",
+    "count": "{count} / {max}",
+    "channelLabel": "Channel",
+    "defaultChannel": "Interview",
+    "customerLabel": "Person or role",
+    "customerOptional": "optional",
+    "customerPlaceholder": "Name, role or company",
+    "dateLabel": "Date",
+    "dateOptional": "if empty, today",
+    "submit": "Add the notes",
+    "submitting": "Adding…",
+    "added": "Added to this Research. You'll find them in Feedback.",
+    "errors": {
+      "empty": "Paste the notes before adding them.",
+      "tooLong": "The notes are over 10,000 characters. Keep the parts that report what the person said.",
+      "limit": "You've reached 100 feedback, the Free plan limit across all your Research: these notes weren't saved.",
+      "futureDate": "Pick today or a date in the past.",
+      "channel": "Say where it comes from, at most {limit} characters.",
+      "customer": "At most {limit} characters.",
+      "session": "Your session has expired. Sign in again to continue: copy the text you wrote first, it won't stay here.",
+      "sessionLink": "Sign in"
+    }
+  },
+  "synthesis": {
+    "themesTitle": "Themes",
+    "lede": "<b>{count} feedback</b> from {start} to {end}, grouped into <b>{themes} themes</b>.",
+    "analyze": {
+      "label": "Analyze {count} feedback",
+      "labelPartial": "Analyze the {count} most recent feedback",
+      "labelThemesOnly": "Analyze only the themes of {count} feedback",
+      "partialNote": "of {total} in this Research",
+      "running": "Analysis running…",
+      "runningNote": "It can take a few minutes. Themes and verdicts show up here as soon as it's done.",
+      "slowNote": "This is taking longer than usual. Themes and verdicts will show up here: you can leave the page and come back.",
+      "announcement": "Analysis done: {count, plural, one {1 theme} other {# themes}}.",
+      "announcementVerdicts": "{count, plural, one {1 verdict} other {# verdicts}}: {parts}.",
+      "confirmedCount": "{count} confirmed",
+      "refutedCount": "{count} refuted",
+      "toReviewCount": "{count} to review",
+      "network": "I can't reach Voce. If the analysis had already started, the result shows up here when it's done: reload the page in a few minutes.",
+      "sessionLink": "Sign in",
+      "lowFeedbackNote": "With fewer than 5 feedback the themes say little: you can analyze them anyway.",
+      "cost": {
+        "one": "You'll use 1 of your {limit} analyses for {month}.",
+        "left": "You have {remaining} analyses left for {month}.",
+        "two": "You'll use 2 of your {limit} analyses for {month}: one for the themes, one for the hypothesis verdict."
+      },
+      "themesFailed": "The themes were not updated and don't count toward this month's limit: the ones from {date} stay. The hypothesis verdict is ready below.",
+      "themesFailedFirst": "The themes didn't come through and don't count toward this month's limit. The hypothesis verdict is ready below.",
+      "verdictFailed": "The verdict didn't come through and doesn't count toward this month's limit: the hypotheses still show the previous verdict. Try again with “Verdict only”.",
+      "verdictFailedNextAnalysis": "The verdict didn't come through and doesn't count toward this month's limit: the hypotheses still show the previous verdict. It comes with the next analysis.",
+      "themesOnlyNote": "You have 1 analysis left for {month}: enough for the themes, not for the verdict, which uses another one. The hypothesis verdict is available again on {nextMonth} 1, or right away with Pro."
+    },
+    "changes": {
+      "line": "Since the analysis of {date}: {feedback, plural, one {1 more feedback} other {# more feedback}}, {themes, plural, one {1 new theme} other {# new themes}}.",
+      "themeDelta": "+{count} since {date}",
+      "newTheme": "New"
+    }
+  },
+  "hypotheses": {
+    "title": "Hypotheses",
+    "emptyText": "Have an idea to put to the test? Write it as a hypothesis: the feedback will tell whether they confirm it.",
+    "write": "Write a hypothesis",
+    "label": "New hypothesis",
+    "hint": "A sentence that can be confirmed or refuted.",
+    "add": "Add the hypothesis",
+    "adding": "Adding…",
+    "cancel": "Cancel",
+    "added": "Hypothesis added. The verdict comes with the next analysis.",
+    "noVerdict": "No verdict yet. It comes with the next analysis.",
+    "maxReached": "This Research already has 5 hypotheses, the maximum. Delete one to write another.",
+    "edit": "Edit",
+    "editName": "Edit the hypothesis: {text}",
+    "editLabel": "Text of the hypothesis",
+    "editWarning": "If you change the text, the current verdict is removed: it was about the previous sentence. The new one comes with the next analysis.",
+    "save": "Save",
+    "saving": "Saving…",
+    "delete": "Delete",
+    "deleteName": "Delete the hypothesis: {text}",
+    "deleteConfirm": "You are deleting the hypothesis and its verdict. This cannot be undone.",
+    "deleteConfirmAction": "Delete the hypothesis",
+    "deleting": "Deleting…",
+    "errors": {
+      "empty": "Write the hypothesis as a sentence the feedback can confirm or refute. For example: small teams do not move to Pro because the price is per user.",
+      "tooLong": "The hypothesis is over 200 characters: keep it to a single claim.",
+      "failed": "I couldn't save the hypothesis. Try again shortly: your text is still here.",
+      "deleteFailed": "I couldn't delete the hypothesis. Try again shortly.",
+      "session": "Your session has expired. Sign in again to continue: copy the text you wrote first, it won't stay here.",
+      "sessionLink": "Sign in",
+      "busy": "An analysis of this Research is running: you can change the hypotheses once it's done."
+    },
+    "verdictOnly": {
+      "label": "Verdict only for {count, plural, one {1 hypothesis} other {# hypotheses}}",
+      "running": "Verdict running…"
+    }
+  },
+  "verdict": {
+    "confirmed": "Confirmed",
+    "refuted": "Refuted",
+    "toReview": "To review",
+    "counts": "{supporting} for · {contradicting} against · of {read} read",
+    "inFavour": "For",
+    "against": "Against",
+    "noEvidence": "None of the {read} feedback read mentions it.",
+    "writtenAfter": "Written on {date}. Of the {read} feedback read, {count, plural, one {1 arrived after} other {# arrived after}}.",
+    "writtenBefore": "Written on {date}. All {read} feedback read had already arrived when you wrote it: the verdict rereads them, it doesn't test it against new feedback.",
+    "arrivedAfterVerdict": "{count, plural, one {1 feedback has arrived} other {# feedback have arrived}} since this verdict."
+  },
+  "delete": {
+    "open": "Delete the Research",
+    "confirm": "You delete “{question}” with its {count} feedback, the themes, the hypotheses and the verdicts. The form link and the QR code stop working. This can't be undone.",
+    "submit": "Delete the Research",
+    "deleting": "Deleting…",
+    "cancel": "Cancel",
+    "failed": "I couldn't delete the Research. Nothing changed: try again in a moment.",
+    "session": "Your session has expired. Log in again to continue.",
+    "sessionLink": "Log in"
+  }
+}

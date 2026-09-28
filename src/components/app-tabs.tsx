@@ -2,30 +2,29 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useTranslations } from "next-intl"
 
-const TABS = [
-  { href: "/themes", key: "themes" },
-  { href: "/ask", key: "ask" },
-  { href: "/feedback", key: "feedback" },
-  { href: "/collect", key: "collect" },
-  { href: "/billing", key: "billing" },
-] as const
+// exact: current only on href itself, not on the pages below it.
+// also: other path prefixes where the tab is current.
+export type Tab = { href: string; label: string; exact?: boolean; also?: string[] }
 
-// Kit: .tabs, .tab with aria-current="page"
-export function AppTabs() {
+function isCurrent(tab: Tab, pathname: string) {
+  const own = tab.exact ? pathname === tab.href : pathname === tab.href || pathname.startsWith(`${tab.href}/`)
+  return own || (tab.also ?? []).some((prefix) => pathname.startsWith(prefix))
+}
+
+// Kit: .tabs, .tab with aria-current="page". The app bar and the tabs inside a Research.
+export function AppTabs({ tabs, label, className }: { tabs: Tab[]; label: string; className?: string }) {
   const pathname = usePathname()
-  const t = useTranslations("app.tabs")
   return (
-    <nav className="flex gap-6 self-stretch">
-      {TABS.map((tab) => (
+    <nav aria-label={label} className={className ?? "flex gap-6 self-stretch"}>
+      {tabs.map((tab) => (
         <Link
           key={tab.href}
           href={tab.href}
-          aria-current={pathname.startsWith(tab.href) ? "page" : undefined}
+          aria-current={isCurrent(tab, pathname) ? "page" : undefined}
           className="flex items-center border-y-2 border-transparent text-base text-ink-muted aria-[current=page]:border-b-ink aria-[current=page]:font-semibold aria-[current=page]:text-ink"
         >
-          {t(tab.key)}
+          {tab.label}
         </Link>
       ))}
     </nav>

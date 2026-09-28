@@ -84,6 +84,7 @@
       "period": "forever",
       "feedback": "Up to {count} feedback",
       "analyses": "{count} AI analyses a month",
+      "verdict": "The hypothesis verdict uses 1 analysis",
       "questions": "{count} questions to your feedback a month",
       "sources": "Public form, CSV and manual entry",
       "cta": "Start free"
@@ -93,6 +94,7 @@
       "period": "a month",
       "feedback": "Unlimited feedback",
       "analyses": "{count} AI analyses a month",
+      "verdict": "The hypothesis verdict uses 1 analysis",
       "questions": "{count} questions to your feedback a month",
       "everything": "Everything in Free",
       "cta": "Try Pro"

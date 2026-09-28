@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
         event: "signed_up",
         properties: { method: fromEmail ? "email" : "google" },
       })
-      redirect("/themes")
+      redirect("/research")
     }
     // The exchange needs the code verifier cookie of the browser that signed up. Opened elsewhere,
     // the link has still confirmed the email: Supabase gives a code only after confirming it.

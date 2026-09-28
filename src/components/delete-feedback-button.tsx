@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl"
 import { useState, useTransition } from "react"
-import { deleteFeedback } from "@/app/(app)/feedback/actions"
+import { deleteFeedback } from "@/app/(app)/research/[id]/feedback/actions"
 import { Button } from "@/components/ui/button"
 
 // Two clicks: "Elimina" asks, "Sì, elimina" deletes. The row goes away when the page refreshes.

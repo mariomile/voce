@@ -1,0 +1,186 @@
+{
+  "metadata": {
+    "title": "Research"
+  },
+  "list": {
+    "title": "Le tue Research",
+    "lede": "Una Research parte da una domanda sui clienti e raccoglie i feedback che servono a rispondere.",
+    "newResearch": "Nuova Research",
+    "row": {
+      "feedbackLabel": "feedback",
+      "formOff": "Modulo spento",
+      "noFeedback": "Nessun feedback ancora",
+      "themes": "{count, plural, one {# tema} other {# temi}}",
+      "hypotheses": "{count} ipotesi",
+      "hypothesesWithVerdicts": "{count} ipotesi: {verdicts}",
+      "confirmed": "{count, plural, one {# confermata} other {# confermate}}",
+      "refuted": "{count, plural, one {# smentita} other {# smentite}}",
+      "toReview": "{count} da rivedere",
+      "newFeedback": "{count, plural, one {# feedback nuovo da analizzare} other {# feedback nuovi da analizzare}}"
+    },
+    "deleted": "Research eliminata."
+  },
+  "firstRun": {
+    "title": "Qui tieni le tue domande sui clienti, con le loro risposte.",
+    "lede": "Parti da una domanda a cui vuoi rispondere prima di una decisione. Poi raccogli i feedback: modulo con QR code, note di intervista, CSV."
+  },
+  "form": {
+    "label": "La tua domanda",
+    "hint": "Per esempio: perché i team piccoli non passano a Pro dopo la prova?",
+    "create": "Crea la Research",
+    "creating": "Creo…",
+    "cancel": "Annulla",
+    "count": "{count} / {max}",
+    "errors": {
+      "empty": "Scrivi la domanda a cui vuoi rispondere. Per esempio: perché i team piccoli non passano a Pro dopo la prova?",
+      "tooLong": "La domanda supera i 200 caratteri: tienila a una domanda sola.",
+      "failed": "Non sono riuscito a salvare la Research. Riprova tra poco: la domanda è ancora qui.",
+      "session": "La sessione è scaduta. Accedi di nuovo per continuare: copia prima il testo che hai scritto, qui non resta.",
+      "sessionLink": "Accedi"
+    },
+    "edit": "Modifica",
+    "editLabel": "Modifica la domanda",
+    "save": "Salva",
+    "saving": "Salvo…"
+  },
+  "header": {
+    "back": "Tutte le Research",
+    "ledeCount": "{count} feedback da {channels, plural, one {1 canale} other {# canali}}, dal {start} al {end}.",
+    "ledeEmpty": "Ancora nessun feedback. Il modulo è attivo."
+  },
+  "tabs": {
+    "label": "Sezioni della Research",
+    "synthesis": "Sintesi",
+    "ask": "Chiedi",
+    "feedback": "Feedback",
+    "collect": "Raccolta"
+  },
+  "notFound": {
+    "title": "Non trovo questa Research.",
+    "text": "Forse è stata eliminata, o il link è di un altro account.",
+    "action": "Tutte le Research"
+  },
+  "notes": {
+    "title": "Incolla le note di un'intervista",
+    "lede": "Un'intervista alla volta: le note di una persona sono un feedback. Va bene anche un messaggio copiato da un'email o da Slack: cambia il canale.",
+    "textLabel": "Note",
+    "textPlaceholder": "Le parole della persona, così come le hai annotate",
+    "emptyHint": "Le note non si salvano finché non le aggiungi.",
+    "count": "{count} / {max}",
+    "channelLabel": "Canale",
+    "defaultChannel": "Intervista",
+    "customerLabel": "Persona o ruolo",
+    "customerOptional": "facoltativo",
+    "customerPlaceholder": "Nome, ruolo o azienda",
+    "dateLabel": "Data",
+    "dateOptional": "se vuota, oggi",
+    "submit": "Aggiungi le note",
+    "submitting": "Aggiungo…",
+    "added": "Aggiunte a questa Research. Le trovi in Feedback.",
+    "errors": {
+      "empty": "Incolla le note prima di aggiungerle.",
+      "tooLong": "Le note superano i 10.000 caratteri. Tieni le parti che riportano cosa ha detto la persona.",
+      "limit": "Hai raggiunto 100 feedback, il limite del piano Free per tutte le tue Research: queste note non sono state salvate.",
+      "futureDate": "Scegli una data di oggi o del passato.",
+      "channel": "Scrivi da dove arriva, al massimo {limit} caratteri.",
+      "customer": "Al massimo {limit} caratteri.",
+      "session": "La sessione è scaduta. Accedi di nuovo per continuare: copia prima il testo che hai scritto, qui non resta.",
+      "sessionLink": "Accedi"
+    }
+  },
+  "synthesis": {
+    "themesTitle": "Temi",
+    "lede": "<b>{count} feedback</b> dal {start} al {end}, raggruppati in <b>{themes} temi</b>.",
+    "analyze": {
+      "label": "Analizza {count} feedback",
+      "labelPartial": "Analizza i {count} feedback più recenti",
+      "labelThemesOnly": "Analizza solo i temi di {count} feedback",
+      "partialNote": "su {total} di questa Research",
+      "running": "Analisi in corso…",
+      "runningNote": "Può volerci qualche minuto. Temi e verdetti compaiono qui appena è finita.",
+      "slowNote": "Ci vuole più del solito. Temi e verdetti compaiono qui: puoi lasciare la pagina e tornare.",
+      "announcement": "Analisi finita: {count, plural, one {1 tema} other {# temi}}.",
+      "announcementVerdicts": "{count, plural, one {1 verdetto} other {# verdetti}}: {parts}.",
+      "confirmedCount": "{count, plural, one {# confermata} other {# confermate}}",
+      "refutedCount": "{count, plural, one {# smentita} other {# smentite}}",
+      "toReviewCount": "{count} da rivedere",
+      "network": "Non riesco a raggiungere Voce. Se l'analisi era già partita, il risultato compare qui quando è finita: ricarica la pagina tra qualche minuto.",
+      "sessionLink": "Accedi",
+      "lowFeedbackNote": "Con meno di 5 feedback i temi dicono poco: puoi analizzarli lo stesso.",
+      "cost": {
+        "one": "Userai 1 delle {limit} analisi di {month}.",
+        "left": "Ti restano {remaining} analisi di {month}.",
+        "two": "Userai 2 delle {limit} analisi di {month}: una per i temi, una per il verdetto delle ipotesi."
+      },
+      "themesFailed": "I temi non sono stati aggiornati e non contano nel limite del mese: restano quelli del {date}. Il verdetto delle ipotesi è pronto qui sotto.",
+      "themesFailedFirst": "I temi non sono arrivati e non contano nel limite del mese. Il verdetto delle ipotesi è pronto qui sotto.",
+      "verdictFailed": "Il verdetto non è arrivato e non conta nel limite del mese: le ipotesi mostrano ancora il verdetto precedente. Riprova con «Solo il verdetto».",
+      "verdictFailedNextAnalysis": "Il verdetto non è arrivato e non conta nel limite del mese: le ipotesi mostrano ancora il verdetto precedente. Arriva con la prossima analisi.",
+      "themesOnlyNote": "Ti resta 1 analisi di {month}: basta per i temi, non per il verdetto, che ne usa un'altra. Il verdetto delle ipotesi torna disponibile il 1 {nextMonth}, o subito con Pro."
+    },
+    "changes": {
+      "line": "Dall'analisi del {date}: {feedback, plural, one {1 feedback in più} other {# feedback in più}}, {themes, plural, one {1 tema nuovo} other {# temi nuovi}}.",
+      "themeDelta": "+{count} dal {date}",
+      "newTheme": "Nuovo"
+    }
+  },
+  "hypotheses": {
+    "title": "Ipotesi",
+    "emptyText": "Hai un'idea da mettere alla prova? Scrivila come ipotesi: i feedback diranno se la confermano.",
+    "write": "Scrivi un'ipotesi",
+    "label": "Nuova ipotesi",
+    "hint": "Una frase che si può confermare o smentire.",
+    "add": "Aggiungi l'ipotesi",
+    "adding": "Aggiungo…",
+    "cancel": "Annulla",
+    "added": "Ipotesi aggiunta. Il verdetto arriva con la prossima analisi.",
+    "noVerdict": "Nessun verdetto ancora. Arriva con la prossima analisi.",
+    "maxReached": "Questa Research ha già 5 ipotesi, il massimo. Eliminane una per scriverne un'altra.",
+    "edit": "Modifica",
+    "editName": "Modifica l'ipotesi: {text}",
+    "editLabel": "Testo dell'ipotesi",
+    "editWarning": "Se cambi il testo, il verdetto attuale si toglie: era sulla frase di prima. Il nuovo arriva con la prossima analisi.",
+    "save": "Salva",
+    "saving": "Salvo…",
+    "delete": "Elimina",
+    "deleteName": "Elimina l'ipotesi: {text}",
+    "deleteConfirm": "Elimini l'ipotesi e il suo verdetto. Non si può annullare.",
+    "deleteConfirmAction": "Elimina l'ipotesi",
+    "deleting": "Elimino…",
+    "errors": {
+      "empty": "Scrivi l'ipotesi come una frase che i feedback possono confermare o smentire. Per esempio: i team piccoli non passano a Pro perché il prezzo è per utente.",
+      "tooLong": "L'ipotesi supera i 200 caratteri: tienila a un'affermazione sola.",
+      "failed": "Non sono riuscito a salvare l'ipotesi. Riprova tra poco: il testo è ancora qui.",
+      "deleteFailed": "Non sono riuscito a eliminare l'ipotesi. Riprova tra poco.",
+      "session": "La sessione è scaduta. Accedi di nuovo per continuare: copia prima il testo che hai scritto, qui non resta.",
+      "sessionLink": "Accedi",
+      "busy": "C'è un'analisi in corso su questa Research: le ipotesi si cambiano quando è finita."
+    },
+    "verdictOnly": {
+      "label": "Solo il verdetto di {count} ipotesi",
+      "running": "Verdetto in corso…"
+    }
+  },
+  "verdict": {
+    "confirmed": "Confermata",
+    "refuted": "Smentita",
+    "toReview": "Da rivedere",
+    "counts": "{supporting} a favore · {contradicting} contro · su {read} letti",
+    "inFavour": "A favore",
+    "against": "Contro",
+    "noEvidence": "Nessuno dei {read} feedback letti ne parla.",
+    "writtenAfter": "Scritta il {date}. Dei {read} feedback letti, {count, plural, one {1 è arrivato dopo} other {# sono arrivati dopo}}.",
+    "writtenBefore": "Scritta il {date}. Tutti i {read} feedback letti erano già arrivati quando l'hai scritta: il verdetto li rilegge, non la mette alla prova con feedback nuovi.",
+    "arrivedAfterVerdict": "Dopo questo verdetto {count, plural, one {è arrivato 1 feedback} other {sono arrivati # feedback}}."
+  },
+  "delete": {
+    "open": "Elimina la Research",
+    "confirm": "Elimini «{question}» con i suoi {count} feedback, i temi, le ipotesi e i verdetti. Il link del modulo e il QR code smettono di funzionare. Non si può annullare.",
+    "submit": "Elimina la Research",
+    "deleting": "Elimino…",
+    "cancel": "Annulla",
+    "failed": "Non sono riuscito a eliminare la Research. Non è cambiato nulla: riprova tra poco.",
+    "session": "La sessione è scaduta. Accedi di nuovo per continuare.",
+    "sessionLink": "Accedi"
+  }
+}

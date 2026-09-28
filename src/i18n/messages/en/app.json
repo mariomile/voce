@@ -1,9 +1,7 @@
 {
   "tabs": {
-    "themes": "Themes",
-    "ask": "Ask",
-    "feedback": "Feedback",
-    "collect": "Collect",
+    "label": "App sections",
+    "research": "Research",
     "billing": "Plan"
   },
   "bar": {

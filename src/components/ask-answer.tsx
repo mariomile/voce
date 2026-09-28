@@ -1,5 +1,5 @@
 import { useLocale, useTranslations } from "next-intl"
-import type { AskResult } from "@/app/(app)/ask/actions"
+import type { AskResult } from "@/app/(app)/research/[id]/ask/actions"
 import { countLabel } from "@/components/ask-copy"
 import { Quote } from "@/components/quote"
 import { Stat } from "@/components/theme-row"
@@ -48,8 +48,8 @@ export function AskAnswer({ result }: { result: Answer }) {
               ))}
             </div>
             <p className="max-w-[64ch] text-sm text-ink-muted">
-              {result.feedbackInWindow > result.feedbackConsidered
-                ? t("answer.perimeterPartial", { considered: result.feedbackConsidered, total: result.feedbackInWindow, keep })
+              {result.feedbackTotal > result.feedbackConsidered
+                ? t("answer.perimeterPartial", { considered: result.feedbackConsidered, total: result.feedbackTotal, keep })
                 : t("answer.perimeterFull", { count: result.feedbackConsidered, keep })}
             </p>
           </div>

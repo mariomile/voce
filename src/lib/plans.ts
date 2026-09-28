@@ -6,11 +6,18 @@ export const PLAN_LIMITS: Record<Plan, { feedback: number | null; analysesPerMon
   pro: { feedback: null, analysesPerMonth: 100, questionsPerMonth: 100 },
 };
 
+// The public form and the CSV import. Interview notes go up to NOTES_MAX_LENGTH, the check on feedback.text.
 export const FEEDBACK_MAX_LENGTH = 2000;
+export const NOTES_MAX_LENGTH = 10000;
+// Same as the check on research.question and in create_research.
+export const RESEARCH_QUESTION_MAX_LENGTH = 200;
+// Same as the check on research_hypotheses.text and its insert trigger.
+export const HYPOTHESIS_MAX_LENGTH = 200;
+export const MAX_HYPOTHESES = 5;
 export const FORM_QUESTION_MAX_LENGTH = 140;
 export const CHANNEL_MAX_LENGTH = 60;
 export const CUSTOMER_MAX_LENGTH = 200;
 export const CSV_MAX_BYTES = 1024 * 1024;
 export const CSV_MAX_ROWS = 2000;
-// Same as the check on workspaces.form_slug.
+// Same as the check on research.form_slug.
 export const FORM_SLUG_PATTERN = /^[a-z0-9-]{3,60}$/;

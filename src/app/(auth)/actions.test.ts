@@ -39,7 +39,7 @@ describe("signIn", () => {
   it("counts an email sign-up at sign-in, and lands in the app", async () => {
     auth.error = null
     tracked.length = 0
-    await expect(signIn(credentials())).rejects.toThrow("redirect /themes")
+    await expect(signIn(credentials())).rejects.toThrow("redirect /research")
     expect(tracked).toEqual([{ event: "signed_up", properties: { method: "email" } }])
   })
 

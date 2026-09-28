@@ -3,11 +3,8 @@
     "title": "Raccolta"
   },
   "page": {
-    "title": "Raccolta",
-    "lede": "Porta qui i feedback che hai già e chiedine di nuovi. Ognuno tiene il canale da cui arriva, così poi puoi filtrarli.",
     "sections": {
-      "csv": "Importa un CSV",
-      "manual": "Incolla un feedback"
+      "csv": "Importa un CSV"
     }
   },
   "channels": {
@@ -48,35 +45,13 @@
     "copy": "Copia il link",
     "copied": "Link copiato"
   },
-  "manualForm": {
-    "intro": "Copiato da un'email, da Slack o dalle tue note, uno alla volta.",
-    "feedbackLabel": "Feedback",
-    "feedbackPlaceholder": "Le parole del cliente, così come le ha scritte",
-    "channelLabel": "Canale",
-    "channelPlaceholder": "Supporto, Slack…",
-    "customerLabel": "Cliente",
-    "customerOptional": "facoltativo",
-    "customerPlaceholder": "Nome o azienda",
-    "dateLabel": "Data",
-    "dateOptional": "se vuota, oggi",
-    "submit": "Aggiungi il feedback",
-    "submitting": "Aggiungo…",
-    "added": "Aggiunto. Lo trovi tra i feedback.",
-    "limitReached": "Hai raggiunto il limite del piano Free: questo feedback non è stato salvato.",
-    "errors": {
-      "text": "Scrivi il testo del feedback, al massimo {limit} caratteri.",
-      "channel": "Scrivi da dove arriva, al massimo {limit} caratteri.",
-      "customer": "Al massimo {limit} caratteri.",
-      "receivedAt": "Scegli una data di oggi o del passato."
-    }
-  },
   "csvImport": {
     "chooseFile": "Scegli il file",
     "reading": "Leggo {name}…",
     "defaultFileName": "il file",
     "sizeError": "Il file supera 1 MB. Dividilo in più file e importali uno alla volta.",
     "chooseFileError": "Scegli un file CSV.",
-    "intro": "Serve una colonna <b>testo</b>. Canale, cliente e data sono facoltativi. Fino a {max} righe e 1 MB. Prima di salvare vedi cosa entra e quali righe non vanno; i feedback già presenti non si duplicano.",
+    "intro": "Serve una colonna <b>testo</b>. Canale, cliente e data sono facoltativi. Fino a {max} righe e 1 MB. Prima di salvare vedi cosa entra e quali righe non vanno; i feedback già presenti in questa Research non si duplicano.",
     "toImport": "{count, plural, one {1 feedback da importare} other {{n} feedback da importare}}",
     "freeLimitTitle": "Il piano Free arriva a 100 feedback",
     "overLimitNoneOne": "Non c'è più posto: il feedback nuovo resta fuori.",
@@ -99,7 +74,7 @@
     "import": "{count, plural, one {Importa 1 feedback} other {Importa {n} feedback}}",
     "importing": "Importo…",
     "chooseAnother": "Scegli un altro file",
-    "imported": "{count, plural, one {Importato 1 feedback} other {Importati {n} feedback}}",
+    "imported": "{count, plural, one {Importato 1 feedback in questa Research} other {Importati {n} feedback in questa Research}}",
     "seeFeedback": "Vedi i feedback",
     "importAnother": "Importa un altro file",
     "ignoredPrefix": ". Restano fuori: ",
@@ -119,6 +94,7 @@
     "brokenQuotes": "Le virgolette di questa riga non sono chiuse o sono fuori posto: il testo potrebbe essersi unito alle righe dopo.",
     "extraColumns": "La riga ha più colonne dell'intestazione: forse c'è una virgola nel testo senza virgolette.",
     "invalidDate": "La data \"{value}\" non è valida. Usa 25/09/2026 o 2026-09-25.",
-    "futureDate": "La data {date} è nel futuro."
+    "futureDate": "La data {date} è nel futuro.",
+    "session": "La sessione è scaduta. Accedi di nuovo per importare il file."
   }
 }

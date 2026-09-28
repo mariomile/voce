@@ -1,9 +1,7 @@
 {
   "tabs": {
-    "themes": "Temi",
-    "ask": "Chiedi",
-    "feedback": "Feedback",
-    "collect": "Raccolta",
+    "label": "Sezioni dell'app",
+    "research": "Research",
     "billing": "Piano"
   },
   "bar": {

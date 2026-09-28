@@ -5,7 +5,7 @@ import { z } from "zod"
 import { trackMilestone } from "@/lib/analytics"
 import { getCurrentWorkspace } from "@/lib/data"
 import { FEEDBACK_MAX_LENGTH, FORM_SLUG_PATTERN } from "@/lib/plans"
-import { sendPublicFeedback, workspaceOfForm } from "@/lib/supabase/admin"
+import { sendPublicFeedback, workspaceOfCollectedResearch, workspaceOfForm } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
 
 // Server actions validate every input with an explicit schema, then write as the signed-in user:
@@ -64,5 +64,6 @@ export async function submitFeedback(
   if (result !== "ok") return { ok: false, reason: result }
   const slug = parsed.data.slug
   trackMilestone(() => workspaceOfForm(slug), { event: "first_feedback_added", properties: { source: "form" } })
+  trackMilestone(() => workspaceOfCollectedResearch({ slug }), { event: "first_research_collected", properties: {} })
   return { ok: true }
 }

@@ -1,17 +1,11 @@
 {
-  "meta": {
-    "title": "Chiedi ai tuoi feedback"
-  },
   "page": {
-    "title": "Chiedi ai tuoi feedback",
     "lede": "Scrivi una domanda su un argomento. Voce risponde con quanti feedback ne parlano e con le frasi esatte dei clienti.",
     "addFeedback": "Aggiungi feedback"
   },
   "nothingToAsk": {
     "titleEmpty": "Qui farai domande ai tuoi feedback e leggerai le risposte con le parole dei clienti.",
-    "titleOld": "Negli ultimi 90 giorni non è arrivato nessun feedback.",
-    "bodyEmpty": "Per rispondere servono feedback. Aggiungili dal modulo pubblico, da un CSV o incollandoli a mano.",
-    "bodyOld": "Chiedi legge solo i feedback degli ultimi 90 giorni, e i tuoi {count} sono più vecchi. Aggiungine di recenti per fare una domanda."
+    "bodyEmpty": "Per rispondere servono feedback. Aggiungili dal modulo pubblico, da un CSV o incollandoli a mano."
   },
   "form": {
     "label": "La tua domanda",
@@ -33,8 +27,10 @@
     "network": "Non riesco a raggiungere Voce: controlla la connessione e riprova. Se la domanda era già partita, conta tra quelle del mese.",
     "sessionText": "La sessione è scaduta. Accedi di nuovo per fare la domanda.",
     "sessionLink": "Accedi",
-    "noFeedbackText": "Negli ultimi 90 giorni non ci sono più feedback su cui rispondere.",
-    "noFeedbackLink": "Aggiungi feedback"
+    "noFeedbackText": "In questa Research non ci sono più feedback su cui rispondere.",
+    "noFeedbackLink": "Aggiungi feedback",
+    "notFoundText": "Non trovo questa Research: forse è stata eliminata.",
+    "notFoundLink": "Tutte le Research"
   },
   "failed": {
     "zero": "La risposta non è arrivata. La domanda conta lo stesso: hai usato tutte le domande di {month}.",
@@ -52,7 +48,7 @@
   "slow": "Ci vuole più del solito. La risposta arriva: resta su questa pagina.",
   "count": "{count, plural, one {feedback ne parla} other {feedback ne parlano}}",
   "summary": {
-    "noEvidence": "Non trovo feedback che ne parlano. Letti {count} feedback degli ultimi 90 giorni.",
+    "noEvidence": "Non trovo feedback che ne parlano. Letti {count} feedback di questa Research.",
     "quotesOne": "Sotto c'è 1 citazione.",
     "quotesOther": "Sotto ci sono {count} citazioni.",
     "answered": "Risposta pronta. {count} {countLabel}. {answer} {quotes}"
@@ -60,11 +56,11 @@
   "answer": {
     "heading": "Risposta a «{question}»",
     "noEvidenceTitle": "Non trovo feedback che ne parlano.",
-    "noEvidenceBody": "Letti {count} feedback degli ultimi 90 giorni. Prova con altre parole, per esempio il nome della funzione come lo scrivono i clienti.",
+    "noEvidenceBody": "Letti {count} feedback di questa Research. Prova con altre parole, per esempio il nome della funzione come lo scrivono i clienti.",
     "writtenAll": "Cosa hanno scritto",
     "writtenPartial": "Cosa hanno scritto: {quotes} dei {total} feedback",
     "keep": "La risposta non resta su questa pagina: se ti serve, copiala.",
-    "perimeterFull": "Letti {count} feedback degli ultimi 90 giorni. {keep}",
-    "perimeterPartial": "Letti i {considered} feedback più recenti degli ultimi 90 giorni, su {total}: i più vecchi non entrano nella risposta. {keep}"
+    "perimeterFull": "Letti {count} feedback di questa Research. {keep}",
+    "perimeterPartial": "Letti i {considered} feedback più recenti di questa Research, su {total}: i più vecchi non entrano nella risposta. {keep}"
   }
 }

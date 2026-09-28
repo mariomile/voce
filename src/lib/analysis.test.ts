@@ -8,6 +8,7 @@ import {
   estimateCost,
   INSTRUCTIONS,
   runAnalysis,
+  selectFeedback,
   type AnalysisFeedback,
   type RawOutput,
 } from "./analysis"
@@ -33,6 +34,32 @@ const theme = (overrides: Partial<RawTheme> = {}): RawTheme => ({
     { feedback: 2, text: "ricollegare la banca ogni settimana" },
   ],
   ...overrides,
+})
+
+describe("selectFeedback", () => {
+  const rows = (count: number, length: number, receivedAt = "2026-09-01") =>
+    Array.from({ length: count }, (_, i) => ({ id: `id-${i}`, text: "a".repeat(length), channel: "Supporto", receivedAt }))
+
+  it("selectFeedback keeps the 500 most recent of 501", () => {
+    const selected = selectFeedback(rows(501, 10))
+    expect(selected).toHaveLength(500)
+    expect(selected.at(-1)!.id).toBe("id-499")
+  })
+
+  it("selectFeedback stops at 1,000,000 characters: 250 of 300 feedback of 4,000", () => {
+    const selected = selectFeedback(rows(300, 4000))
+    expect(selected).toHaveLength(250)
+    expect(selected.map((f) => f.id)).toEqual(rows(250, 1).map((f) => f.id))
+  })
+
+  it("counts characters, not UTF-16 units", () => {
+    const emoji = Array.from({ length: 101 }, (_, i) => ({ id: `e-${i}`, text: "😀".repeat(10000) }))
+    expect(selectFeedback(emoji)).toHaveLength(100)
+  })
+
+  it("selectFeedback has no 90-day window", () => {
+    expect(selectFeedback(rows(3, 10, "2024-01-01"))).toHaveLength(3)
+  })
 })
 
 describe("checkOutput", () => {

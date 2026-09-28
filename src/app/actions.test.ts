@@ -17,12 +17,12 @@ let otherThemeId: string
 async function addTheme(u: TestUser) {
   const { data: analysis } = await admin
     .from("analyses")
-    .insert({ workspace_id: u.workspaceId, period_start: "2026-07-01", feedback_count: 0 })
+    .insert({ workspace_id: u.workspaceId, research_id: u.researchId, period_start: "2026-07-01", feedback_count: 0 })
     .select("id")
     .single()
   const { data: theme } = await admin
     .from("themes")
-    .insert({ workspace_id: u.workspaceId, analysis_id: analysis!.id, kind: "problem", title: "Tema", summary: "Sintesi", sentiment: "negative" })
+    .insert({ workspace_id: u.workspaceId, research_id: u.researchId, analysis_id: analysis!.id, kind: "problem", title: "Tema", summary: "Sintesi", sentiment: "negative" })
     .select("id")
     .single()
   return theme!.id
@@ -54,6 +54,22 @@ describe("submitFeedback", () => {
       { channel: "Modulo pubblico", email: null },
       { channel: "Modulo pubblico", email: "giulia@esempio.it" },
     ])
+  })
+
+  it("a public form response lands in the Research of its slug", async () => {
+    const { data: second, error } = await admin
+      .from("research")
+      .insert({ workspace_id: user.workspaceId, question: "Seconda?", form_slug: `seconda-${crypto.randomUUID().slice(0, 8)}` })
+      .select("id, form_slug")
+      .single()
+    if (error) throw error
+    try {
+      expect(await submitFeedback({ ...valid(), slug: second.form_slug, text: "Per la seconda." })).toEqual({ ok: true })
+      const { data } = await admin.from("feedback").select("research_id").eq("text", "Per la seconda.")
+      expect(data).toEqual([{ research_id: second.id }])
+    } finally {
+      await admin.from("research").delete().eq("id", second.id)
+    }
   })
 
   it("rejects empty, blank and too long texts", async () => {
@@ -141,7 +157,7 @@ describe("submitFeedback", () => {
   it("keeps rejecting the 101st feedback of a Free workspace", async () => {
     const full = await createTestUser("full")
     try {
-      const rows = Array.from({ length: 99 }, (_, i) => ({ workspace_id: full.workspaceId, text: `F ${i}`, channel: "Supporto" }))
+      const rows = Array.from({ length: 99 }, (_, i) => ({ workspace_id: full.workspaceId, research_id: full.researchId, text: `F ${i}`, channel: "Supporto" }))
       await admin.from("feedback").insert(rows)
       expect(await submitFeedback({ ...valid(), slug: full.formSlug, text: "Il numero 100" })).toEqual({ ok: true })
       expect(await submitFeedback({ ...valid(), slug: full.formSlug, text: "Il numero 101" })).toEqual({
@@ -156,9 +172,9 @@ describe("submitFeedback", () => {
   })
 
   it("stops at once when the PM turns the link off", async () => {
-    await admin.from("workspaces").update({ form_enabled: false }).eq("id", user.workspaceId)
+    await admin.from("research").update({ form_enabled: false }).eq("id", user.researchId)
     expect(await submitFeedback(valid())).toEqual({ ok: false, reason: "unavailable" })
-    await admin.from("workspaces").update({ form_enabled: true }).eq("id", user.workspaceId)
+    await admin.from("research").update({ form_enabled: true }).eq("id", user.researchId)
     expect(await submitFeedback(valid())).toEqual({ ok: true })
   })
 

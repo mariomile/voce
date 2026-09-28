@@ -10,10 +10,15 @@ insert into auth.users (id, email, raw_user_meta_data) values
   ('00000000-0000-0000-0000-00000000000a', 'delete-rule-a@test.voce', '{"workspace_name": "A"}'),
   ('00000000-0000-0000-0000-00000000000b', 'delete-rule-b@test.voce', '{"workspace_name": "B"}');
 
-insert into public.feedback (workspace_id, text, channel)
-select m.workspace_id, 'Feedback', 'Supporto'
+insert into public.research (workspace_id, question, form_slug)
+select m.workspace_id, 'Domanda?', 'delete-rule-' || right(m.user_id::text, 1)
 from public.workspace_members m
 where m.user_id in ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-00000000000b');
+
+insert into public.feedback (workspace_id, research_id, text, channel)
+select r.workspace_id, r.id, 'Feedback', 'Supporto'
+from public.research r
+where r.form_slug in ('delete-rule-a', 'delete-rule-b');
 
 set local role authenticated;
 set local request.jwt.claims = '{"sub": "00000000-0000-0000-0000-00000000000a", "role": "authenticated"}';

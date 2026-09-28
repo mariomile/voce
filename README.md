@@ -48,7 +48,7 @@ SUPABASE_SECRET_KEY=                 # SECRET_KEY: solo lato server, per il modu
 
 Poi `pnpm dev` e apri `http://localhost:3000`.
 
-- **Utenti di esempio**, password `password-voce`: `fatturino@voce.test` (Pro, con analisi e temi), `orto@voce.test` (feedback senza analisi), `ordinalo@voce.test` (al limite Free), `bottega@voce.test` (vuoto), `spento@voce.test` (modulo pubblico spento).
+- **Utenti di esempio**, password `password-voce`: `fatturino@voce.test` (Pro, il workspace della demo: tre Research, una con temi, due ipotesi e i loro verdetti, una con note di intervista da analizzare, una appena aperta con un'ipotesi e nessun feedback), `orto@voce.test` (feedback senza analisi), `ordinalo@voce.test` (al limite Free), `bottega@voce.test` (vuoto), `spento@voce.test` (modulo pubblico spento). Ogni workspace ha una Research con il suo modulo pubblico.
 - **Email** (conferma della registrazione): Mailpit su `http://127.0.0.1:54324`.
 - **Database**: Studio su `http://127.0.0.1:54323`.
 - **Test**: `pnpm test` gira contro lo stack locale, con il seed caricato.
@@ -60,7 +60,7 @@ L'analisi usa Claude direttamente sull'API Anthropic. La chiave va in `ANTHROPIC
 
 - **Registro**: ogni analisi lascia una riga in `analysis_runs` (input, output grezzo, scarti, modello, token, durata, costo stimato, errore). Si legge da Studio: gli utenti non la vedono.
 - **Test**: `pnpm test` usa un modello finto, non chiama mai l'API Anthropic.
-- **Evals**: `pnpm evals` chiama il modello vero sul set sintetico in `evals/dataset.json` (costa qualche centesimo). Il risultato va in `evals/results/` e si confronta con il precedente. Da eseguire dopo ogni modifica al prompt o ai controlli dell'analisi.
+- **Evals**: `pnpm evals` chiama il modello vero su tre set sintetici: temi (`evals/dataset.json`), Chiedi (`evals/questions.json`) e verdetto delle ipotesi (`evals/verdicts.json`, 20 chiamate). Costa qualche decina di centesimi. Ogni eval salva il suo risultato in `evals/results/{eval}-{data}.json` e lo confronta con il proprio precedente. Da eseguire dopo ogni modifica a un prompt, ai controlli dell'analisi o del verdetto, o al perimetro di lettura.
 
 ## Accesso con Google
 
@@ -68,7 +68,7 @@ L'analisi usa Claude direttamente sull'API Anthropic. La chiave va in `ANTHROPIC
 
 ## Analytics con PostHog
 
-Il server manda a PostHog UE quattro eventi di attivazione, uno per workspace, senza testo dei feedback né dati personali: elenco e regole in `docs/analytics.md`. Senza la variabile non parte nulla.
+Il server manda a PostHog UE cinque eventi di attivazione, uno per workspace, e due eventi ripetibili (`question_answered`, `research_synthesized`), senza testo dei feedback né dati personali: elenco e regole in `docs/analytics.md`. Senza la variabile non parte nulla.
 
 ```
 POSTHOG_KEY=   # phc_...: Project API key di un progetto PostHog in regione UE, solo lato server

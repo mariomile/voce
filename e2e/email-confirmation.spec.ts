@@ -14,10 +14,10 @@ async function signUp(page: Page) {
   return email
 }
 
-test("the default template link lands the user signed in on the themes", async ({ page }) => {
+test("the default template link lands the user signed in on the Research", async ({ page }) => {
   const email = await signUp(page)
   await page.goto(await defaultTemplateLink(email))
-  await expect(page).toHaveURL(/\/themes$/)
+  await expect(page).toHaveURL(/\/research$/)
 })
 
 test("opened in another browser, the link confirms the email and asks to sign in", async ({ page, browser }) => {
@@ -30,6 +30,6 @@ test("opened in another browser, the link confirms the email and asks to sign in
   await otherPage.getByLabel("Email").fill(email)
   await otherPage.getByLabel("Password", { exact: true }).fill("password-e2e-voce")
   await otherPage.getByRole("button", { name: "Accedi" }).click()
-  await expect(otherPage).toHaveURL(/\/themes$/)
+  await expect(otherPage).toHaveURL(/\/research$/)
   await other.close()
 })

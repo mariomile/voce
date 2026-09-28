@@ -47,6 +47,7 @@ export default function LandingPage() {
       features: [
         t("pricing.free.feedback", { count: PLAN_LIMITS.free.feedback! }),
         t("pricing.free.analyses", { count: PLAN_LIMITS.free.analysesPerMonth }),
+        t("pricing.free.verdict"),
         t("pricing.free.questions", { count: PLAN_LIMITS.free.questionsPerMonth }),
         t("pricing.free.sources"),
       ],
@@ -59,6 +60,7 @@ export default function LandingPage() {
       features: [
         t("pricing.pro.feedback"),
         t("pricing.pro.analyses", { count: PLAN_LIMITS.pro.analysesPerMonth }),
+        t("pricing.pro.verdict"),
         t("pricing.pro.questions", { count: PLAN_LIMITS.pro.questionsPerMonth }),
         t("pricing.pro.everything"),
       ],

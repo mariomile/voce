@@ -2,13 +2,21 @@
 
 import { useTranslations } from "next-intl"
 import { useState, useTransition } from "react"
-import { setFormQuestion } from "@/app/(app)/collect/actions"
+import { setFormQuestion } from "@/app/(app)/research/[id]/collect/actions"
 import { Button } from "@/components/ui/button"
 import { Field, FieldCount, FieldHint, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { FORM_QUESTION_MAX_LENGTH } from "@/lib/plans"
 
-export function FormQuestionField({ question, defaultQuestion }: { question: string | null; defaultQuestion: string }) {
+export function FormQuestionField({
+  researchId,
+  question,
+  defaultQuestion,
+}: {
+  researchId: string
+  question: string | null
+  defaultQuestion: string
+}) {
   const t = useTranslations("collect.formQuestion")
   const [value, setValue] = useState(question ?? "")
   const [saved, setSaved] = useState(question ?? "")
@@ -19,7 +27,7 @@ export function FormQuestionField({ question, defaultQuestion }: { question: str
     e.preventDefault()
     setMessage(null)
     startTransition(async () => {
-      const result = await setFormQuestion(value)
+      const result = await setFormQuestion(researchId, value)
       if (result.ok) {
         setValue(value.trim())
         setSaved(value.trim())

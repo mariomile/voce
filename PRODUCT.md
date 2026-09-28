@@ -1,12 +1,14 @@
 # PRODUCT.md — Voce
 
 **Stage:** pre-PMF
-**Last amended:** 2026-09-26
-**Amendment count:** 0
+**Last amended:** 2026-09-28
+**Amendment count:** 1
 
 ## Purpose
 
-Voce raccoglie i feedback dei clienti da più canali e li raggruppa in temi con l'AI, per decidere la roadmap. `[doc:voce-brief]`
+Voce aiuta i PM a fare customer discovery: parti da una domanda, raccogli le voci dei clienti, ottieni una sintesi con le prove e un verdetto. `[doc:user-2026-09-28-research-round1]`
+
+Fino al 2026-09-27 lo scopo era raccogliere i feedback da più canali e raggrupparli in temi per decidere la roadmap `[doc:voce-brief]`. Il riposizionamento è una scelta di Mario, non un risultato della ricerca: l'iniziativa `research` lo mette alla prova.
 
 ## The Problem
 
@@ -22,11 +24,13 @@ Nessuna delle tre righe viene da utenti: sono le ipotesi scritte nel brief `[doc
 
 | | Primary | Secondary |
 |---|---------|-----------|
-| **Segment** | PM di startup e scaleup italiane, team di prodotto 1-10 | Founder che fanno anche da PM |
+| **Segment** | PM che fa discovery senza un ricercatore dedicato, da startup a grande azienda `[doc:user-2026-09-28-research-round1]` | PM e team di prodotto di grandi aziende con research ops `[doc:user-2026-09-28-research-round1]` |
 | **Size** | non stimata `[assumption:unvalidated]` | non stimata `[assumption:unvalidated]` |
-| **Trigger** | una riunione di roadmap con feedback da riassumere | |
-| **Buying power** | il PM stesso, piano Pro a 19 €/mese `[doc:voce-brief]` | |
-| **Where they are** | community di product italiane, Product Heroes `[assumption:unvalidated]` | |
+| **Trigger** | una domanda aperta su clienti o problema da chiudere prima di una decisione di prodotto `[assumption:unvalidated]` | uno studio che il team di research non ha tempo di seguire `[assumption:unvalidated]` |
+| **Buying power** | il PM stesso, piano Pro a 19 €/mese `[doc:voce-brief]` | budget di team o di research ops, non noto `[assumption:unvalidated]` |
+| **Where they are** | community di product italiane, Product Heroes; la sala di PHC26 come primo canale `[assumption:unvalidated]` | non noto `[assumption:unvalidated]` |
+
+Mario ha indicato "Anche per grandi aziende" `[doc:user-2026-09-28-research-round1]`. BuilderOS chiede un solo ICP primario: il primario è il PM senza ricercatore, a prescindere dalla dimensione dell'azienda, perché è chi fa discovery da solo e non ha già uno strumento di research; il PM di grande azienda con research ops resta secondario, perché lì compra e sceglie gli strumenti chi fa research. Deciso dal modello per delega di Mario (2026-09-28). Da confermare con Mario.
 
 ## Jobs To Be Done
 
@@ -34,7 +38,10 @@ When accumulo feedback da canali diversi, I want to vedere in pochi minuti quali
 
 ## Non-Goals
 
-- Inviti e team con più membri, because prima serve un utente singolo che torna `[doc:user-2026-09-26-init]`
+- Inviti, team con più membri e condivisione delle Research, because prima serve un utente singolo che torna `[doc:user-2026-09-26-init]` `[doc:user-2026-09-28-research-round1]`
+- Pianificazione, registrazione e trascrizione delle interviste, because Voce parte dalle voci già raccolte: le note si incollano `[doc:user-2026-09-28-research-round1]`
+- Reclutamento dei partecipanti, because trovare le persone da sentire resta fuori da Voce `[doc:user-2026-09-28-research-round1]`
+- Survey builder per ora, because arriverà in seguito (non ora, non mai escluso); oggi la raccolta è il modulo pubblico con una domanda `[doc:user-2026-09-28-research-round1]`
 - Integrazioni dirette con Intercom, Zendesk, Slack, because CSV e modulo pubblico coprono la raccolta `[doc:user-2026-09-26-init]`
 - Notifiche email, app mobile, SSO aziendale, because non servono per arrivare alla prima analisi `[doc:user-2026-09-26-init]`
 - Prompt dell'AI personalizzabili dall'utente, because la qualità si misura con le evals solo se il prompt è unico `[doc:user-2026-09-26-init]`
@@ -60,7 +67,8 @@ When accumulo feedback da canali diversi, I want to vedere in pochi minuti quali
 
 | Term | Means | Not to be confused with |
 |------|-------|------------------------|
-| Feedback | Un messaggio di un cliente raccolto in Voce | Tema |
+| Research | Una domanda di ricerca con le sue ipotesi, la sua raccolta dedicata (modulo pubblico o QR, note di intervista incollate, CSV), i temi e Chiedi limitati ai suoi feedback, e un verdetto per ipotesi (confermata / smentita / da rivedere) con le citazioni che lo sostengono `[doc:user-2026-09-28-research-round1]` | Analisi, Workspace |
+| Feedback | Un messaggio di un cliente raccolto in Voce; appartiene sempre a una sola Research `[doc:user-2026-09-28-research-round1]` | Tema |
 | Tema | Un gruppo di feedback con titolo, sintesi, conteggio e citazioni, prodotto dall'analisi | Feedback |
 | Analisi | L'esecuzione dell'AI che produce un nuovo insieme di temi | Evals |
 | Workspace | Lo spazio dati di un utente; nessuno vede quello di un altro | Account |
@@ -77,3 +85,10 @@ When accumulo feedback da canali diversi, I want to vedere in pochi minuti quali
 | PostHog (UE) | assente: eventi nel codice, chiave non configurata | attivazione per workspace |
 | Supabase | solo locale, produzione non creata | feedback, analisi, piani |
 | Registro `analysis_runs` | solo locale | costo, durata ed esito di ogni analisi |
+
+## Amendment Log
+
+| Date | What changed | Why | Evidence |
+|------|-------------|-----|----------|
+| 2026-09-26 | Created | nessuno | `[doc:user-2026-09-26-init]` |
+| 2026-09-28 | Purpose riscritto su customer discovery; ICP primario e secondario ridefiniti (primario Deciso dal modello per delega di Mario (2026-09-28)); non-goal su interviste, reclutamento, condivisione e survey builder; termine Research nel glossario, ogni Feedback appartiene a una Research | Riposizionamento deciso da Mario; The Problem e JTBD restano quelli del brief finché la fase 1 dell'iniziativa `research` non dà un verdetto | `[doc:user-2026-09-28-research-round1]` |

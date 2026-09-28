@@ -32,7 +32,7 @@ export async function signIn(formData: FormData): Promise<AuthState> {
   // starts at this first sign-in. The event leaves only once per workspace.
   const userId = data.user.id
   trackMilestone(() => workspaceOfUser(userId), { event: "signed_up", properties: { method: "email" } })
-  redirect("/themes")
+  redirect("/research")
 }
 
 const signUpSchema = z.object({
