@@ -51,10 +51,7 @@ Due famiglie: `--font-sans` (Hanken Grotesk) per l'interfaccia, `--font-serif` (
 
 | Token | px | Uso tipico |
 |---|---|---|
-| `--text-9xl` | 96 | Solo landing: titolo principale, i tre verbi, numeri e prezzi grandi |
-| `--text-8xl` | 80 | Solo landing: titoli di sezione da tablet in su |
-| `--text-7xl` | 64 | Solo landing: titolo dell'esempio da tablet in su |
-| `--text-6xl` | 48 | Numero di feedback di un tema. Sulla landing, titoli da telefono |
+| `--text-6xl` | 48 | Numero di feedback di un tema |
 | `--text-5xl` | 40 | Titolo dello stato vuoto, messaggio del modulo (serif) |
 | `--text-4xl` | 32 | Titolo di pagina, domanda del modulo pubblico |
 | `--text-3xl` | 24 | Titolo di un tema |
@@ -65,8 +62,6 @@ Due famiglie: `--font-sans` (Hanken Grotesk) per l'interfaccia, `--font-serif` (
 | `--text-md` | 14 | Etichette, chip, tipo di tema |
 | `--text-sm` | 13 | Fonti, suggerimenti, contatori, badge |
 | `--text-xs` | 12 | Il minimo: note a margine, piè di pagina del modulo |
-
-Le taglie da `--text-7xl` a `--text-9xl` esistono solo per la landing, che si guarda anche da un proiettore: nell'app il massimo resta `--text-6xl`. Con loro si usa `--tracking-display` (-0,035em) e `--leading-display`. Sopra 96 px non si va.
 
 Pesi: 400 testo e titolo dello stato vuoto (più calmo), 500 domanda e messaggi del modulo pubblico, 600 etichette e pulsanti, 700 titoli sans. Interlinea: `--leading-relaxed` (1.55) per testo lungo e citazioni, `--leading-normal` (1.5) per l'interfaccia, `--leading-snug`/`--leading-tight` per i titoli sans, `--leading-heading` (1.2) e `--leading-display` (1.1) per i titoli serif grandi.
 
@@ -185,14 +180,14 @@ Composti dai componenti sopra, servono alle schermate della B.
 - **Modulo pubblico**: `.form-page`; `.form-ask` con `.form-brand` (`.avatar` con l'iniziale del workspace), `.form-ask-title` e `.form-ask-text` su `.surface-highlight`; `.form-body` con i campi a riga e il pulsante in fondo; `.form-foot`. `.form-message` per inviato e non disponibile, `.form-message-title.is-long` quando il messaggio è lungo.
   - La domanda (`.form-ask-title`) la sceglie il PM, con default "Cosa vuoi dire al team di …?". Va a capo su qualsiasi lunghezza; mentre si scrive, `.form-ask.is-compact` la riduce e nasconde il sottotitolo.
   - La domanda è testo scritto dal PM e mostrato a sconosciuti: sempre come testo, mai come HTML. Massimo 140 caratteri.
-- **Landing**: pensata per essere letta da un proiettore e da un telefono in pochi secondi.
-  - Barra con marchio, "Prezzi" (nascosto sotto i 640 px), "Accedi" e "Prova gratis".
-  - Titolo sans a `--text-9xl` su due righe, con la frase chiave in `<mark class="mark-sweep">`: l'evidenziatore passa sulla frase una volta al caricamento (spento con `prefers-reduced-motion`). È l'unico movimento della pagina.
-  - L'esempio su fondo velo: cinque citazioni da canali diversi, ognuna con la sua frase evidenziata, una freccia e il tema che le conta su una superficie carta. Il numero è l'elemento più grande. L'esempio dice sempre che i feedback sono inventati.
-  - I tre verbi (Raccogli, Analizza, Decidi) come righe separate da linee inchiostro di 2 px, il verbo a `--text-9xl`.
-  - Chiedi è l'unica fascia inchiostro: testo carta, secondario in `--color-line-strong` (10:1), il numero in giallo. Dentro non ci sono elementi con focus, perché l'anello di focus inchiostro non si vedrebbe.
-  - I prezzi in due `card`, Pro in `card-highlight` (è l'azione consigliata della pagina), prezzi a `--text-9xl`.
-  - Chiusura con titolo grande e lo stesso pulsante del titolo. `.landing ::selection` colora la selezione di giallo.
+- **Landing**: l'unica superficie che esce dal sistema sobrio, perché si guarda da un proiettore e da un telefono e deve arrivare in pochi secondi. Stessi colori e stessi font, a scala da manifesto; le regole stanno in `src/app/landing.css` (classi `l-*`) e non entrano nell'app.
+  - Il primo schermo è tutto giallo: il titolo in Hanken 900 fino a 200 px, la frase chiave in una fascia inchiostro con testo giallo (l'evidenziatore rovesciato). Un solo pulsante grande.
+  - Il numero guida, alla lettera: "58" alto un terzo dello schermo, a cavallo tra il giallo e il bianco.
+  - "Parole diverse, stesso problema.": le cinque citazioni scorrono in un solo paragrafo serif grande, ogni canale in un'etichetta inchiostro, ogni frase chiave evidenziata. L'esempio dice sempre che i feedback sono inventati.
+  - I tre verbi larghi quanto lo schermo, una riga di testo sotto ciascuno.
+  - Chiedi su fondo inchiostro: la domanda scritta in grande, il conteggio in giallo a scala da manifesto.
+  - Movimento: il conteggio sale da 0, gli evidenziatori passano uno dopo l'altro, la domanda si scrive, la risposta sale. Partono una volta quando il blocco entra nello schermo (`InView`), e con `prefers-reduced-motion` non parte niente. Senza JavaScript tutto è già nello stato finale.
+  - Nella fascia inchiostro non ci sono elementi con focus: l'anello inchiostro non si vedrebbe.
 - **Accesso e registrazione**: colonna stretta, marchio in alto, campi `.input` con fondo velo, un solo pulsante primario a tutta larghezza.
 
 ## Nell'app
