@@ -7,6 +7,7 @@ import enCommon from "./en/common.json"
 import enFeedback from "./en/feedback.json"
 import enForm from "./en/form.json"
 import enLanding from "./en/landing.json"
+import enResearch from "./en/research.json"
 import enRoom from "./en/room.json"
 import enThemes from "./en/themes.json"
 import itApp from "./it/app.json"
@@ -18,6 +19,7 @@ import itCommon from "./it/common.json"
 import itFeedback from "./it/feedback.json"
 import itForm from "./it/form.json"
 import itLanding from "./it/landing.json"
+import itResearch from "./it/research.json"
 import itRoom from "./it/room.json"
 import itThemes from "./it/themes.json"
 import type { Locale } from "../locale"
@@ -29,6 +31,7 @@ const it = {
   landing: itLanding,
   auth: itAuth,
   app: itApp,
+  research: itResearch,
   themes: itThemes,
   ask: itAsk,
   feedback: itFeedback,
@@ -47,6 +50,7 @@ export const messages: Record<Locale, Messages> = {
     landing: enLanding,
     auth: enAuth,
     app: enApp,
+    research: enResearch,
     themes: enThemes,
     ask: enAsk,
     feedback: enFeedback,

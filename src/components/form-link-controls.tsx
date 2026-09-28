@@ -2,11 +2,11 @@
 
 import { useTranslations } from "next-intl"
 import { useState, useTransition } from "react"
-import { regenerateFormLink, setFormEnabled } from "@/app/(app)/collect/actions"
+import { regenerateFormLink, setFormEnabled } from "@/app/(app)/research/[id]/collect/actions"
 import { Button } from "@/components/ui/button"
 
 // Turning the link off is reversible. A new link is not: the old link and printed QR codes stop working.
-export function FormLinkControls({ enabled }: { enabled: boolean }) {
+export function FormLinkControls({ researchId, enabled }: { researchId: string; enabled: boolean }) {
   const t = useTranslations("collect.formLink")
   const [confirming, setConfirming] = useState(false)
   const [failed, setFailed] = useState(false)
@@ -26,7 +26,7 @@ export function FormLinkControls({ enabled }: { enabled: boolean }) {
       {confirming ? (
         <>
           <span className="mr-2">{t("regenerateWarning")}</span>
-          <Button disabled={pending} onClick={() => run(regenerateFormLink)}>
+          <Button disabled={pending} onClick={() => run(() => regenerateFormLink(researchId))}>
             {pending ? t("generating") : t("generate")}
           </Button>
           <Button variant="secondary" disabled={pending} onClick={() => setConfirming(false)}>
@@ -35,7 +35,7 @@ export function FormLinkControls({ enabled }: { enabled: boolean }) {
         </>
       ) : (
         <>
-          <Button variant="secondary" disabled={pending} onClick={() => run(() => setFormEnabled(!enabled))}>
+          <Button variant="secondary" disabled={pending} onClick={() => run(() => setFormEnabled(researchId, !enabled))}>
             {enabled ? t("disable") : t("enable")}
           </Button>
           <Button variant="secondary" disabled={pending} onClick={() => setConfirming(true)}>

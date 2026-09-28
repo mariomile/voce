@@ -11,10 +11,13 @@ import { CHANNEL_MAX_LENGTH, CUSTOMER_MAX_LENGTH, FEEDBACK_MAX_LENGTH, FORM_QUES
 import { createClient } from "@/lib/supabase/server"
 
 // Every write runs as the signed-in user: RLS, column grants and the database functions decide
-// what it can touch. The Free limit is enforced by the database on every insert.
+// what it can touch. The Free limit is enforced by the database on every insert. The Research id
+// comes from the page: a Research of another workspace is refused by the database (RLS, the composite
+// key of feedback, the membership checks of the functions).
 
 // Postgres text cannot hold NUL characters.
 const text = (schema: z.ZodString) => z.string().transform((t) => t.replaceAll("\0", "")).pipe(schema)
+const researchIdSchema = z.uuid()
 
 const manualFeedbackSchema = z.object({
   text: text(z.string().trim().min(1).max(FEEDBACK_MAX_LENGTH)),
@@ -30,7 +33,11 @@ export type AddFeedbackResult =
   | { ok: false; reason: "invalid"; fields: ManualFeedbackField[] }
   | { ok: false; reason: "limit" }
 
-export async function addFeedback(input: z.input<typeof manualFeedbackSchema>): Promise<AddFeedbackResult> {
+export async function addFeedback(
+  researchId: string,
+  input: z.input<typeof manualFeedbackSchema>
+): Promise<AddFeedbackResult> {
+  if (!researchIdSchema.safeParse(researchId).success) return { ok: false, reason: "invalid", fields: [] }
   const parsed = manualFeedbackSchema.safeParse(input)
   const today = isoDateOf(new Date())
   const future = parsed.success && parsed.data.receivedAt > today
@@ -42,6 +49,7 @@ export async function addFeedback(input: z.input<typeof manualFeedbackSchema>): 
   const supabase = await createClient()
   const { error } = await supabase.from("feedback").insert({
     workspace_id: workspace.id,
+    research_id: researchId,
     text: parsed.data.text,
     channel: parsed.data.channel,
     customer: parsed.data.customer || null,
@@ -78,8 +86,8 @@ const SAMPLE_ROWS = 5
 
 // The browser sends the file twice, for the preview and for the import. The server reads it
 // again each time: what the browser showed is never trusted.
-export async function previewCsv(formData: FormData): Promise<CsvPreview | CsvError> {
-  const result = await runImport(formData, true)
+export async function previewCsv(researchId: string, formData: FormData): Promise<CsvPreview | CsvError> {
+  const result = await runImport(researchId, formData, true)
   if (!result.ok) return result
   const saved = result.rows.filter((_, i) => result.outcomes[i] === "new")
   return {
@@ -92,8 +100,8 @@ export async function previewCsv(formData: FormData): Promise<CsvPreview | CsvEr
   }
 }
 
-export async function importCsv(formData: FormData): Promise<CsvImportResult | CsvError> {
-  const result = await runImport(formData, false)
+export async function importCsv(researchId: string, formData: FormData): Promise<CsvImportResult | CsvError> {
+  const result = await runImport(researchId, formData, false)
   if (!result.ok) return result
   const imported = result.outcomes.filter((o) => o === "new").length
   if (imported > 0) trackMilestone(result.workspaceId, { event: "first_feedback_added", properties: { source: "csv" } })
@@ -107,7 +115,8 @@ export async function importCsv(formData: FormData): Promise<CsvImportResult | C
   }
 }
 
-async function runImport(formData: FormData, dryRun: boolean) {
+async function runImport(researchId: string, formData: FormData, dryRun: boolean) {
+  researchIdSchema.parse(researchId)
   const t = await getTranslations("collect")
   const file = formData.get("file")
   if (!(file instanceof File)) return { ok: false as const, error: t("csvImport.chooseFileError") }
@@ -118,6 +127,7 @@ async function runImport(formData: FormData, dryRun: boolean) {
   const supabase = await createClient()
   const { data, error } = await supabase.rpc("import_feedback", {
     ws: workspace.id,
+    research: researchId,
     rows: parsed.rows.map((r) => ({
       text: r.text,
       channel: r.channel,
@@ -131,40 +141,38 @@ async function runImport(formData: FormData, dryRun: boolean) {
   return { ok: true as const, workspaceId: workspace.id, rows: parsed.rows, invalid: parsed.invalid, outcomes }
 }
 
-export async function setFormEnabled(enabled: boolean) {
+export async function setFormEnabled(researchId: string, enabled: boolean) {
   const parsed = z.boolean().safeParse(enabled)
-  if (!parsed.success) return { ok: false as const }
-  const workspace = await getCurrentWorkspace()
+  if (!parsed.success || !researchIdSchema.safeParse(researchId).success) return { ok: false as const }
   const supabase = await createClient()
   const { data, error } = await supabase
-    .from("workspaces")
+    .from("research")
     .update({ form_enabled: parsed.data })
-    .eq("id", workspace.id)
+    .eq("id", researchId)
     .select("id")
   if (error || data.length === 0) return { ok: false as const }
   revalidatePath("/", "layout")
   return { ok: true as const }
 }
 
-export async function regenerateFormLink() {
-  const workspace = await getCurrentWorkspace()
+export async function regenerateFormLink(researchId: string) {
+  if (!researchIdSchema.safeParse(researchId).success) return { ok: false as const }
   const supabase = await createClient()
-  const { error } = await supabase.rpc("regenerate_form_link", { ws: workspace.id })
+  const { error } = await supabase.rpc("regenerate_form_link", { research: researchId })
   if (error) return { ok: false as const }
   revalidatePath("/", "layout")
   return { ok: true as const }
 }
 
 // Empty means the default question, which the database builds from the workspace name.
-export async function setFormQuestion(question: string) {
+export async function setFormQuestion(researchId: string, question: string) {
   const parsed = text(z.string().trim().max(FORM_QUESTION_MAX_LENGTH)).safeParse(question)
-  if (!parsed.success) return { ok: false as const }
-  const workspace = await getCurrentWorkspace()
+  if (!parsed.success || !researchIdSchema.safeParse(researchId).success) return { ok: false as const }
   const supabase = await createClient()
   const { data, error } = await supabase
-    .from("workspaces")
+    .from("research")
     .update({ form_question: parsed.data || null })
-    .eq("id", workspace.id)
+    .eq("id", researchId)
     .select("id")
   if (error || data.length === 0) return { ok: false as const }
   revalidatePath("/", "layout")

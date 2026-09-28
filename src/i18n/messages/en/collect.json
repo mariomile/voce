@@ -3,8 +3,6 @@
     "title": "Collect"
   },
   "page": {
-    "title": "Collect",
-    "lede": "Bring in the feedback you already have and ask for more. Each one keeps the channel it came from, so you can filter by it later.",
     "sections": {
       "csv": "Import a CSV",
       "manual": "Paste feedback"

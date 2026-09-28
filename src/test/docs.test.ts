@@ -19,6 +19,17 @@ describe("the questions migration", () => {
   })
 })
 
+describe("the research migration", () => {
+  it("enables RLS on research in the same file that creates it", () => {
+    const creating = migrations.filter((f) =>
+      /create table public\.research\b/.test(readFileSync(`supabase/migrations/${f}`, "utf8"))
+    )
+    expect(creating).toEqual(["20261001090000_research.sql"])
+    const sql = readFileSync(`supabase/migrations/${creating[0]}`, "utf8")
+    expect(sql).toMatch(/alter table public\.research enable row level security;/)
+  })
+})
+
 describe("the question quota", () => {
   it("PLAN_LIMITS mirrors private.questions_limit", () => {
     const sql = readFileSync("supabase/migrations/20260927120000_questions.sql", "utf8")

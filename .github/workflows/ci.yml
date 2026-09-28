@@ -63,6 +63,8 @@ jobs:
         run: pnpm exec vitest run src/test/rls.test.ts
       - name: Database tests (SQL rules the API cannot isolate)
         run: supabase test db
+      - name: Database tests (the research migration on the data it moves, then a full reset)
+        run: bash supabase/migration-tests/run.sh
       - name: Unit tests
         run: pnpm exec vitest run --exclude src/test/rls.test.ts
 

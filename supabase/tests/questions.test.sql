@@ -172,8 +172,10 @@ select results_eq($$select used from public.question_usage((select id from ws wh
 
 -- ===== AC 17: finish_question checks the quotes again on the saved feedback =====
 
-insert into public.feedback (id, workspace_id, text, channel)
-select v.id::uuid, w.id, v.text, 'Supporto' from ws w, (values
+insert into public.research (workspace_id, question, form_slug)
+select w.id, 'Domanda?', 'questions-c' from ws w where w.name = 'c';
+insert into public.feedback (id, workspace_id, research_id, text, channel)
+select v.id::uuid, w.id, r.id, v.text, 'Supporto' from ws w join public.research r on r.workspace_id = w.id, (values
   ('30000000-0000-0000-0000-000000000001', 'La banca si scollega ogni lunedì.'),
   ('30000000-0000-0000-0000-000000000002', 'Devo ricollegare la banca ogni settimana.')
 ) as v (id, text) where w.name = 'c';

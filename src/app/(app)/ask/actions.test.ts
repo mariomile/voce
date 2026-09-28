@@ -63,6 +63,7 @@ const daysAgo = (days: number) => isoDateOf(new Date(Date.now() - days * 24 * 60
 async function addFeedback(texts = TEXTS, firstDaysAgo = 0) {
   const rows = texts.map((text, i) => ({
     workspace_id: user.workspaceId,
+    research_id: user.researchId,
     text,
     channel: "Supporto",
     customer: "Mario Rossi",
@@ -390,6 +391,7 @@ describe("ask: what reaches the model", () => {
     await admin.from("subscriptions").update({ plan: "pro" }).eq("workspace_id", user.workspaceId)
     const rows = Array.from({ length: 501 }, (_, i) => ({
       workspace_id: user.workspaceId,
+      research_id: user.researchId,
       text: `Feedback numero ${i}.`,
       channel: "Supporto",
       received_at: daysAgo(Math.floor(i / 10)),

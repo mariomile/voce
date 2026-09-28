@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition, type 
 import Link from "next/link"
 import { cn } from "cn"
 import { useLocale, useTranslations } from "next-intl"
-import { roomThemes } from "@/app/sala/actions"
+import { roomThemes } from "@/app/research/[id]/sala/actions"
 import { analyze } from "@/app/(app)/themes/actions"
 import { failureMessage, type AnalysisFailure } from "@/components/analyze-button"
 import { Logo } from "@/components/logo"
@@ -43,6 +43,7 @@ type Screen = { act: "pile"; failure: Failure | null } | { act: "themes"; analys
 // Two acts on one canvas (room-dots.tsx): each response is a dot that falls onto the pile above
 // the count; the analysis sorts the dots into one bubble per theme.
 export function RoomScreen({
+  researchId,
   workspaceName,
   question,
   shortUrl,
@@ -50,6 +51,7 @@ export function RoomScreen({
   initialStatus,
   limitNote,
 }: {
+  researchId: string
   workspaceName: string
   question: string
   shortUrl: string
@@ -57,7 +59,9 @@ export function RoomScreen({
   initialStatus: RoomStatus
   limitNote?: string
 }) {
-  const status = useRoomStatus(initialStatus)
+  const status = useRoomStatus(initialStatus, `/research/${researchId}/sala/status`)
+  // "Esci dallo schermo" and "Riaccendi il link" go back to the Raccolta of this Research.
+  const collectHref = `/research/${researchId}/collect`
   const [screen, setScreen] = useState<Screen>({ act: "pile", failure: null })
   const [pending, startTransition] = useTransition()
 
@@ -121,6 +125,7 @@ export function RoomScreen({
       {screen.act === "themes" ? (
         <ThemesView
           workspaceName={workspaceName}
+          collectHref={collectHref}
           groups={groups}
           labels={layout?.labels ?? null}
           responses={status.responses}
@@ -132,6 +137,7 @@ export function RoomScreen({
       ) : (
         <PileView
           workspaceName={workspaceName}
+          collectHref={collectHref}
           question={question}
           shortUrl={shortUrl}
           qrCode={qrCode}
@@ -150,6 +156,7 @@ export function RoomScreen({
 // Act 1: the question, the pile over the count, the analysis button and the QR code.
 function PileView({
   workspaceName,
+  collectHref,
   question,
   shortUrl,
   qrCode,
@@ -161,6 +168,7 @@ function PileView({
   pileRef,
 }: {
   workspaceName: string
+  collectHref: string
   question: string
   shortUrl: string
   qrCode: ReactNode
@@ -187,7 +195,7 @@ function PileView({
 
   return (
     <>
-      <RoomHeader workspaceName={workspaceName} />
+      <RoomHeader workspaceName={workspaceName} exitHref={collectHref} />
 
       <div className="l-wrap grid flex-1 grid-cols-[minmax(0,1fr)_auto] gap-x-[4vw] pt-[1svh] pb-[4svh]">
         <div className="flex min-w-0 flex-col gap-[2svh]">
@@ -233,7 +241,7 @@ function PileView({
             <FormPanel
               title={t("pile.formOff.title")}
               text={t("pile.formOff.text")}
-              href="/collect"
+              href={collectHref}
               action={t("pile.formOff.action")}
             />
           ) : (
@@ -251,14 +259,14 @@ function PileView({
 }
 
 // Asks the server every few seconds, one call at a time. A failed call keeps the last count.
-function useRoomStatus(initial: RoomStatus) {
+function useRoomStatus(initial: RoomStatus, url: string) {
   const [status, setStatus] = useState(initial)
   useEffect(() => {
     let stopped = false
     let timer: ReturnType<typeof setTimeout>
     async function poll() {
       try {
-        const response = await fetch("/sala/status", { cache: "no-store" })
+        const response = await fetch(url, { cache: "no-store" })
         if (response.ok && response.headers.get("content-type")?.includes("application/json")) {
           const next: RoomStatus = await response.json()
           if (!stopped) setStatus(next)
@@ -273,7 +281,7 @@ function useRoomStatus(initial: RoomStatus) {
       stopped = true
       clearTimeout(timer)
     }
-  }, [])
+  }, [url])
   return status
 }
 
@@ -330,10 +338,12 @@ function Counter({ responses }: { responses: number }) {
 
 function RoomHeader({
   workspaceName,
+  exitHref,
   onPaper = false,
   children,
 }: {
   workspaceName: string
+  exitHref: string
   onPaper?: boolean
   children?: ReactNode
 }) {
@@ -347,7 +357,7 @@ function RoomHeader({
       <div className="ml-auto flex items-center gap-[2vw]">
         {children}
         <Link
-          href="/collect"
+          href={exitHref}
           className={cn("room-lede underline-offset-4 hover:underline", onPaper ? "text-ink-muted" : "text-on-highlight")}
         >
           {t("exit")}
@@ -374,6 +384,7 @@ type ThemeGroup = RoomGroup & { kind: RoomTheme["kind"] }
 // Act 2: the themes as bubbles (drawn on the canvas, labels here) or as a list.
 function ThemesView({
   workspaceName,
+  collectHref,
   groups,
   labels,
   responses,
@@ -383,6 +394,7 @@ function ThemesView({
   stageRef,
 }: {
   workspaceName: string
+  collectHref: string
   groups: RoomGroup[]
   labels: Label[] | null
   responses: number
@@ -401,7 +413,7 @@ function ThemesView({
     "room-lede rounded-full px-[0.8em] py-[0.25em] font-extrabold text-ink-muted transition-colors hover:text-ink aria-pressed:bg-ink aria-pressed:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
   return (
     <>
-      <RoomHeader workspaceName={workspaceName} onPaper>
+      <RoomHeader workspaceName={workspaceName} exitHref={collectHref} onPaper>
         <div className="flex items-center rounded-full border border-line p-[0.2em]" role="group" aria-label={t("themesView.modeGroupLabel")}>
           <button type="button" aria-pressed={view === "bubbles"} onClick={() => onView("bubbles")} className={toggle}>
             {t("themesView.bubbles")}

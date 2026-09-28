@@ -52,7 +52,7 @@ beforeEach(async () => {
   await admin.from("analytics_milestones").delete().eq("workspace_id", user.workspaceId)
   await admin
     .from("feedback")
-    .insert({ workspace_id: user.workspaceId, text: TEXT, channel: "Supporto", received_at: isoDateOf(new Date()) })
+    .insert({ workspace_id: user.workspaceId, research_id: user.researchId, text: TEXT, channel: "Supporto", received_at: isoDateOf(new Date()) })
 })
 
 async function settle() {

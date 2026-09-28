@@ -58,7 +58,7 @@ function NothingToAsk({ t, olderCount }: { t: Awaited<ReturnType<typeof getTrans
       <p className="mb-8 max-w-[58ch] text-lg leading-relaxed text-ink-muted">
         {olderCount === 0 ? t("nothingToAsk.bodyEmpty") : t("nothingToAsk.bodyOld", { count: olderCount })}
       </p>
-      <Link href="/collect" className={buttonVariants()}>
+      <Link href="/research" className={buttonVariants()}>
         {t("page.addFeedback")}
       </Link>
     </div>

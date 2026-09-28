@@ -19,6 +19,7 @@ async function seed(user: TestUser) {
     .insert(
       ["La banca si scollega.", "Ricollego la banca ogni lunedì.", "Risposta inappropriata"].map((text) => ({
         workspace_id: user.workspaceId,
+        research_id: user.researchId,
         text,
         channel: "Modulo pubblico",
       }))

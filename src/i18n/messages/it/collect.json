@@ -3,8 +3,6 @@
     "title": "Raccolta"
   },
   "page": {
-    "title": "Raccolta",
-    "lede": "Porta qui i feedback che hai già e chiedine di nuovi. Ognuno tiene il canale da cui arriva, così poi puoi filtrarli.",
     "sections": {
       "csv": "Importa un CSV",
       "manual": "Incolla un feedback"

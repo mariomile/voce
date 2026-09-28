@@ -1,21 +1,18 @@
 import Link from "next/link"
 import { getLocale, getTranslations } from "next-intl/server"
 import { AnalyzeButton } from "@/components/analyze-button"
-import { CopyLinkButton } from "@/components/copy-link-button"
 import { LimitWarning } from "@/components/limit-warning"
 import { Page, PageHeader, PageLede, PageMore, PageTitle } from "@/components/page"
 import { Quote } from "@/components/quote"
-import { QrCode } from "@/components/qr-code"
 import { StatusMenu } from "@/components/status-menu"
 import { ThemeRow } from "@/components/theme-row"
 import { buttonVariants } from "@/components/ui/button"
-import { Card, CardActions, CardBody, CardMeta, CardText, CardTitle } from "@/components/ui/card"
+import { Card, CardText, CardTitle } from "@/components/ui/card"
 import { ChipCount, chipVariants, FilterBar, FilterBarSep } from "@/components/ui/chip"
 import { getCurrentWorkspace, getDashboard, getUsage, type StatusFilter, type Usage } from "@/lib/data"
 import type { Locale } from "@/i18n/locale"
-import { getOrigin } from "@/lib/origin"
 import { formatDate, formatMonth } from "@/lib/format"
-import type { ThemeKind, Workspace } from "@/lib/types"
+import type { ThemeKind } from "@/lib/types"
 
 const KINDS: ThemeKind[] = ["problem", "opportunity", "praise"]
 const STATUSES: StatusFilter[] = ["open", "all", "to_review", "roadmap", "done", "discarded"]
@@ -42,7 +39,7 @@ export default async function ThemesPage({ searchParams }: PageProps<"/themes">)
   ])
 
   if (dashboard.feedbackCount === 0)
-    return <EmptyNoFeedback workspace={workspace} origin={await getOrigin()} t={t} />
+    return <EmptyNoFeedback t={t} tResearch={await getTranslations("research")} />
 
   const limitReached = usage.feedbackLimit !== null && usage.feedbackCount >= usage.feedbackLimit
   const { analysis } = dashboard
@@ -128,16 +125,15 @@ export default async function ThemesPage({ searchParams }: PageProps<"/themes">)
   )
 }
 
+// Feedback are collected inside a Research now: this page, removed with the Research synthesis,
+// only points there.
 function EmptyNoFeedback({
-  workspace,
-  origin,
   t,
+  tResearch,
 }: {
-  workspace: Workspace
-  origin: string
   t: Awaited<ReturnType<typeof getTranslations<"themes">>>
+  tResearch: Awaited<ReturnType<typeof getTranslations<"research">>>
 }) {
-  const formPath = `/f/${workspace.formSlug}`
   return (
     <Page>
       <div className="py-6">
@@ -147,42 +143,9 @@ function EmptyNoFeedback({
         <p className="mb-10 max-w-[58ch] text-lg leading-relaxed text-ink-muted">
           {t("page.emptyNoFeedback.lede")}
         </p>
-        <div className="grid grid-cols-[1.35fr_1fr_1fr] gap-5">
-          <Card variant="highlight" layout="media">
-            <CardBody>
-              <CardTitle>{t("page.emptyNoFeedback.askTitle")}</CardTitle>
-              <CardText>{t("page.emptyNoFeedback.askText")}</CardText>
-              <CardMeta>
-                <Link href={formPath} className="hover:underline">
-                  {new URL(origin).host}
-                  {formPath}
-                </Link>
-              </CardMeta>
-              <CardActions>
-                <CopyLinkButton path={formPath} />
-              </CardActions>
-            </CardBody>
-            <QrCode url={`${origin}${formPath}`} />
-          </Card>
-          <Card>
-            <CardTitle>{t("page.emptyNoFeedback.csvTitle")}</CardTitle>
-            <CardText>{t.rich("page.emptyNoFeedback.csvText", { b: (chunks) => <b>{chunks}</b> })}</CardText>
-            <CardActions>
-              <Link href="/collect#csv" className={buttonVariants({ variant: "secondary" })}>
-                {t("page.emptyNoFeedback.chooseFile")}
-              </Link>
-            </CardActions>
-          </Card>
-          <Card>
-            <CardTitle>{t("page.emptyNoFeedback.pasteTitle")}</CardTitle>
-            <CardText>{t("page.emptyNoFeedback.pasteText")}</CardText>
-            <CardActions>
-              <Link href="/collect#manual" className={buttonVariants({ variant: "secondary" })}>
-                {t("page.emptyNoFeedback.pasteAction")}
-              </Link>
-            </CardActions>
-          </Card>
-        </div>
+        <Link href="/research" className={buttonVariants()}>
+          {tResearch("header.back")}
+        </Link>
       </div>
     </Page>
   )

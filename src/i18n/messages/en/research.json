@@ -1,0 +1,49 @@
+{
+  "metadata": {
+    "title": "Research"
+  },
+  "list": {
+    "title": "Your Research",
+    "lede": "A Research starts from a question about your customers and collects the feedback you need to answer it.",
+    "newResearch": "New Research",
+    "row": {
+      "feedbackLabel": "feedback",
+      "formOff": "Form off",
+      "noFeedback": "No feedback yet"
+    }
+  },
+  "firstRun": {
+    "title": "Here you keep your questions about customers, with their answers.",
+    "lede": "Start from a question you want answered before a decision. Then collect feedback: a form with a QR code, interview notes, a CSV."
+  },
+  "form": {
+    "label": "Your question",
+    "hint": "For example: why don't small teams move to Pro after the trial?",
+    "create": "Create the Research",
+    "creating": "Creating…",
+    "cancel": "Cancel",
+    "count": "{count} / {max}",
+    "errors": {
+      "empty": "Write the question you want to answer. For example: why don't small teams move to Pro after the trial?",
+      "tooLong": "The question is over 200 characters: keep it to a single question.",
+      "failed": "I couldn't save the Research. Try again shortly: your question is still here.",
+      "session": "Your session has expired. Log in again to continue: copy the text you wrote first, it won't stay here.",
+      "sessionLink": "Log in"
+    }
+  },
+  "header": {
+    "back": "All Research",
+    "ledeCount": "{count} feedback from {channels, plural, one {1 channel} other {# channels}}, {start} to {end}.",
+    "ledeEmpty": "No feedback yet. The form is on."
+  },
+  "tabs": {
+    "label": "Research sections",
+    "synthesis": "Summary",
+    "collect": "Collect"
+  },
+  "notFound": {
+    "title": "I can't find this Research.",
+    "text": "It may have been deleted, or the link belongs to another account.",
+    "action": "All Research"
+  }
+}

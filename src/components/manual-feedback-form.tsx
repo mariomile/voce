@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from "next-intl"
 import { useState, useTransition } from "react"
-import { addFeedback, type ManualFeedbackField } from "@/app/(app)/collect/actions"
+import { addFeedback, type ManualFeedbackField } from "@/app/(app)/research/[id]/collect/actions"
 import { Button } from "@/components/ui/button"
 import { Field, FieldCount, FieldError, FieldLabel, FieldOptional } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { formatNumber } from "@/lib/format"
 import { CHANNEL_MAX_LENGTH, CUSTOMER_MAX_LENGTH, FEEDBACK_MAX_LENGTH } from "@/lib/plans"
 
-export function ManualFeedbackForm({ channels, today }: { channels: string[]; today: string }) {
+export function ManualFeedbackForm({ researchId, channels, today }: { researchId: string; channels: string[]; today: string }) {
   const t = useTranslations("collect.manualForm")
   const locale = useLocale()
   const ERRORS: Record<ManualFeedbackField, string> = {
@@ -31,7 +31,7 @@ export function ManualFeedbackForm({ channels, today }: { channels: string[]; to
     e.preventDefault()
     setMessage(null)
     startTransition(async () => {
-      const result = await addFeedback({ text, channel, customer, receivedAt })
+      const result = await addFeedback(researchId, { text, channel, customer, receivedAt })
       if (result.ok) {
         // Channel and date usually stay the same for the next one.
         setText("")

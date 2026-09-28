@@ -35,7 +35,7 @@ describe("error copy", () => {
     expect(errors.noFeedback).toEqual({
       text: "Negli ultimi 90 giorni non ci sono più feedback su cui rispondere.",
       link: "Aggiungi feedback",
-      href: "/collect",
+      href: "/research",
     })
   })
 

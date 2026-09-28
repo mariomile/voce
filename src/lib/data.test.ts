@@ -5,8 +5,19 @@ import { admin, createTestUser, deleteTestUsers, signIn, type Client } from "@/t
 const session = vi.hoisted(() => ({ client: null as unknown }))
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => session.client }))
 
-const { FEEDBACK_PAGE_SIZE, getCurrentWorkspace, getDashboard, getPublicForm, getQuestionWindow, getTheme, getUsage, listFeedback } =
-  await import("./data")
+const {
+  FEEDBACK_PAGE_SIZE,
+  getCurrentWorkspace,
+  getDashboard,
+  getPublicForm,
+  getQuestionWindow,
+  getResearch,
+  getResearchStats,
+  getTheme,
+  getUsage,
+  listFeedback,
+  listResearch,
+} = await import("./data")
 
 const users: Record<"fatturino" | "orto" | "ordinalo", Client> = {} as never
 const workspaceIds: Record<string, string> = {}
@@ -27,13 +38,45 @@ function as(name: keyof typeof users) {
 describe("getCurrentWorkspace", () => {
   it("is the signed-in user's workspace", async () => {
     as("orto")
-    expect(await getCurrentWorkspace()).toEqual({
-      id: workspaceIds.orto,
-      name: "Orto",
+    expect(await getCurrentWorkspace()).toEqual({ id: workspaceIds.orto, name: "Orto" })
+  })
+})
+
+describe("the Research of the seed", () => {
+  it("listResearch gives the newest first, with the number of feedback", async () => {
+    const list = await listResearch(as("fatturino"))
+    expect(list.map((r) => [r.question, r.formEnabled, r.feedbackCount > 0])).toEqual([
+      ["Come usano l'export in Excel i clienti Pro?", true, false],
+      ["Cosa dicono i clienti di Fatturino?", true, true],
+    ])
+    expect(list[0].feedbackCount).toBe(0)
+  })
+
+  it("getResearch reads the form of the Research", async () => {
+    as("orto")
+    const [orto] = await listResearch(workspaceIds.orto)
+    expect(await getResearch(orto.id)).toMatchObject({
+      workspaceId: workspaceIds.orto,
       formSlug: "orto-p2x8",
       formEnabled: true,
       formQuestion: "Cosa ti ha fatto perdere tempo questa settimana con Orto?",
     })
+  })
+
+  it("getResearch is null for another workspace's Research, an unknown id and a non-uuid", async () => {
+    const [orto] = await listResearch(as("orto"))
+    as("fatturino")
+    expect(await getResearch(orto.id)).toBeNull()
+    expect(await getResearch(crypto.randomUUID())).toBeNull()
+    expect(await getResearch("non-un-uuid")).toBeNull()
+  })
+
+  it("getResearchStats counts feedback, channels and the dates of one Research", async () => {
+    const [orto] = await listResearch(as("orto"))
+    const stats = await getResearchStats({ id: orto.id, workspaceId: workspaceIds.orto })
+    expect(stats.feedbackCount).toBe(orto.feedbackCount)
+    expect(stats.channelCount).toBeGreaterThan(0)
+    expect(stats.firstReceivedAt! <= stats.lastReceivedAt!).toBe(true)
   })
 })
 
@@ -147,6 +190,7 @@ describe("listFeedback pages", () => {
       await admin.from("subscriptions").update({ plan: "pro" }).eq("workspace_id", user.workspaceId)
       const rows = Array.from({ length: 1050 }, (_, i) => ({
         workspace_id: user.workspaceId,
+        research_id: user.researchId,
         text: `Feedback ${i}`,
         channel: i % 2 ? "Supporto" : "Call vendita",
       }))
@@ -195,8 +239,12 @@ describe("getPublicForm", () => {
     expect((await getPublicForm("ordinalo-7fq2"))?.accepting).toBe(false)
   })
 
-  it("does not exist when the link is disabled or unknown", async () => {
-    expect(await getPublicForm("spento-a1b2")).toBeNull()
+  it("does not accept feedback when the link is disabled, and does not exist when unknown", async () => {
+    expect(await getPublicForm("spento-a1b2")).toEqual({
+      workspaceName: "Spento",
+      question: "Cosa vuoi dire al team di Spento?",
+      accepting: false,
+    })
     expect(await getPublicForm("nope")).toBeNull()
   })
 })
@@ -243,7 +291,7 @@ describe("getQuestionWindow", () => {
       session.client = user.client
       const day = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000).toLocaleDateString("en-CA", { timeZone: "Europe/Rome" })
       await admin.from("feedback").insert(
-        [0, 89, 90].map((n) => ({ workspace_id: user.workspaceId, text: `Feedback ${n}`, channel: "Supporto", received_at: day(n) }))
+        [0, 89, 90].map((n) => ({ workspace_id: user.workspaceId, research_id: user.researchId, text: `Feedback ${n}`, channel: "Supporto", received_at: day(n) }))
       )
       expect(await getQuestionWindow(user.workspaceId)).toEqual({ total: 3, recent: 2 })
     } finally {

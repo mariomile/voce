@@ -33,25 +33,25 @@ beforeEach(async () => {
   session.client = owner.client
   await admin.from("analyses").delete().eq("workspace_id", owner.workspaceId)
   await admin.from("feedback").delete().eq("workspace_id", owner.workspaceId)
-  await admin.from("workspaces").update({ form_enabled: true }).eq("id", owner.workspaceId)
+  await admin.from("research").update({ form_enabled: true }).eq("id", owner.researchId)
 })
 
 async function addFeedback(texts: string[], channel: string) {
   const { error } = await admin
     .from("feedback")
-    .insert(texts.map((text) => ({ workspace_id: owner.workspaceId, text, channel })))
+    .insert(texts.map((text) => ({ workspace_id: owner.workspaceId, research_id: owner.researchId, text, channel })))
   if (error) throw error
 }
 
 // Polled by the screen while an analysis may be running: a route handler, because server actions
 // from one page run one at a time and the counter would stop for the whole analysis.
-async function roomStatus() {
-  const response = await GET()
+async function roomStatus(researchId = owner.researchId) {
+  const response = await GET(new Request("http://localhost"), { params: Promise.resolve({ id: researchId }) })
   expect(response.headers.get("cache-control")).toBe("private, no-store")
-  return response.json()
+  return response.status === 404 ? 404 : response.json()
 }
 
-describe("GET /sala/status", () => {
+describe("GET /research/[id]/sala/status", () => {
   it("counts only the responses from the public form", async () => {
     await addFeedback(["Uno", "Due"], "Modulo pubblico")
     await addFeedback(["Tre"], "Supporto")
@@ -59,7 +59,7 @@ describe("GET /sala/status", () => {
   })
 
   it("says when the link is off", async () => {
-    await admin.from("workspaces").update({ form_enabled: false }).eq("id", owner.workspaceId)
+    await admin.from("research").update({ form_enabled: false }).eq("id", owner.researchId)
     expect(await roomStatus()).toEqual({ responses: 0, form: "off" })
   })
 
@@ -71,11 +71,17 @@ describe("GET /sala/status", () => {
 })
 
 describe("getRoomStatus", () => {
-  it("reads nothing of another workspace, even given its id", async () => {
+  it("reads nothing of another workspace, even given its ids", async () => {
     await addFeedback(["Uno", "Due"], "Modulo pubblico")
     session.client = other.client
-    const status = await getRoomStatus({ id: owner.workspaceId, formEnabled: true })
+    const status = await getRoomStatus({ id: owner.researchId, workspaceId: owner.workspaceId, formEnabled: true })
     expect(status.responses).toBe(0)
+  })
+
+  it("answers 404 for a Research of another workspace or a wrong id", async () => {
+    session.client = other.client
+    expect(await roomStatus(owner.researchId)).toBe(404)
+    expect(await roomStatus("non-un-uuid")).toBe(404)
   })
 })
 

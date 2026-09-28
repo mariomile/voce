@@ -1,0 +1,49 @@
+{
+  "metadata": {
+    "title": "Research"
+  },
+  "list": {
+    "title": "Le tue Research",
+    "lede": "Una Research parte da una domanda sui clienti e raccoglie i feedback che servono a rispondere.",
+    "newResearch": "Nuova Research",
+    "row": {
+      "feedbackLabel": "feedback",
+      "formOff": "Modulo spento",
+      "noFeedback": "Nessun feedback ancora"
+    }
+  },
+  "firstRun": {
+    "title": "Qui tieni le tue domande sui clienti, con le loro risposte.",
+    "lede": "Parti da una domanda a cui vuoi rispondere prima di una decisione. Poi raccogli i feedback: modulo con QR code, note di intervista, CSV."
+  },
+  "form": {
+    "label": "La tua domanda",
+    "hint": "Per esempio: perché i team piccoli non passano a Pro dopo la prova?",
+    "create": "Crea la Research",
+    "creating": "Creo…",
+    "cancel": "Annulla",
+    "count": "{count} / {max}",
+    "errors": {
+      "empty": "Scrivi la domanda a cui vuoi rispondere. Per esempio: perché i team piccoli non passano a Pro dopo la prova?",
+      "tooLong": "La domanda supera i 200 caratteri: tienila a una domanda sola.",
+      "failed": "Non sono riuscito a salvare la Research. Riprova tra poco: la domanda è ancora qui.",
+      "session": "La sessione è scaduta. Accedi di nuovo per continuare: copia prima il testo che hai scritto, qui non resta.",
+      "sessionLink": "Accedi"
+    }
+  },
+  "header": {
+    "back": "Tutte le Research",
+    "ledeCount": "{count} feedback da {channels, plural, one {1 canale} other {# canali}}, dal {start} al {end}.",
+    "ledeEmpty": "Ancora nessun feedback. Il modulo è attivo."
+  },
+  "tabs": {
+    "label": "Sezioni della Research",
+    "synthesis": "Sintesi",
+    "collect": "Raccolta"
+  },
+  "notFound": {
+    "title": "Non trovo questa Research.",
+    "text": "Forse è stata eliminata, o il link è di un altro account.",
+    "action": "Tutte le Research"
+  }
+}

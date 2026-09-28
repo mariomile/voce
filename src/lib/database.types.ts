@@ -166,6 +166,7 @@ export type Database = {
           email: string | null
           id: string
           received_at: string
+          research_id: string
           text: string
           workspace_id: string
         }
@@ -176,6 +177,7 @@ export type Database = {
           email?: string | null
           id?: string
           received_at?: string
+          research_id: string
           text: string
           workspace_id: string
         }
@@ -186,10 +188,18 @@ export type Database = {
           email?: string | null
           id?: string
           received_at?: string
+          research_id?: string
           text?: string
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "feedback_research_fkey"
+            columns: ["workspace_id", "research_id"]
+            isOneToOne: false
+            referencedRelation: "research"
+            referencedColumns: ["workspace_id", "id"]
+          },
           {
             foreignKeyName: "feedback_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -296,6 +306,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "questions_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      research: {
+        Row: {
+          created_at: string
+          form_enabled: boolean
+          form_question: string | null
+          form_slug: string
+          id: string
+          question: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          form_enabled?: boolean
+          form_question?: string | null
+          form_slug: string
+          id?: string
+          question: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          form_enabled?: boolean
+          form_question?: string | null
+          form_slug?: string
+          id?: string
+          question?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -465,25 +513,16 @@ export type Database = {
       workspaces: {
         Row: {
           created_at: string
-          form_enabled: boolean
-          form_question: string | null
-          form_slug: string
           id: string
           name: string
         }
         Insert: {
           created_at?: string
-          form_enabled?: boolean
-          form_question?: string | null
-          form_slug: string
           id?: string
           name: string
         }
         Update: {
           created_at?: string
-          form_enabled?: boolean
-          form_question?: string | null
-          form_slug?: string
           id?: string
           name?: string
         }
@@ -498,6 +537,32 @@ export type Database = {
           workspace_id: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "feedback_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      research_feedback_stats: {
+        Row: {
+          channel_count: number | null
+          feedback_count: number | null
+          first_received_at: string | null
+          last_received_at: string | null
+          research_id: string | null
+          workspace_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_research_fkey"
+            columns: ["workspace_id", "research_id"]
+            isOneToOne: false
+            referencedRelation: "research"
+            referencedColumns: ["workspace_id", "id"]
+          },
           {
             foreignKeyName: "feedback_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -526,6 +591,10 @@ export type Database = {
       }
     }
     Functions: {
+      create_research: {
+        Args: { question: string; ws: string }
+        Returns: string
+      }
       fail_analysis: {
         Args: { analysis: string; error: string; run?: Json }
         Returns: undefined
@@ -556,7 +625,7 @@ export type Database = {
         }[]
       }
       import_feedback: {
-        Args: { dry_run?: boolean; rows: Json; ws: string }
+        Args: { dry_run?: boolean; research: string; rows: Json; ws: string }
         Returns: string[]
       }
       question_usage: {
@@ -566,7 +635,7 @@ export type Database = {
           used: number
         }[]
       }
-      regenerate_form_link: { Args: { ws: string }; Returns: string }
+      regenerate_form_link: { Args: { research: string }; Returns: string }
       start_analysis: {
         Args: {
           feedback_count: number

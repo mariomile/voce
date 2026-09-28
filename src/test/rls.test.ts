@@ -14,7 +14,7 @@ const aIds = { feedback: "", analysis: "", theme: "" }
 async function seedWorkspace(user: TestUser, label: string) {
   const { data: feedback } = await admin
     .from("feedback")
-    .insert({ workspace_id: user.workspaceId, text: `Feedback di ${label}`, channel: "Supporto" })
+    .insert({ workspace_id: user.workspaceId, research_id: user.researchId, text: `Feedback di ${label}`, channel: "Supporto" })
     .select("id")
     .single()
   const { data: analysis } = await admin
@@ -57,6 +57,8 @@ const untyped = (client: Client) => client as unknown as SupabaseClient
 
 const WORKSPACE_TABLES = [
   "workspace_members",
+  "research",
+  "research_feedback_stats",
   "subscriptions",
   "feedback",
   "analyses",
@@ -104,15 +106,26 @@ describe("a user cannot read another workspace", () => {
 })
 
 describe("a user cannot change another workspace", () => {
-  it("cannot rename B's workspace or change its form", async () => {
+  it("cannot rename B's workspace", async () => {
+    const { data } = await a.client.from("workspaces").update({ name: "Preso" }).eq("id", b.workspaceId).select()
+    expect(data).toEqual([])
+    const { data: after } = await admin.from("workspaces").select("name").eq("id", b.workspaceId).single()
+    expect(after).toEqual({ name: "Prova b" })
+  })
+
+  it("cannot change B's Research or its form", async () => {
     const { data } = await a.client
-      .from("workspaces")
-      .update({ name: "Preso", form_enabled: false })
-      .eq("id", b.workspaceId)
+      .from("research")
+      .update({ question: "Presa?", form_enabled: false, form_question: "Presa?" })
+      .eq("id", b.researchId)
       .select()
     expect(data).toEqual([])
-    const { data: after } = await admin.from("workspaces").select("name, form_enabled").eq("id", b.workspaceId).single()
-    expect(after).toEqual({ name: "Prova b", form_enabled: true })
+    const { data: after } = await admin
+      .from("research")
+      .select("question, form_enabled, form_question")
+      .eq("id", b.researchId)
+      .single()
+    expect(after).toEqual({ question: "Domanda di prova?", form_enabled: true, form_question: null })
   })
 
   it("cannot change B's themes", async () => {
@@ -125,8 +138,17 @@ describe("a user cannot change another workspace", () => {
   it("cannot add feedback to B's workspace", async () => {
     const { error } = await a.client
       .from("feedback")
-      .insert({ workspace_id: b.workspaceId, text: "Intruso", channel: "Supporto" })
+      .insert({ workspace_id: b.workspaceId, research_id: b.researchId, text: "Intruso", channel: "Supporto" })
     expect(error?.code).toBe("42501")
+  })
+
+  it("cannot add feedback to B's Research from their own workspace", async () => {
+    const { error } = await a.client
+      .from("feedback")
+      .insert({ workspace_id: a.workspaceId, research_id: b.researchId, text: "Intruso", channel: "Supporto" })
+    expect(error?.code).toBe("23503")
+    const { count } = await admin.from("feedback").select("id", { count: "exact", head: true }).eq("research_id", b.researchId)
+    expect(count).toBe(1)
   })
 
   // Every API delete filters by column, so the select rule applies too and already hides B's rows:
@@ -147,8 +169,11 @@ describe("a user cannot change another workspace", () => {
   it("cannot import feedback into B's workspace, not even as a dry run", async () => {
     const rows = [{ text: "Feedback di B", channel: "Supporto", customer: null, received_at: null }]
     for (const dry_run of [true, false]) {
-      const { error } = await a.client.rpc("import_feedback", { ws: b.workspaceId, rows, dry_run })
+      const { error } = await a.client.rpc("import_feedback", { ws: b.workspaceId, research: b.researchId, rows, dry_run })
       expect(error?.code).toBe("42501")
+      // Their own workspace with B's Research is refused too.
+      const mixed = await a.client.rpc("import_feedback", { ws: a.workspaceId, research: b.researchId, rows, dry_run })
+      expect(mixed.error?.code).toBe("42501")
     }
     const { count } = await admin.from("feedback").select("id", { count: "exact", head: true }).eq("workspace_id", b.workspaceId)
     expect(count).toBe(1)
@@ -157,18 +182,29 @@ describe("a user cannot change another workspace", () => {
   it("cannot skip the server checks by calling the import directly", async () => {
     const row = { text: "Diretto", channel: "Supporto", customer: null, received_at: null }
     for (const bad of [{ received_at: "2999-01-01" }, { received_at: "0001-01-01" }, { text: "\n\t " }]) {
-      const { error } = await a.client.rpc("import_feedback", { ws: a.workspaceId, rows: [{ ...row, ...bad }] })
+      const { error } = await a.client.rpc("import_feedback", {
+        ws: a.workspaceId,
+        research: a.researchId,
+        rows: [{ ...row, ...bad }],
+      })
       expect(error?.message).toBe("invalid_rows")
     }
     const { count } = await admin.from("feedback").select("id", { count: "exact", head: true }).eq("text", "Diretto")
     expect(count).toBe(0)
   })
 
-    it("cannot give B's form a new link", async () => {
-    const { error } = await a.client.rpc("regenerate_form_link", { ws: b.workspaceId })
+  it("cannot give B's form a new link", async () => {
+    const { error } = await a.client.rpc("regenerate_form_link", { research: b.researchId })
     expect(error?.code).toBe("42501")
-    const { data } = await admin.from("workspaces").select("form_slug").eq("id", b.workspaceId).single()
+    const { data } = await admin.from("research").select("form_slug").eq("id", b.researchId).single()
     expect(data!.form_slug).toBe(b.formSlug)
+  })
+
+  it("cannot create a Research in B's workspace", async () => {
+    const { error } = await a.client.rpc("create_research", { ws: b.workspaceId, question: "Intrusa?" })
+    expect(error?.code).toBe("42501")
+    const { count } = await admin.from("research").select("id", { count: "exact", head: true }).eq("workspace_id", b.workspaceId)
+    expect(count).toBe(1)
   })
 
   it("cannot join B's workspace", async () => {
@@ -242,7 +278,7 @@ describe("in their own workspace", () => {
   it("can add feedback and set priority and status", async () => {
     const insert = await a.client
       .from("feedback")
-      .insert({ workspace_id: a.workspaceId, text: "Nuovo feedback", channel: "Call vendita" })
+      .insert({ workspace_id: a.workspaceId, research_id: a.researchId, text: "Nuovo feedback", channel: "Call vendita" })
     expect(insert.error).toBeNull()
     const { data } = await a.client
       .from("themes")
@@ -255,7 +291,7 @@ describe("in their own workspace", () => {
   it("can delete their feedback, and its theme links go with it", async () => {
     const { data: feedback } = await admin
       .from("feedback")
-      .insert({ workspace_id: a.workspaceId, text: "Da eliminare", channel: "Supporto" })
+      .insert({ workspace_id: a.workspaceId, research_id: a.researchId, text: "Da eliminare", channel: "Supporto" })
       .select("id")
       .single()
     await admin.from("theme_feedback").insert({ workspace_id: a.workspaceId, theme_id: aIds.theme, feedback_id: feedback!.id })
@@ -268,17 +304,17 @@ describe("in their own workspace", () => {
   it("cannot add a feedback longer than 2,000 characters, even through the API", async () => {
     const { error } = await a.client
       .from("feedback")
-      .insert({ workspace_id: a.workspaceId, text: "a".repeat(2001), channel: "Supporto" })
+      .insert({ workspace_id: a.workspaceId, research_id: a.researchId, text: "a".repeat(2001), channel: "Supporto" })
     expect(error?.code).toBe("23514")
   })
 
-  it("can change the form question, within 140 characters", async () => {
-    const ok = await a.client.from("workspaces").update({ form_question: "Cosa ti blocca?" }).eq("id", a.workspaceId)
+  it("can change the form question of their Research, within 140 characters", async () => {
+    const ok = await a.client.from("research").update({ form_question: "Cosa ti blocca?" }).eq("id", a.researchId)
     expect(ok.error).toBeNull()
     const long = await a.client
-      .from("workspaces")
+      .from("research")
       .update({ form_question: "a".repeat(141) })
-      .eq("id", a.workspaceId)
+      .eq("id", a.researchId)
     expect(long.error?.code).toBe("23514")
   })
 
@@ -296,8 +332,12 @@ describe("in their own workspace", () => {
   })
 
   it("cannot choose the public form link", async () => {
-    const { error } = await a.client.from("workspaces").update({ form_slug: "preso" }).eq("id", a.workspaceId)
+    const { error } = await a.client.from("research").update({ form_slug: "preso" }).eq("id", a.researchId)
     expect(error?.code).toBe("42501")
+    const insert = await a.client
+      .from("research")
+      .insert({ workspace_id: a.workspaceId, question: "Diretta?", form_slug: "scelto-da-me" })
+    expect(insert.error?.code).toBe("42501")
   })
 })
 
@@ -305,6 +345,7 @@ describe("Free limit of 100 feedback", () => {
   beforeAll(async () => {
     const rows = Array.from({ length: 100 }, (_, i) => ({
       workspace_id: full.workspaceId,
+      research_id: full.researchId,
       text: `Feedback ${i + 1}`,
       channel: "Supporto",
     }))
@@ -315,7 +356,7 @@ describe("Free limit of 100 feedback", () => {
   it("rejects the 101st feedback, even through the API", async () => {
     const { error } = await full.client
       .from("feedback")
-      .insert({ workspace_id: full.workspaceId, text: "Il numero 101", channel: "Supporto" })
+      .insert({ workspace_id: full.workspaceId, research_id: full.researchId, text: "Il numero 101", channel: "Supporto" })
     expect(error?.message).toBe("feedback_limit_reached")
     const { count } = await admin
       .from("feedback")
@@ -345,7 +386,9 @@ describe("anonymous visitor", () => {
   })
 
   it("cannot write feedback directly", async () => {
-    const { error } = await anon().from("feedback").insert({ workspace_id: b.workspaceId, text: "Ciao", channel: "Supporto" })
+    const { error } = await anon()
+      .from("feedback")
+      .insert({ workspace_id: b.workspaceId, research_id: b.researchId, text: "Ciao", channel: "Supporto" })
     expect(error?.code).toBe("42501")
   })
 
@@ -362,8 +405,9 @@ describe("anonymous visitor", () => {
 
   it("cannot import feedback or change a form link", async () => {
     const rows = [{ text: "Intruso", channel: "Supporto", customer: null, received_at: null }]
-    expect((await anon().rpc("import_feedback", { ws: b.workspaceId, rows })).error?.code).toBe("42501")
-    expect((await anon().rpc("regenerate_form_link", { ws: b.workspaceId })).error?.code).toBe("42501")
+    expect((await anon().rpc("import_feedback", { ws: b.workspaceId, research: b.researchId, rows })).error?.code).toBe("42501")
+    expect((await anon().rpc("regenerate_form_link", { research: b.researchId })).error?.code).toBe("42501")
+    expect((await anon().rpc("create_research", { ws: b.workspaceId, question: "Anonima?" })).error?.code).toBe("42501")
   })
 })
 
@@ -376,10 +420,12 @@ describe("public form function", () => {
     expect(await send("  Dal modulo pubblico  ", "giulia@esempio.it")).toBe("ok")
     const { data: saved } = await admin
       .from("feedback")
-      .select("text, channel, email")
+      .select("text, channel, email, research_id")
       .eq("workspace_id", b.workspaceId)
       .eq("channel", "Modulo pubblico")
-    expect(saved).toEqual([{ text: "Dal modulo pubblico", channel: "Modulo pubblico", email: "giulia@esempio.it" }])
+    expect(saved).toEqual([
+      { text: "Dal modulo pubblico", channel: "Modulo pubblico", email: "giulia@esempio.it", research_id: b.researchId },
+    ])
   })
 
   it("validates on its own", async () => {
@@ -389,14 +435,14 @@ describe("public form function", () => {
     expect(await send("Ciao", "")).toBe("ok")
   })
 
-  it("gives nothing to a disabled or unknown link", async () => {
-    await admin.from("workspaces").update({ form_enabled: false }).eq("id", b.workspaceId)
+  it("says a disabled link does not accept feedback, and gives nothing to an unknown one", async () => {
+    await admin.from("research").update({ form_enabled: false }).eq("id", b.researchId)
     const { data: form } = await anon().rpc("get_public_form", { slug: b.formSlug })
-    expect(form).toEqual([])
+    expect(form).toEqual([{ workspace_name: "Prova b", question: "Cosa vuoi dire al team di Prova b?", accepting: false }])
     expect(await send("Ciao")).toBe("unavailable")
     expect((await anon().rpc("get_public_form", { slug: "non-esiste" })).data).toEqual([])
     expect(await send("Ciao", "", "non-esiste")).toBe("unavailable")
-    await admin.from("workspaces").update({ form_enabled: true }).eq("id", b.workspaceId)
+    await admin.from("research").update({ form_enabled: true }).eq("id", b.researchId)
   })
 })
 

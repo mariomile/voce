@@ -208,8 +208,9 @@ export async function workspaceOfUser(userId: string) {
   return data?.workspace_id ?? null
 }
 
+// The workspace of the Research whose public form has this link.
 export async function workspaceOfForm(slug: string) {
-  const { data, error } = await adminClient().from("workspaces").select("id").eq("form_slug", slug).maybeSingle()
+  const { data, error } = await adminClient().from("research").select("workspace_id").eq("form_slug", slug).maybeSingle()
   if (error) throw error
-  return data?.id ?? null
+  return data?.workspace_id ?? null
 }

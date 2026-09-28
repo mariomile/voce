@@ -16,7 +16,7 @@ export function askErrors(t: AskT) {
     busy: t("errors.busy"),
     network: t("errors.network"),
     session: { text: t("errors.sessionText"), link: t("errors.sessionLink"), href: "/login" },
-    noFeedback: { text: t("errors.noFeedbackText"), link: t("errors.noFeedbackLink"), href: "/collect" },
+    noFeedback: { text: t("errors.noFeedbackText"), link: t("errors.noFeedbackLink"), href: "/research" },
   }
 }
 

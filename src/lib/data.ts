@@ -11,7 +11,7 @@ import { FORM_SLUG_PATTERN, PLAN_LIMITS } from "./plans";
 import { formState, PUBLIC_FORM_CHANNEL, type RoomStatus } from "./room";
 import { questionUsage } from "./supabase/admin";
 import { createClient } from "./supabase/server";
-import type { Analysis, Feedback, Plan, Theme, ThemeKind, ThemeStatus, Workspace } from "./types";
+import type { Analysis, Feedback, Plan, Research, Theme, ThemeKind, ThemeStatus, Workspace } from "./types";
 
 // The only way pages read data. Every query runs as the signed-in user, so RLS limits it
 // to their workspace; the explicit workspace filters keep the queries readable and indexed.
@@ -37,6 +37,17 @@ export type ThemeSummary = Theme & {
   // Feedback per week, oldest first, ending with the analysis week.
   trend: number[];
   quotes: Quote[];
+};
+
+// A row of /research: the Research with its number of feedback.
+export type ResearchSummary = Pick<Research, "id" | "question" | "formEnabled"> & { feedbackCount: number };
+
+// The numbers in the header of a Research.
+export type ResearchStats = {
+  feedbackCount: number;
+  channelCount: number;
+  firstReceivedAt: string | null;
+  lastReceivedAt: string | null;
 };
 
 export type Usage = {
@@ -65,21 +76,71 @@ export const getCurrentWorkspace = cache(async (): Promise<Workspace> => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("workspaces")
-    .select("id, name, form_slug, form_enabled, form_question")
+    .select("id, name")
     .order("created_at")
     .limit(1)
     .maybeSingle();
   if (error) throw error;
   // The proxy already sends signed-out users to /login: a signed-in user without a workspace is a bug.
   if (!data) throw new Error("The signed-in user has no workspace");
+  return { id: data.id, name: data.name };
+});
+
+// Newest first. Cached per request like the workspace.
+export const listResearch = cache(async (workspaceId: string): Promise<ResearchSummary[]> => {
+  const supabase = await createClient();
+  const [research, stats] = await Promise.all([
+    supabase
+      .from("research")
+      .select("id, question, form_enabled")
+      .eq("workspace_id", workspaceId)
+      .order("created_at", { ascending: false }),
+    supabase.from("research_feedback_stats").select("research_id, feedback_count").eq("workspace_id", workspaceId),
+  ]);
+  const counts = unwrap(stats);
+  return unwrap(research).map((r) => ({
+    id: r.id,
+    question: r.question,
+    formEnabled: r.form_enabled,
+    feedbackCount: counts.find((c) => c.research_id === r.id)?.feedback_count ?? 0,
+  }));
+});
+
+// Null when the id is not a Research the user can read: another workspace's, deleted, or not a uuid.
+// The same answer in every case, so a page cannot tell "someone else's" from "does not exist".
+export const getResearch = cache(async (id: string): Promise<Research | null> => {
+  if (!z.uuid().safeParse(id).success) return null;
+  const supabase = await createClient();
+  const row = unwrap(await supabase.from("research").select("*").eq("id", id).maybeSingle());
+  if (!row) return null;
   return {
-    id: data.id,
-    name: data.name,
-    formSlug: data.form_slug,
-    formEnabled: data.form_enabled,
-    formQuestion: data.form_question,
+    id: row.id,
+    workspaceId: row.workspace_id,
+    question: row.question,
+    formSlug: row.form_slug,
+    formEnabled: row.form_enabled,
+    formQuestion: row.form_question,
+    createdAt: row.created_at,
   };
 });
+
+export async function getResearchStats(research: Pick<Research, "id" | "workspaceId">): Promise<ResearchStats> {
+  const supabase = await createClient();
+  const row = unwrap(
+    await supabase
+      .from("research_feedback_stats")
+      .select("*")
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id)
+      .maybeSingle()
+  );
+  return {
+    feedbackCount: row?.feedback_count ?? 0,
+    channelCount: row?.channel_count ?? 0,
+    firstReceivedAt: row?.first_received_at ?? null,
+    lastReceivedAt: row?.last_received_at ?? null,
+  };
+}
 
 export const getUsage = cache(async (workspaceId: string, now = new Date()): Promise<Usage> => {
   const supabase = await createClient();
@@ -110,23 +171,25 @@ export const getUsage = cache(async (workspaceId: string, now = new Date()): Pro
   };
 });
 
-// For the room screen, polled every few seconds: counts only, never feedback text.
-export async function getRoomStatus(workspace: Pick<Workspace, "id" | "formEnabled">): Promise<RoomStatus> {
+// For the room screen of a Research, polled every few seconds: counts only, never feedback text.
+// The responses are those of its public form; the Free limit counts the whole workspace.
+export async function getRoomStatus(research: Pick<Research, "id" | "workspaceId" | "formEnabled">): Promise<RoomStatus> {
   const supabase = await createClient();
   const [subscription, total, responses] = await Promise.all([
-    supabase.from("subscriptions").select("plan").eq("workspace_id", workspace.id).maybeSingle(),
-    supabase.from("feedback").select("id", { count: "exact", head: true }).eq("workspace_id", workspace.id),
+    supabase.from("subscriptions").select("plan").eq("workspace_id", research.workspaceId).maybeSingle(),
+    supabase.from("feedback").select("id", { count: "exact", head: true }).eq("workspace_id", research.workspaceId),
     supabase
       .from("feedback")
       .select("id", { count: "exact", head: true })
-      .eq("workspace_id", workspace.id)
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id)
       .eq("channel", PUBLIC_FORM_CHANNEL),
   ]);
   const plan = unwrap(subscription)?.plan ?? "free";
   return {
     responses: countOf(responses),
     form: formState({
-      formEnabled: workspace.formEnabled,
+      formEnabled: research.formEnabled,
       feedbackCount: countOf(total),
       feedbackLimit: PLAN_LIMITS[plan].feedback,
     }),

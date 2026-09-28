@@ -29,9 +29,11 @@ export async function signIn(email: string, password = SEED_PASSWORD): Promise<C
   return client
 }
 
-export type TestUser = { client: Client; userId: string; workspaceId: string; formSlug: string }
+// researchId and formSlug: the user's first Research, created the way the app creates it.
+export type TestUser = { client: Client; userId: string; workspaceId: string; researchId: string; formSlug: string }
 
-// A fresh confirmed user. The signup trigger gives them a workspace, like a real signup.
+// A fresh confirmed user. The signup trigger gives them a workspace, like a real signup; then they
+// create one Research ("Domanda di prova?") with its public form.
 export async function createTestUser(label: string): Promise<TestUser> {
   const email = `${label}-${crypto.randomUUID().slice(0, 8)}@test.voce`
   const password = crypto.randomUUID()
@@ -44,14 +46,19 @@ export async function createTestUser(label: string): Promise<TestUser> {
   if (error) throw error
   const { data: member } = await admin
     .from("workspace_members")
-    .select("workspace_id, workspaces (form_slug)")
+    .select("workspace_id")
     .eq("user_id", data.user.id)
     .single()
+  const client = await signIn(email, password)
+  const research = await client.rpc("create_research", { ws: member!.workspace_id, question: "Domanda di prova?" })
+  if (research.error) throw research.error
+  const { data: row } = await admin.from("research").select("form_slug").eq("id", research.data).single()
   return {
-    client: await signIn(email, password),
+    client,
     userId: data.user.id,
     workspaceId: member!.workspace_id,
-    formSlug: member!.workspaces.form_slug,
+    researchId: research.data,
+    formSlug: row!.form_slug,
   }
 }
 

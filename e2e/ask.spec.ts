@@ -17,22 +17,20 @@ test("ask a question from the keyboard and read the answer", async ({ page }) =>
   await page.getByRole("button", { name: "Crea il workspace" }).click()
   await expect(page.getByText("Controlla la tua email")).toBeVisible()
   await page.goto(await confirmationLink(email))
-  await expect(page).toHaveURL(/\/themes$/)
+  await expect(page).toHaveURL(/\/research$/)
 
-  await page.goto("/collect")
+  await page.getByLabel("La tua domanda").fill("Cosa chiedono del PDF?")
+  await page.getByRole("button", { name: "Crea la Research" }).click()
+  await page.getByRole("link", { name: "Raccolta", exact: true }).click()
   const feedback = "Vorrei esportare il report mensile in PDF per il commercialista."
   await page.getByLabel("Feedback", { exact: true }).fill(feedback)
   await page.getByLabel("Canale", { exact: true }).fill("Supporto")
   await page.getByRole("button", { name: "Aggiungi il feedback" }).click()
   await expect(page.getByText("Aggiunto. Lo trovi tra i feedback.")).toBeVisible()
 
-  // From here on, keyboard only: Tab to the "Chiedi" tab, Enter, then type and press Enter.
-  await page.goto("/themes")
-  const tab = page.getByRole("link", { name: "Chiedi", exact: true })
-  for (let i = 0; i < 20 && !(await tab.evaluate((el) => el === document.activeElement)); i++) await page.keyboard.press("Tab")
-  await expect(tab).toBeFocused()
-  await page.keyboard.press("Enter")
-  await expect(page).toHaveURL(/\/ask$/)
+  // From here on, keyboard only: the field has the focus, type and press Enter. (Chiedi reads the
+  // whole workspace until it moves inside the Research, with its own tab.)
+  await page.goto("/ask")
 
   const field = page.getByLabel("La tua domanda")
   await expect(field).toBeFocused()
@@ -55,14 +53,6 @@ test("ask a question from the keyboard and read the answer", async ({ page }) =>
   await expect(page.getByRole("region", { name: "Risposta a «E dei report?»" })).toBeVisible()
   await expect(page.getByRole("region", { name: /Risposta a «Cosa chiedono del PDF\?»/ })).toHaveCount(0)
   await expect(field).toBeFocused()
-})
-
-test("the Chiedi tab sits between Temi and Feedback and marks the page", async ({ page }) => {
-  await signedInUser(page, "tabs")
-  await page.goto("/ask")
-  const tabs = page.getByRole("navigation").getByRole("link")
-  await expect(tabs).toHaveText(["Temi", "Chiedi", "Feedback", "Raccolta", "Piano"])
-  await expect(page.getByRole("link", { name: "Chiedi", exact: true })).toHaveAttribute("aria-current", "page")
 })
 
 test("/ask without a session goes to /login", async ({ page }) => {
@@ -91,7 +81,7 @@ const nextMonth = () =>
 
 async function openAsk(page: import("@playwright/test").Page, label: string) {
   const user = await signedInUser(page, label)
-  await insertFeedback(user.workspaceId, ["Vorrei esportare il report mensile in PDF."])
+  await insertFeedback(user, ["Vorrei esportare il report mensile in PDF."])
   await page.goto("/ask")
   const field = page.getByLabel("La tua domanda")
   await expect(field).toBeFocused()
@@ -217,7 +207,7 @@ test("E9: the feedback of the last 90 days are gone", async ({ page }) => {
   await page.keyboard.type("Cosa chiedono del PDF?")
   await page.keyboard.press("Enter")
   await expect(status(page)).toContainText("Negli ultimi 90 giorni non ci sono più feedback su cui rispondere.")
-  await expect(status(page).getByRole("link", { name: "Aggiungi feedback" })).toHaveAttribute("href", "/collect")
+  await expect(status(page).getByRole("link", { name: "Aggiungi feedback" })).toHaveAttribute("href", "/research")
   await expect(field).toHaveValue("Cosa chiedono del PDF?")
   await expect(field).toBeFocused()
 })
@@ -235,7 +225,7 @@ test("the quota note before and after the first question", async ({ page }) => {
 
 test("Free at 10 questions: notice and Passa a Pro, button off", async ({ page }) => {
   const user = await signedInUser(page, "free-full")
-  await insertFeedback(user.workspaceId, ["Vorrei esportare il report mensile in PDF."])
+  await insertFeedback(user, ["Vorrei esportare il report mensile in PDF."])
   await addQuestions(user.workspaceId, 10)
   await page.goto("/ask")
   await expect(page.getByRole("heading", { name: `Hai usato le 10 domande di ${month}` })).toBeVisible()
@@ -247,7 +237,7 @@ test("Free at 10 questions: notice and Passa a Pro, button off", async ({ page }
 test("Pro at 100 questions: notice without button", async ({ page }) => {
   const user = await signedInUser(page, "pro-full")
   await admin.from("subscriptions").update({ plan: "pro" }).eq("workspace_id", user.workspaceId)
-  await insertFeedback(user.workspaceId, ["Vorrei esportare il report mensile in PDF."])
+  await insertFeedback(user, ["Vorrei esportare il report mensile in PDF."])
   await addQuestions(user.workspaceId, 100)
   await page.goto("/ask")
   await expect(page.getByRole("heading", { name: `Hai usato le 100 domande di ${month}` })).toBeVisible()
@@ -283,17 +273,17 @@ test("no feedback: text A, no field", async ({ page }) => {
   await signedInUser(page, "empty-a")
   await page.goto("/ask")
   await expect(page.getByText("Qui farai domande ai tuoi feedback e leggerai le risposte con le parole dei clienti.")).toBeVisible()
-  await expect(page.getByRole("link", { name: "Aggiungi feedback" })).toHaveAttribute("href", "/collect")
+  await expect(page.getByRole("link", { name: "Aggiungi feedback" })).toHaveAttribute("href", "/research")
   await expect(page.getByLabel("La tua domanda")).toHaveCount(0)
 })
 
 test("only feedback older than 90 days: text B, no field", async ({ page }) => {
   const user = await signedInUser(page, "empty-b")
-  await insertFeedback(user.workspaceId, ["Vecchio uno.", "Vecchio due."], 95)
+  await insertFeedback(user, ["Vecchio uno.", "Vecchio due."], 95)
   await page.goto("/ask")
   await expect(page.getByText("Negli ultimi 90 giorni non è arrivato nessun feedback.")).toBeVisible()
   await expect(page.getByText("e i tuoi 2 sono più vecchi")).toBeVisible()
-  await expect(page.getByRole("link", { name: "Aggiungi feedback" })).toHaveAttribute("href", "/collect")
+  await expect(page.getByRole("link", { name: "Aggiungi feedback" })).toHaveAttribute("href", "/research")
   await expect(page.getByLabel("La tua domanda")).toHaveCount(0)
 })
 

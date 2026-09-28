@@ -27,7 +27,7 @@ describe("/ask with nothing to ask", () => {
     expect(html).toContain(
       "Per rispondere servono feedback. Aggiungili dal modulo pubblico, da un CSV o incollandoli a mano."
     )
-    expect(html).toMatch(/<a[^>]*href="\/collect"[^>]*>Aggiungi feedback<\/a>/)
+    expect(html).toMatch(/<a[^>]*href="\/research"[^>]*>Aggiungi feedback<\/a>/)
     expect(html).not.toContain("<textarea")
   })
 
@@ -38,7 +38,7 @@ describe("/ask with nothing to ask", () => {
     expect(html).toContain(
       "Chiedi legge solo i feedback degli ultimi 90 giorni, e i tuoi 3 sono più vecchi. Aggiungine di recenti per fare una domanda."
     )
-    expect(html).toMatch(/<a[^>]*href="\/collect"[^>]*>Aggiungi feedback<\/a>/)
+    expect(html).toMatch(/<a[^>]*href="\/research"[^>]*>Aggiungi feedback<\/a>/)
     expect(html).not.toContain("<textarea")
   })
 

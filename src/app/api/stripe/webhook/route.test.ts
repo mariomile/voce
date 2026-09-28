@@ -221,7 +221,7 @@ describe("cancellation", () => {
   })
 
   it("back to Free, the workspace keeps its feedback but takes no more than 100", async () => {
-    const rows = Array.from({ length: 101 }, (_, i) => ({ workspace_id: user.workspaceId, text: `Feedback ${i}`, channel: "Supporto" }))
+    const rows = Array.from({ length: 101 }, (_, i) => ({ workspace_id: user.workspaceId, research_id: user.researchId, text: `Feedback ${i}`, channel: "Supporto" }))
     fake.subscriptions.set(customer, [subscription("sub_1", "active")])
     await send(checkoutCompleted())
     expect((await admin.from("feedback").insert(rows)).error).toBeNull()
@@ -230,7 +230,7 @@ describe("cancellation", () => {
     await send(event("customer.subscription.deleted", subscription("sub_1", "canceled")))
     const { count } = await admin.from("feedback").select("id", { count: "exact", head: true }).eq("workspace_id", user.workspaceId)
     expect(count).toBe(101)
-    const extra = await admin.from("feedback").insert({ workspace_id: user.workspaceId, text: "Uno in più", channel: "Supporto" })
+    const extra = await admin.from("feedback").insert({ workspace_id: user.workspaceId, research_id: user.researchId, text: "Uno in più", channel: "Supporto" })
     expect(extra.error?.message).toBe("feedback_limit_reached")
     await admin.from("feedback").delete().eq("workspace_id", user.workspaceId)
   })

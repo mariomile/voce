@@ -41,14 +41,14 @@ beforeEach(() => {
 describe("auth callback", () => {
   it("signs in from the confirmation email and lands in the app, tracking an email sign-up", async () => {
     auth.exchange.mockResolvedValue({ data: { user: { id: "u-1" } }, error: null })
-    expect(await landing("?code=abc&flow=signup")).toBe("/themes")
+    expect(await landing("?code=abc&flow=signup")).toBe("/research")
     expect(auth.exchange).toHaveBeenCalledWith("abc")
     expect(tracked).toEqual([{ event: "signed_up", properties: { method: "email" } }])
   })
 
   it("signs in from Google and lands in the app, tracking a Google sign-up", async () => {
     auth.exchange.mockResolvedValue({ data: { user: { id: "u-1" } }, error: null })
-    expect(await landing("?code=abc")).toBe("/themes")
+    expect(await landing("?code=abc")).toBe("/research")
     expect(tracked).toEqual([{ event: "signed_up", properties: { method: "google" } }])
   })
 
