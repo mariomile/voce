@@ -4,8 +4,8 @@ import { describe, expect, it, vi } from "vitest"
 
 // The screen calls server actions: here it only renders its first act, the pile.
 vi.mock("@/app/(app)/research/[id]/actions", () => ({ synthesize: vi.fn() }))
-vi.mock("@/app/research/[id]/sala/actions", () => ({ roomThemes: vi.fn() }))
-const { RoomScreen } = await import("./room-screen")
+vi.mock("@/app/research/[id]/sala/actions", () => ({ roomThemes: vi.fn(), roomVerdicts: vi.fn() }))
+const { RoomScreen, VerdictView } = await import("./room-screen")
 
 const props = {
   researchId: "11111111-1111-4111-8111-111111111111",
@@ -33,10 +33,54 @@ describe("RoomScreen", () => {
     expect(analyzeButton(html)).not.toContain("aria-disabled")
   })
 
-  it("with hypotheses, says the verdict is in the Research; without, says nothing of it", () => {
-    const note = "Il verdetto delle ipotesi lo trovi nella Research."
+  it("with hypotheses, says the verdict comes with the themes; without, says nothing of it", () => {
+    const note = "Con i temi arriva anche il verdetto delle ipotesi."
     expect(renderToStaticMarkup(<RoomScreen {...props} hasHypotheses />)).toContain(note)
     expect(renderToStaticMarkup(<RoomScreen {...props} />)).not.toContain(note)
+  })
+})
+
+describe("VerdictView", () => {
+  const hypothesis = {
+    id: "h1",
+    text: "Quello che ti blocca di più è la parte tecnica",
+    verdict: "confirmed" as const,
+    supporting: 48,
+    contradicting: 12,
+    feedbackRead: 230,
+  }
+
+  it("shows the hypothesis, the word of its verdict and the counts", () => {
+    const html = renderToStaticMarkup(<VerdictView verdict={{ state: "done", hypotheses: [hypothesis] }} />)
+    expect(html).toContain("Quello che ti blocca di più è la parte tecnica")
+    expect(html).toContain(`<span aria-hidden="true">✓</span> Confermata`)
+    expect(html).toContain("48 a favore · 12 contro · su 230 letti")
+  })
+
+  it("every verdict word, and no counts when no feedback talks about the hypothesis", () => {
+    const html = renderToStaticMarkup(
+      <VerdictView
+        verdict={{
+          state: "done",
+          hypotheses: [
+            { ...hypothesis, id: "a", verdict: "refuted", supporting: 3, contradicting: 1500 },
+            { ...hypothesis, id: "b", verdict: "to_review", supporting: 0, contradicting: 0 },
+          ],
+        }}
+      />
+    )
+    expect(html).toContain("Smentita")
+    expect(html).toContain("3 a favore · 1.500 contro · su 230 letti")
+    expect(html).toContain("Da rivedere")
+    expect(html).toContain("Nessuno dei 230 feedback letti ne parla.")
+  })
+
+  it("says why there is no verdict: failed, only one analysis left, or none saved", () => {
+    expect(renderToStaticMarkup(<VerdictView verdict={{ state: "failed" }} />)).toContain("Il verdetto non è arrivato")
+    expect(renderToStaticMarkup(<VerdictView verdict={{ state: "limit" }} />)).toContain("Era rimasta una sola analisi del mese")
+    expect(renderToStaticMarkup(<VerdictView verdict={{ state: "done", hypotheses: [] }} />)).toContain(
+      "Nessuna ipotesi ha ricevuto un verdetto."
+    )
   })
 })
 
