@@ -59,7 +59,7 @@ const hypothesis = (id: string, v: Verdict | null): Hypothesis => ({ id, text: `
 
 describe("roomVerdicts", () => {
   it("sends only the hypothesis text, the verdict word and the counts: no reasoning, no quotes, no feedback text", () => {
-    const sent = roomVerdicts([hypothesis("a", verdict("confirmed", 48, 12))])
+    const sent = roomVerdicts([hypothesis("a", verdict("confirmed", 48, 12))], ["a"])
     expect(sent).toEqual([{ id: "a", text: "Ipotesi a", verdict: "confirmed", supporting: 48, contradicting: 12, feedbackRead: 230 }])
     expect(JSON.stringify(sent)).not.toMatch(/motivazione|Testo di un cliente/)
   })
@@ -69,7 +69,7 @@ describe("roomVerdicts", () => {
       hypothesis("a", verdict("refuted", 2, 30)),
       hypothesis("b", null),
       hypothesis("c", verdict("to_review", 4, 4)),
-    ])
+    ], ["a", "b", "c"])
     expect(sent.map((h) => [h.id, h.verdict])).toEqual([
       ["a", "refuted"],
       ["c", "to_review"],
@@ -77,6 +77,11 @@ describe("roomVerdicts", () => {
   })
 
   it("reads a verdict with no feedback linked as to_review, like the Sintesi", () => {
-    expect(roomVerdicts([hypothesis("a", verdict("confirmed", 0, 0))])[0].verdict).toBe("to_review")
+    expect(roomVerdicts([hypothesis("a", verdict("confirmed", 0, 0))], ["a"])[0].verdict).toBe("to_review")
+  })
+
+  it("leaves out a verdict older than the last verdict analysis: the model left that hypothesis out", () => {
+    const sent = roomVerdicts([hypothesis("a", verdict("confirmed", 5, 0)), hypothesis("b", verdict("refuted", 0, 5))], ["b"])
+    expect(sent.map((h) => h.id)).toEqual(["b"])
   })
 })

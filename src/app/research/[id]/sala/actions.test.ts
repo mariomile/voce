@@ -176,6 +176,26 @@ describe("roomVerdicts", () => {
     expect(JSON.stringify(sent)).not.toMatch(/motivazione|scollega|ricollegare|benissimo/)
   })
 
+  it("leaves out a hypothesis the last analysis gave no verdict: its verdict of before is not this click's", async () => {
+    // Two full analyses with hypotheses take 4 analyses: more than Free's 3.
+    await admin.from("subscriptions").update({ plan: "pro" }).eq("workspace_id", owner.workspaceId)
+    try {
+      await analyzeWithHypothesis()
+      const { error } = await admin
+        .from("research_hypotheses")
+        .insert({ workspace_id: owner.workspaceId, research_id: owner.researchId, text: "La banca va bene" })
+      if (error) throw error
+      // The next run judges hypothesis 2 only: hypothesis 1 keeps the verdict of the first run.
+      const [first] = verdict.hypotheses
+      const second = { ...first, hypothesis: 2, verdict: "to_review" as const, quotes: [], supporting: [], contradicting: [] }
+      ai.model = fakeSynthesisModel({ themes: [bank] }, { hypotheses: [second] })
+      expect(await synthesize(owner.researchId)).toMatchObject({ ok: true, verdict: "done" })
+      expect((await roomVerdicts(owner.researchId)).map((h) => h.text)).toEqual(["La banca va bene"])
+    } finally {
+      await admin.from("subscriptions").update({ plan: "free" }).eq("workspace_id", owner.workspaceId)
+    }
+  })
+
   it("is empty with no hypothesis, and for a wrong id", async () => {
     expect(await roomVerdicts(owner.researchId)).toEqual([])
     expect(await roomVerdicts("non-un-uuid")).toEqual([])

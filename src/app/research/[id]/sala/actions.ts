@@ -1,6 +1,6 @@
 "use server"
 
-import { getDashboard, getResearch, listHypotheses } from "@/lib/data"
+import { getDashboard, getResearch, latestVerdictHypothesisIds, listHypotheses } from "@/lib/data"
 import { roomThemes as reduceThemes, roomVerdicts as reduceVerdicts, type RoomTheme, type RoomVerdict } from "@/lib/room"
 
 // The room screen is projected: it gets theme titles, hypotheses, verdict words and counts only. No input;
@@ -15,10 +15,11 @@ export async function roomThemes(researchId: string): Promise<RoomTheme[]> {
   return reduceThemes(themes)
 }
 
-// The hypotheses of the Research with their last verdict, the same the Sintesi shows, without the reasoning
-// and the quotes. A Research the user cannot read has none.
+// The hypotheses of the Research with the verdict of its last verdict analysis, as the Sintesi shows them,
+// without the reasoning and the quotes. A Research the user cannot read has none.
 export async function roomVerdicts(researchId: string): Promise<RoomVerdict[]> {
   const research = await getResearch(researchId)
   if (!research) return []
-  return reduceVerdicts(await listHypotheses(research))
+  const [hypotheses, fresh] = await Promise.all([listHypotheses(research), latestVerdictHypothesisIds(research)])
+  return reduceVerdicts(hypotheses, fresh)
 }

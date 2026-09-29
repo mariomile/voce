@@ -33,11 +33,12 @@ export function roomThemes(themes: (RoomTheme & Record<string, unknown>)[]): Roo
     .map(({ id, kind, title, feedbackCount }) => ({ id, kind, title, feedbackCount }))
 }
 
-// Only what the screen shows of each hypothesis with a verdict, in the order the PM wrote them. Without a
-// feedback linked the word is to_review, as in the Sintesi (VerdictWord in hypothesis-list.tsx).
-export function roomVerdicts(hypotheses: Hypothesis[]): RoomVerdict[] {
+// Only what the screen shows of each hypothesis with a verdict of the last verdict analysis (fresh: their ids),
+// in the order the PM wrote them. Without a feedback linked the word is to_review, as in the Sintesi
+// (VerdictWord in hypothesis-list.tsx).
+export function roomVerdicts(hypotheses: Hypothesis[], fresh: string[]): RoomVerdict[] {
   return hypotheses.flatMap(({ id, text, verdict: v }) =>
-    v
+    v && fresh.includes(id)
       ? [
           {
             id,
