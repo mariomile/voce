@@ -11,7 +11,7 @@
     "G2": "Every span between quotation marks (\"...\", “...”, «...») in the answer text is an exact substring of some feedback text in the dataset.",
     "G3": "The answer text contains no count of feedback or customers written as digits: regex /\\b\\d+\\s+(feedback|clienti|utenti|persone|iscritti|segnalazioni)\\b/i does not match.",
     "G4": "After the app's checks, at most 5 quotes remain, at most 1 per feedback.",
-    "G5": "Reported only, not gating: number of sentences in the answer text (the instructions ask for at most 3)."
+    "G5": "Reported only, not gating: number of sentences in the answer text (the instructions ask for at most 2)."
   },
   "cases": [
     {
