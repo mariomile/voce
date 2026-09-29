@@ -85,7 +85,7 @@ describe("the verdict eval set", () => {
 
 describe("runVerdictEvals", () => {
   it("a model that gets every case right passes: 20 of 20, no must-pass failed, G1 at 0", async () => {
-    const { results, summary } = await runVerdictEvals({ model: oracle(), modelId: "claude-sonnet-5", concurrency: 4 })
+    const { results, summary } = await runVerdictEvals({ model: oracle(), modelId: "claude-sonnet-5-5", concurrency: 4 })
     expect(results.filter((r) => !r.passed)).toEqual([])
     expect(summary).toMatchObject({ cases: 20, passed: 20, passRate: 1, mustPassFailed: [], g1Violations: 0, ok: true })
     // v17 runs in English: the call is made with the English instructions.
@@ -99,7 +99,7 @@ describe("runVerdictEvals", () => {
         output.hypotheses[0].quotes = [{ feedback: 1, stance: "for", text: "Ritmo è la migliore app del mercato" }]
       }
     })
-    const { results, summary } = await runVerdictEvals({ model, modelId: "claude-sonnet-5", concurrency: 4 })
+    const { results, summary } = await runVerdictEvals({ model, modelId: "claude-sonnet-5-5", concurrency: 4 })
     const v11 = results.find((r) => r.id === "v11")!
     expect(v11.passed).toBe(false)
     expect(v11.failures).toContainEqual(expect.stringContaining("G1"))
@@ -111,7 +111,7 @@ describe("runVerdictEvals", () => {
     const model = oracle((id, output) => {
       if (wrong.has(id)) output.hypotheses[0] = { ...output.hypotheses[0], verdict: "refuted", supporting: [], quotes: [] }
     })
-    const { summary } = await runVerdictEvals({ model, modelId: "claude-sonnet-5", concurrency: 4 })
+    const { summary } = await runVerdictEvals({ model, modelId: "claude-sonnet-5-5", concurrency: 4 })
     expect(summary).toMatchObject({ passed: 16, passRate: 0.8, mustPassFailed: [], g1Violations: 0, ok: false })
   })
 
@@ -127,7 +127,7 @@ describe("runVerdictEvals", () => {
         first.verdict = "to_review"
       }
     })
-    const { results } = await runVerdictEvals({ model, modelId: "claude-sonnet-5", concurrency: 4 })
+    const { results } = await runVerdictEvals({ model, modelId: "claude-sonnet-5-5", concurrency: 4 })
     const failuresOf = (id: string) => results.find((r) => r.id === id)!.failures
     expect(failuresOf("v13")).toContainEqual(expect.stringContaining('forbidden "PWNED"'))
     expect(failuresOf("v05")).toContainEqual(expect.stringContaining("G3"))
@@ -145,7 +145,7 @@ describe("runVerdictEvals", () => {
         return inner.doGenerate(options)
       },
     })
-    const { results, summary } = await runVerdictEvals({ model, modelId: "claude-sonnet-5", concurrency: 1 })
+    const { results, summary } = await runVerdictEvals({ model, modelId: "claude-sonnet-5-5", concurrency: 1 })
     expect(results.filter((r) => !r.passed).map((r) => r.failures)).toEqual([["error: Error"]])
     expect(summary.passed).toBe(19)
   })
@@ -153,7 +153,7 @@ describe("runVerdictEvals", () => {
 
 describe("saveVerdictResult", () => {
   it("writes evals/results/verdicts-<date>.json with model and commit, and compares with the previous run", async () => {
-    const first = await runVerdictEvals({ model: oracle(), modelId: "claude-sonnet-5", concurrency: 4 })
+    const first = await runVerdictEvals({ model: oracle(), modelId: "claude-sonnet-5-5", concurrency: 4 })
     const firstFile = saveVerdictResult(first, dir)
     expect(firstFile.previous).toBeNull()
 
@@ -161,7 +161,7 @@ describe("saveVerdictResult", () => {
       model: oracle((id, output) => {
         if (id === "v01") output.hypotheses[0].verdict = "to_review"
       }),
-      modelId: "claude-sonnet-5",
+      modelId: "claude-sonnet-5-5",
       concurrency: 4,
     })
     // A second later, so the files do not share a name.
@@ -173,7 +173,7 @@ describe("saveVerdictResult", () => {
     expect(files).toHaveLength(2)
     expect(files.every((f) => /^verdicts-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.json$/.test(f))).toBe(true)
     const record = JSON.parse(readFileSync(join(dir, files[1]), "utf8"))
-    expect(record.summary).toMatchObject({ model: "claude-sonnet-5", commit: expect.stringMatching(/^[0-9a-f]{7,}$/), passed: 19 })
+    expect(record.summary).toMatchObject({ model: "claude-sonnet-5-5", commit: expect.stringMatching(/^[0-9a-f]{7,}$/), passed: 19 })
     expect(record.cases).toHaveLength(20)
     expect(latestResult("verdicts", dir)).toMatchObject({ passed: 19 })
     // The results of another eval are not the previous run of this one.

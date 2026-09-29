@@ -8,7 +8,7 @@
 | frontend | Next.js 16 (App Router), React 19, TypeScript strict, Tailwind, shadcn/ui | stack di default, un solo repo per UI e server | inherited |
 | backend | Server action e route handler di Next.js | niente servizio separato da gestire | inherited |
 | data | Supabase: Postgres, Auth (`@supabase/ssr`), Row Level Security | login e permessi per workspace nel database | inherited |
-| AI | AI SDK con Claude sull'API Anthropic (`@ai-sdk/anthropic`, chiave `ANTHROPIC_API_KEY`), modello da `AI_MODEL` (default `claude-sonnet-5`), thinking spento | un solo fornitore AI, tetto di spesa nella console Anthropic | inherited |
+| AI | AI SDK con Claude sull'API Anthropic (`@ai-sdk/anthropic`, chiave `ANTHROPIC_API_KEY`), modello da `AI_MODEL` (default `claude-sonnet-5-5`), thinking adattivo a effort `low` (Sonnet 5.5 non accetta `disabled`) | un solo fornitore AI, tetto di spesa nella console Anthropic | inherited |
 | payments | Stripe, modalità test | Checkout e portale cliente senza UI propria | inherited |
 | hosting | Vercel, progetto `voce-feedback` | anteprime per ogni PR | inherited |
 | analytics | PostHog UE, eventi solo lato server | niente testo dei feedback nel browser di terzi | inherited |

@@ -185,7 +185,7 @@ describe("synthesize", () => {
     const log = await runLog(analysis.id)
     expect(log).toMatchObject({
       workspace_id: user.workspaceId,
-      model: "claude-sonnet-5",
+      model: "claude-sonnet-5-5",
       input_tokens: 100_000,
       output_tokens: 10_000,
       cost_usd: 0.3,
@@ -909,7 +909,7 @@ describe("synthesize with hypotheses", () => {
     const logged = await runLog(verdict[0].id)
     expect(logged).toMatchObject({
       workspace_id: user.workspaceId,
-      model: "claude-sonnet-5",
+      model: "claude-sonnet-5-5",
       input_tokens: 100_000,
       output_tokens: 10_000,
       cost_usd: 0.3,

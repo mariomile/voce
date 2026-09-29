@@ -180,23 +180,23 @@ describe("buildPrompt", () => {
 
 describe("estimateCost", () => {
   it("prices the default model per million tokens, nothing for unknown models", () => {
-    expect(estimateCost("claude-sonnet-5", 100_000, 10_000)).toBe(0.3)
-    expect(estimateCost("claude-sonnet-5", 1234, 567)).toBe(0.008138)
+    expect(estimateCost("claude-sonnet-5-5", 100_000, 10_000)).toBe(0.3)
+    expect(estimateCost("claude-sonnet-5-5", 1234, 567)).toBe(0.008138)
     expect(estimateCost("someone-else", 100_000, 10_000)).toBeNull()
-    expect(estimateCost("claude-sonnet-5", undefined, 10)).toBeNull()
+    expect(estimateCost("claude-sonnet-5-5", undefined, 10)).toBeNull()
   })
 })
 
 describe("analysis model", () => {
-  it("calls Claude on the Anthropic API, Sonnet 5 unless AI_MODEL says otherwise", () => {
+  it("calls Claude on the Anthropic API, Sonnet 5.5 unless AI_MODEL says otherwise", () => {
     const previous = process.env.AI_MODEL
     try {
       delete process.env.AI_MODEL
-      expect(analysisModel()).toBe("claude-sonnet-5")
+      expect(analysisModel()).toBe("claude-sonnet-5-5")
       const model = analysisLanguageModel()
       expect(typeof model === "object" && { provider: model.provider, modelId: model.modelId }).toEqual({
         provider: "anthropic.messages",
-        modelId: "claude-sonnet-5",
+        modelId: "claude-sonnet-5-5",
       })
       process.env.AI_MODEL = "claude-opus-5"
       expect(analysisModel()).toBe("claude-opus-5")
@@ -212,7 +212,7 @@ describe("runAnalysis", () => {
     const model = fakeModel({ themes: [theme(), theme({ title: "Solo", feedback: [3] })] })
     const result = await runAnalysis({
       model,
-      modelId: "claude-sonnet-5",
+      modelId: "claude-sonnet-5-5",
       feedback,
       existingTitles: ["Vecchio tema"],
     })
@@ -229,9 +229,8 @@ describe("runAnalysis", () => {
     expect(JSON.stringify(user)).toContain("feedback_data")
     expect(JSON.stringify(system)).not.toContain("ogni lunedì")
     expect(call.responseFormat?.type).toBe("json")
-    // Sonnet 5 thinks by default and thinking counts against maxOutputTokens: on a large set it
-    // used the whole budget and returned no themes. Grouping feedback does not need it.
-    expect(call.providerOptions?.anthropic).toMatchObject({ thinking: { type: "disabled" } })
+    // Sonnet 5.5 rejects thinking "disabled": adaptive at the lowest effort keeps it short.
+    expect(call.providerOptions?.anthropic).toMatchObject({ thinking: { type: "adaptive" }, effort: "low" })
   })
 
   it("says why the model stopped when it ran out of output tokens", async () => {
