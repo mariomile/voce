@@ -95,64 +95,26 @@ describe("submitFeedback", () => {
       expect(await submitFeedback({ ...valid(), slug })).toEqual({ ok: false, reason: "unavailable" })
   })
 
-  // A full room: every phone reaches the internet from the venue Wi-Fi or the same carrier IP.
-  it("accepts a room of 230 people submitting from the same IP within a minute", async () => {
+  // A full room: every phone reaches the internet from the venue Wi-Fi or the same carrier IP, and many
+  // press "Invia" together. 500 people sending two each fit in the hour; the 1001st waits. The per-IP limit
+  // across forms and the per-workspace limit from any IP are in supabase/tests/public_form.test.sql.
+  it("accepts a room of 500 people sending two each from the same IP, then asks to wait", async () => {
     const room = await createTestUser("room")
     try {
       // Pro, so the Free limit does not get in the way of the count.
       await admin.from("subscriptions").update({ plan: "pro" }).eq("workspace_id", room.workspaceId)
-      const started = Date.now()
       const send = (i: number) => submitFeedback({ ...valid(), slug: room.formSlug, text: `Dalla sala ${i}` })
       const results = []
-      // People submit a few at a time, not one after the other.
-      for (let i = 0; i < 230; i += 23) results.push(...(await Promise.all(Array.from({ length: 23 }, (_, j) => send(i + j)))))
-      expect(Date.now() - started).toBeLessThan(60_000)
-      expect(results).toEqual(Array(230).fill({ ok: true }))
+      // 100 at a time: the moment the speaker says "adesso scrivete".
+      for (let i = 0; i < 1000; i += 100) results.push(...(await Promise.all(Array.from({ length: 100 }, (_, j) => send(i + j)))))
+      expect(results).toEqual(Array(1000).fill({ ok: true }))
+      expect(await send(1000)).toEqual({ ok: false, reason: "rate_limited" })
       const { count } = await admin.from("feedback").select("id", { count: "exact", head: true }).eq("workspace_id", room.workspaceId)
-      expect(count).toBe(230)
+      expect(count).toBe(1000)
     } finally {
       await deleteTestUsers([room])
     }
-  }, 60_000)
-
-  it("accepts 300 submissions an hour from the same IP across all forms, then asks to wait", async () => {
-    const [first, second] = await Promise.all([createTestUser("ip-a"), createTestUser("ip-b")])
-    try {
-      for (const u of [first, second]) await admin.from("subscriptions").update({ plan: "pro" }).eq("workspace_id", u.workspaceId)
-      const send = (u: TestUser, i: number) => submitFeedback({ ...valid(), slug: u.formSlug, text: `Stesso IP ${i}` })
-      for (let i = 0; i < 300; i += 30) {
-        // 200 to the first form, 100 to the second: the limit counts the IP on every form.
-        const target = i < 200 ? first : second
-        expect(await Promise.all(Array.from({ length: 30 }, (_, j) => send(target, i + j)))).toEqual(Array(30).fill({ ok: true }))
-      }
-      expect(await send(second, 300)).toEqual({ ok: false, reason: "rate_limited" })
-      expect(await send(first, 301)).toEqual({ ok: false, reason: "rate_limited" })
-      // Another visitor is not blocked by the first one.
-      session.ip = crypto.randomUUID()
-      expect(await send(second, 302)).toEqual({ ok: true })
-    } finally {
-      await deleteTestUsers([first, second])
-    }
-  }, 60_000)
-
-  it("accepts 300 submissions an hour per workspace, from any IP", async () => {
-    const busy = await createTestUser("busy")
-    try {
-      // Pro, so the Free limit does not get in the way of the count.
-      await admin.from("subscriptions").update({ plan: "pro" }).eq("workspace_id", busy.workspaceId)
-      const send = (i: number) => {
-        session.ip = crypto.randomUUID()
-        return submitFeedback({ ...valid(), slug: busy.formSlug, text: `Feedback ${i}` })
-      }
-      for (let i = 0; i < 300; i += 30)
-        expect(await Promise.all(Array.from({ length: 30 }, (_, j) => send(i + j)))).toEqual(Array(30).fill({ ok: true }))
-      expect(await send(300)).toEqual({ ok: false, reason: "rate_limited" })
-      const { count } = await admin.from("feedback").select("id", { count: "exact", head: true }).eq("workspace_id", busy.workspaceId)
-      expect(count).toBe(300)
-    } finally {
-      await deleteTestUsers([busy])
-    }
-  })
+  }, 180_000)
 
   it("keeps rejecting the 101st feedback of a Free workspace", async () => {
     const full = await createTestUser("full")
