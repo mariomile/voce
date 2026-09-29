@@ -1,7 +1,7 @@
 import "server-only"
 
 import { after } from "next/server"
-import { claimMilestone } from "./supabase/admin"
+import { claimFormMilestones, claimMilestone } from "./supabase/admin"
 
 // Events for PostHog, sent from the server only: no script in the browser, no cookies.
 // Activation milestones leave once per workspace, question_answered at every answer; the workspace id
@@ -44,7 +44,27 @@ export function trackEvent(workspaceId: string, event: RepeatedEvent) {
   send(event, async () => workspaceId)
 }
 
-// The one place that builds the request to PostHog.
+// A public form response: one call to the database claims first_feedback_added and first_research_collected
+// when due, so a full room does not pay five calls per response once they are sent.
+export function trackFormMilestones(slug: string) {
+  const key = process.env.POSTHOG_KEY
+  if (!key) return
+  const timestamp = new Date().toISOString()
+  after(async () => {
+    try {
+      for (const { workspaceId, event } of await claimFormMilestones(slug)) {
+        const milestone: Milestone =
+          event === "first_research_collected"
+            ? { event, properties: {} }
+            : { event: "first_feedback_added", properties: { source: "form" } }
+        await post(key, milestone, workspaceId, timestamp)
+      }
+    } catch (error) {
+      console.error("PostHog: form milestones not sent,", error instanceof Error ? error.name : "unknown")
+    }
+  })
+}
+
 function send(event: Event, workspaceToSend: () => Promise<string | null>) {
   const key = process.env.POSTHOG_KEY
   if (!key) return
@@ -54,21 +74,26 @@ function send(event: Event, workspaceToSend: () => Promise<string | null>) {
     try {
       const workspaceId = await workspaceToSend()
       if (!workspaceId) return
-      const response = await fetch(CAPTURE_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          api_key: key,
-          event: event.event,
-          distinct_id: workspaceId,
-          timestamp,
-          properties: { ...event.properties, $process_person_profile: false, $geoip_disable: true },
-        }),
-        signal: AbortSignal.timeout(5000),
-      })
-      if (!response.ok) console.error(`PostHog: ${event.event} not sent, status ${response.status}`)
+      await post(key, event, workspaceId, timestamp)
     } catch (error) {
       console.error(`PostHog: ${event.event} not sent,`, error instanceof Error ? error.name : "unknown")
     }
   })
+}
+
+// The one place that builds the request to PostHog.
+async function post(key: string, event: Event, workspaceId: string, timestamp: string) {
+  const response = await fetch(CAPTURE_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      api_key: key,
+      event: event.event,
+      distinct_id: workspaceId,
+      timestamp,
+      properties: { ...event.properties, $process_person_profile: false, $geoip_disable: true },
+    }),
+    signal: AbortSignal.timeout(5000),
+  })
+  if (!response.ok) console.error(`PostHog: ${event.event} not sent, status ${response.status}`)
 }

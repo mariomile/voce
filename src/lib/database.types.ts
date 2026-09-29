@@ -771,6 +771,13 @@ export type Database = {
       }
     }
     Functions: {
+      claim_form_milestones: {
+        Args: { slug: string }
+        Returns: {
+          event: string
+          workspace_id: string
+        }[]
+      }
       create_research: {
         Args: { question: string; ws: string }
         Returns: string

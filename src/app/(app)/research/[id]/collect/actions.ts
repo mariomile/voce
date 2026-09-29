@@ -72,7 +72,7 @@ export async function addNotes(researchId: string, input: z.input<typeof notesSc
 
 // Sent once per workspace, by the feedback that brings one of its Research to 5.
 function trackCollected(researchId: string) {
-  trackMilestone(() => workspaceOfCollectedResearch({ id: researchId }), {
+  trackMilestone(() => workspaceOfCollectedResearch(researchId), {
     event: "first_research_collected",
     properties: {},
   })
