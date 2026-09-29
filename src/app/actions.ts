@@ -2,10 +2,10 @@
 
 import { headers } from "next/headers"
 import { z } from "zod"
-import { trackMilestone } from "@/lib/analytics"
+import { trackFormMilestones } from "@/lib/analytics"
 import { getCurrentWorkspace } from "@/lib/data"
 import { FEEDBACK_MAX_LENGTH, FORM_SLUG_PATTERN } from "@/lib/plans"
-import { sendPublicFeedback, workspaceOfCollectedResearch, workspaceOfForm } from "@/lib/supabase/admin"
+import { sendPublicFeedback } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
 
 // Server actions validate every input with an explicit schema, then write as the signed-in user:
@@ -62,8 +62,6 @@ export async function submitFeedback(
     requestHeaders.get("x-real-ip") ?? requestHeaders.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown"
   const result = await sendPublicFeedback({ ...parsed.data, clientIp })
   if (result !== "ok") return { ok: false, reason: result }
-  const slug = parsed.data.slug
-  trackMilestone(() => workspaceOfForm(slug), { event: "first_feedback_added", properties: { source: "form" } })
-  trackMilestone(() => workspaceOfCollectedResearch({ slug }), { event: "first_research_collected", properties: {} })
+  trackFormMilestones(parsed.data.slug)
   return { ok: true }
 }

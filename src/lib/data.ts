@@ -579,7 +579,8 @@ export async function getTheme(research: Pick<Research, "id" | "workspaceId">, t
 }
 
 // Public: read by anonymous visitors through a database function that returns only what the form shows.
-export async function getPublicForm(slug: string) {
+// Once per request: the page and its metadata both need it.
+export const getPublicForm = cache(async (slug: string) => {
   // Slugs come from the URL: anything else cannot exist.
   if (!FORM_SLUG_PATTERN.test(slug)) return null;
   const supabase = await createClient();
@@ -587,7 +588,7 @@ export async function getPublicForm(slug: string) {
   const form = rows[0];
   if (!form) return null;
   return { workspaceName: form.workspace_name, question: form.question, accepting: form.accepting };
-}
+});
 
 async function summarizeAnalysis(workspaceId: string, analysis: Analysis): Promise<ThemeSummary[]> {
   const supabase = await createClient();

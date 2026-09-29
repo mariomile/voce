@@ -249,20 +249,20 @@ export async function workspaceOfUser(userId: string) {
   return data?.workspace_id ?? null
 }
 
-// The workspace of the Research whose public form has this link.
-export async function workspaceOfForm(slug: string) {
-  const { data, error } = await adminClient().from("research").select("workspace_id").eq("form_slug", slug).maybeSingle()
+// The milestones a public form response makes due, claimed in one call: first_feedback_added, and
+// first_research_collected once the Research has COLLECTED_FEEDBACK. Returns only those claimed now.
+export async function claimFormMilestones(slug: string) {
+  const { data, error } = await adminClient().rpc("claim_form_milestones", { slug })
   if (error) throw error
-  return data?.workspace_id ?? null
+  return data.map((row) => ({ workspaceId: row.workspace_id, event: row.event }))
 }
 
-// The workspace of a Research (by id, or by the link of its public form) once it has at least 5 feedback.
-// Null before: first_research_collected is not due yet.
+// The workspace of a Research once it has at least 5 feedback. Null before: first_research_collected is
+// not due yet. Same 5 as claim_form_milestones in the database.
 export const COLLECTED_FEEDBACK = 5
-export async function workspaceOfCollectedResearch(research: { id: string } | { slug: string }) {
+export async function workspaceOfCollectedResearch(researchId: string) {
   const client = adminClient()
-  const query = client.from("research").select("id, workspace_id")
-  const { data, error } = await ("id" in research ? query.eq("id", research.id) : query.eq("form_slug", research.slug)).maybeSingle()
+  const { data, error } = await client.from("research").select("id, workspace_id").eq("id", researchId).maybeSingle()
   if (error) throw error
   if (!data) return null
   const { count, error: countError } = await client
