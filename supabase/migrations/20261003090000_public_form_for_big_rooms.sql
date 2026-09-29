@@ -4,8 +4,9 @@
 --    sending two each fits. One IP still cannot send more than 1000 an hour across all forms.
 -- 2. Every submission locked the workspace row, so 100 phones pressing "Invia" together waited for each
 --    other: up to 6.4 seconds in the database. The lock only keeps two submissions from both taking the
---    last slot of the Free limit, so only a workspace with a limit takes it. On Pro the hourly counts can
---    pass the limit by the submissions running at the same moment, a few at most.
+--    last slot of the Free limit, so only a workspace with a limit takes it. On Pro the hourly limits can
+--    be passed by the submissions running at the same moment (a burst of 100 could reach 1100), and a
+--    downgrade to Free during a burst can leave a few more than 100 feedback, like any downgrade.
 
 create or replace function public.submit_public_feedback(slug text, feedback_text text, email text, client_ip text)
 returns text
