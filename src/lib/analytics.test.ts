@@ -14,9 +14,14 @@ const { submitFeedback } = await import("@/app/actions")
 // Only PostHog is fake: Supabase keeps the real fetch.
 const realFetch = globalThis.fetch
 const posthog = vi.fn<typeof fetch>(async () => new Response("{}", { status: 200 }))
-vi.stubGlobal("fetch", (input: string | URL | Request, init?: RequestInit) =>
-  String(input).startsWith("https://eu.i.posthog.com/") ? posthog(input, init) : realFetch(input, init)
-)
+// The paths of the calls to Supabase, to count what a public form response costs the database.
+const supabaseCalls: string[] = []
+vi.stubGlobal("fetch", (input: string | URL | Request, init?: RequestInit) => {
+  const url = String(input instanceof Request ? input.url : input)
+  if (url.startsWith("https://eu.i.posthog.com/")) return posthog(input, init)
+  if (url.startsWith(process.env.NEXT_PUBLIC_SUPABASE_URL!)) supabaseCalls.push(new URL(url).pathname)
+  return realFetch(input, init)
+})
 
 let user: TestUser
 
@@ -149,5 +154,20 @@ describe("first feedback from the public form", () => {
     const body = JSON.stringify(sent())
     expect(body).not.toContain("segreto")
     expect(body).not.toContain("cliente@")
+  })
+
+  // A full room sends hundreds of responses in a minute to a database on the Free plan of Supabase: each
+  // response costs it the submission and one call for both milestones, even once they are sent.
+  it("costs the database two calls per response: the submission and one claim of the milestones", async () => {
+    for (let i = 0; i < 5; i++) await submitFeedback({ slug: user.formSlug, text: `Dalla sala ${i}`, email: "", website: "" })
+    await settle()
+    expect(sent().map((b) => b.event).sort()).toEqual(["first_feedback_added", "first_research_collected"])
+    pending.tasks = []
+    posthog.mockClear()
+    supabaseCalls.length = 0
+    expect(await submitFeedback({ slug: user.formSlug, text: "Un altro", email: "", website: "" })).toEqual({ ok: true })
+    await settle()
+    expect(supabaseCalls).toEqual(["/rest/v1/rpc/submit_public_feedback", "/rest/v1/rpc/claim_form_milestones"])
+    expect(posthog).not.toHaveBeenCalled()
   })
 })
