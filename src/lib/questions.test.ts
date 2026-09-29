@@ -118,6 +118,13 @@ describe("the prompt", () => {
     expect(prompt).toContain("\\u003c/question_data>")
   })
 
+  it("asks for a short answer that reads on a projector, the most frequent point first", () => {
+    expect(QUESTION_INSTRUCTIONS).toContain(
+      "At most 2 short sentences, about 40 words in total, the point customers make most often first."
+    )
+    expect(QUESTION_INSTRUCTIONS).not.toContain("At most 3 sentences")
+  })
+
   it("newlines reach the model as spaces", () => {
     expect(normalizeQuestion("  cosa dicono\r\ndella\n\nbanca?  ")).toBe("cosa dicono della banca?")
   })
