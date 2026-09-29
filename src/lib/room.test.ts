@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { formState, roomThemes } from "./room"
+import type { Hypothesis, Verdict } from "./data"
+import { formState, roomThemes, roomVerdicts } from "./room"
 
 describe("formState", () => {
   it("is open when the link is on and the Free limit is not reached", () => {
@@ -39,5 +40,43 @@ describe("roomThemes", () => {
 
   it("sends only kind, title and count: no summary, no quotes, no feedback text", () => {
     expect(roomThemes([theme("a", 2)])).toEqual([{ id: "a", kind: "problem", title: "a", feedbackCount: 2 }])
+  })
+})
+
+const verdict = (word: Verdict["verdict"], supporting: number, contradicting: number): Verdict => ({
+  verdict: word,
+  reasoning: "Una motivazione scritta dal modello",
+  feedbackRead: 230,
+  arrivedAfter: 230,
+  supporting,
+  contradicting,
+  quotesFor: [{ feedbackId: "f1", text: "Testo di un cliente a favore", highlight: null, channel: "Modulo pubblico", receivedAt: "2026-10-01" }],
+  quotesAgainst: [{ feedbackId: "f2", text: "Testo di un cliente contro", highlight: null, channel: "Modulo pubblico", receivedAt: "2026-10-01" }],
+  arrivedAfterVerdict: 3,
+})
+
+const hypothesis = (id: string, v: Verdict | null): Hypothesis => ({ id, text: `Ipotesi ${id}`, writtenAt: "2026-10-01T16:00:00Z", verdict: v })
+
+describe("roomVerdicts", () => {
+  it("sends only the hypothesis text, the verdict word and the counts: no reasoning, no quotes, no feedback text", () => {
+    const sent = roomVerdicts([hypothesis("a", verdict("confirmed", 48, 12))])
+    expect(sent).toEqual([{ id: "a", text: "Ipotesi a", verdict: "confirmed", supporting: 48, contradicting: 12, feedbackRead: 230 }])
+    expect(JSON.stringify(sent)).not.toMatch(/motivazione|Testo di un cliente/)
+  })
+
+  it("keeps the order the PM wrote them in, and leaves out a hypothesis with no verdict yet", () => {
+    const sent = roomVerdicts([
+      hypothesis("a", verdict("refuted", 2, 30)),
+      hypothesis("b", null),
+      hypothesis("c", verdict("to_review", 4, 4)),
+    ])
+    expect(sent.map((h) => [h.id, h.verdict])).toEqual([
+      ["a", "refuted"],
+      ["c", "to_review"],
+    ])
+  })
+
+  it("reads a verdict with no feedback linked as to_review, like the Sintesi", () => {
+    expect(roomVerdicts([hypothesis("a", verdict("confirmed", 0, 0))])[0].verdict).toBe("to_review")
   })
 })

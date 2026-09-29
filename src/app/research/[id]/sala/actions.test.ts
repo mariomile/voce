@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import type { RawOutput } from "@/lib/analysis"
-import { fakeModel } from "@/test/fake-model"
+import type { RawVerdictOutput } from "@/lib/verdict"
+import { fakeModel, fakeSynthesisModel } from "@/test/fake-model"
 import { admin, createTestUser, deleteTestUsers, type TestUser } from "@/test/supabase"
 
 // The room screen reads as the signed-in user, against the local database. The model is always fake.
@@ -14,7 +15,7 @@ vi.mock("@/lib/analysis", async (importOriginal) => ({
   analysisLanguageModel: () => ai.model,
 }))
 
-const { roomThemes } = await import("./actions")
+const { roomThemes, roomVerdicts } = await import("./actions")
 const { GET } = await import("./status/route")
 const { synthesize } = await import("@/app/(app)/research/[id]/actions")
 const { getRoomStatus } = await import("@/lib/data")
@@ -33,6 +34,7 @@ beforeEach(async () => {
   session.client = owner.client
   await admin.from("analyses").delete().eq("workspace_id", owner.workspaceId)
   await admin.from("feedback").delete().eq("workspace_id", owner.workspaceId)
+  await admin.from("research_hypotheses").delete().eq("workspace_id", owner.workspaceId)
   await admin.from("research").update({ form_enabled: true }).eq("id", owner.researchId)
 })
 
@@ -119,5 +121,69 @@ describe("roomThemes", () => {
     expect(await synthesize(owner.researchId)).toMatchObject({ ok: true })
     session.client = other.client
     expect(await roomThemes(owner.researchId)).toEqual([])
+  })
+})
+
+describe("roomVerdicts", () => {
+  const bank: RawOutput["themes"][number] = {
+    title: "La banca si scollega",
+    summary: "Il collegamento con la banca cade spesso.",
+    kind: "problem",
+    sentiment: "negative",
+    feedback: [1, 2, 3],
+    quotes: [{ feedback: 1, text: "La banca si scollega." }],
+  }
+  // Two feedback for the hypothesis, one against, each with a quote of its side.
+  const verdict: RawVerdictOutput = {
+    hypotheses: [
+      {
+        hypothesis: 1,
+        verdict: "confirmed",
+        reasoning: "Una motivazione del modello.",
+        supporting: [1, 2],
+        contradicting: [3],
+        quotes: [
+          { feedback: 1, stance: "for", text: "La banca si scollega." },
+          { feedback: 3, stance: "against", text: "La banca va benissimo." },
+        ],
+      },
+    ],
+  }
+
+  async function analyzeWithHypothesis() {
+    await addFeedback(["La banca si scollega.", "Devo ricollegare la banca.", "La banca va benissimo."], "Modulo pubblico")
+    const { error } = await admin
+      .from("research_hypotheses")
+      .insert({ workspace_id: owner.workspaceId, research_id: owner.researchId, text: "La banca è il problema più grande" })
+    if (error) throw error
+    ai.model = fakeSynthesisModel({ themes: [bank] }, verdict)
+    expect(await synthesize(owner.researchId)).toMatchObject({ ok: true, themes: "done", verdict: "done" })
+  }
+
+  it("sends the hypothesis, the word of its verdict and the counts only: no reasoning, no quotes, no feedback text", async () => {
+    await analyzeWithHypothesis()
+    const sent = await roomVerdicts(owner.researchId)
+    expect(sent).toEqual([
+      {
+        id: expect.any(String),
+        text: "La banca è il problema più grande",
+        verdict: "confirmed",
+        supporting: 2,
+        contradicting: 1,
+        feedbackRead: 3,
+      },
+    ])
+    expect(JSON.stringify(sent)).not.toMatch(/motivazione|scollega|ricollegare|benissimo/)
+  })
+
+  it("is empty with no hypothesis, and for a wrong id", async () => {
+    expect(await roomVerdicts(owner.researchId)).toEqual([])
+    expect(await roomVerdicts("non-un-uuid")).toEqual([])
+  })
+
+  it("never shows another workspace's verdicts, even given its Research", async () => {
+    await analyzeWithHypothesis()
+    session.client = other.client
+    expect(await roomVerdicts(owner.researchId)).toEqual([])
   })
 })
