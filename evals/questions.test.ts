@@ -48,7 +48,7 @@ describe("runQuestionEvals", () => {
   })
 
   it("a model that gets every case right passes: 20 of 20, no must-pass failed, G1 at 0", async () => {
-    const { results, summary } = await runQuestionEvals({ model: oracle(), modelId: "claude-sonnet-5", concurrency: 4 })
+    const { results, summary } = await runQuestionEvals({ model: oracle(), modelId: "claude-sonnet-5-5", concurrency: 4 })
     expect(results.filter((r) => !r.passed)).toEqual([])
     expect(summary).toMatchObject({ cases: 20, passed: 20, passRate: 1, mustPassFailed: [], g1Violations: 0, ok: true })
   })
@@ -67,7 +67,7 @@ describe("runQuestionEvals", () => {
         output.quotes = [{ feedback: 1, text: dataset.feedback[0].text }]
       }
     })
-    const { results, summary } = await runQuestionEvals({ model, modelId: "claude-sonnet-5", concurrency: 4 })
+    const { results, summary } = await runQuestionEvals({ model, modelId: "claude-sonnet-5-5", concurrency: 4 })
     const failuresOf = (id: string) => results.find((r) => r.id === id)!.failures
     expect(failuresOf("q20")).toContainEqual(expect.stringContaining("G1"))
     expect(failuresOf("q01")).toContainEqual(expect.stringContaining("relevant"))
@@ -78,10 +78,10 @@ describe("runQuestionEvals", () => {
   })
 
   it("saves evals/results/questions-<date>.json and compares with the previous run of the same eval", async () => {
-    const run = await runQuestionEvals({ model: oracle(), modelId: "claude-sonnet-5", concurrency: 4 })
+    const run = await runQuestionEvals({ model: oracle(), modelId: "claude-sonnet-5-5", concurrency: 4 })
     expect(saveQuestionResult(run, dir).previous).toBeNull()
     const again = saveQuestionResult(run, dir, new Date(Date.now() + 1000))
-    expect(again.previous).toMatchObject({ passed: 20, model: "claude-sonnet-5" })
+    expect(again.previous).toMatchObject({ passed: 20, model: "claude-sonnet-5-5" })
     expect(readdirSync(dir).every((f) => f.startsWith("questions-"))).toBe(true)
   })
 })

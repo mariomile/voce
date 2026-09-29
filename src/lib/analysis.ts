@@ -8,7 +8,7 @@ import type { Sentiment, ThemeKind } from "./types"
 // The feedback text is untrusted input: it only travels as data, and nothing the model returns is
 // saved without being checked against the feedback that was sent.
 
-export const DEFAULT_MODEL = "claude-sonnet-5"
+export const DEFAULT_MODEL = "claude-sonnet-5-5"
 export const ANALYSIS_TIMEOUT_MS = 240_000
 // What one call (themes, Chiedi) reads of a Research: its most recent feedback, at most 500 and at most 1,000,000
 // characters of text (the most a themes prompt could reach before notes of 10,000 characters existed).
@@ -20,7 +20,7 @@ export const MAX_QUOTES = 3
 
 // USD per million tokens, for the estimated cost. A model not listed gets no estimate.
 const PRICES: Record<string, { input: number; output: number }> = {
-  "claude-sonnet-5": { input: 2, output: 10 },
+  "claude-sonnet-5-5": { input: 2, output: 10 },
 }
 
 export function analysisModel() {
@@ -39,11 +39,13 @@ export function analysisLanguageModel(): LanguageModel {
   return anthropic(analysisModel())
 }
 
-// Claude Sonnet 5 thinks by default, and thinking tokens count against maxOutputTokens: on a
-// large set of feedback it spent the whole budget thinking and returned no output. Grouping and
-// quoting feedback does not need it, and without it the answer arrives much sooner.
+// Claude Sonnet 5.5 thinks by default, and thinking tokens count against maxOutputTokens: on a
+// large set of feedback the previous Sonnet spent the whole budget thinking and returned no output.
+// Grouping and quoting feedback needs little of it. Sonnet 5.5 rejects thinking "disabled" (400), so
+// thinking stays adaptive at the lowest effort. "between_tools", its no-upfront-thinking setting,
+// made it garble accented characters in the quotes (evals: 4 to 7 quotes not in the feedback).
 export const MODEL_OPTIONS = {
-  anthropic: { thinking: { type: "disabled" } } satisfies AnthropicLanguageModelOptions,
+  anthropic: { thinking: { type: "adaptive" }, effort: "low" } satisfies AnthropicLanguageModelOptions,
 }
 
 export type AnalysisFeedback = { id: string; text: string; channel: string; receivedAt: string }

@@ -189,7 +189,7 @@ describe("ask", () => {
     const log = await runLog(question.id)
     expect(log).toMatchObject({
       workspace_id: user.workspaceId,
-      model: "claude-sonnet-5",
+      model: "claude-sonnet-5-5",
       output: bank,
       issues: [{ part: "feedback", problem: "unknown_feedback", detail: 999 }],
       input_tokens: 100_000,
