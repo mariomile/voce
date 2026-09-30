@@ -112,7 +112,9 @@ describe("the judge", () => {
   })
 
   it("finds numbers in words and the other language", () => {
-    expect(numberWords(["Due palestre su tre, metà dei casi."])).toEqual(["Due", "tre", "metà"])
+    expect(numberWords(["Due palestre su tre, metà dei casi.", "Three of the people wrote."])).toEqual(["Due palestre", "metà", "Three of"])
+    // Pointing back to things the sentence names is not a count.
+    expect(numberWords(["Sono i due problemi successivi per peso.", "Le due ragioni non si separano."])).toEqual([])
     expect(otherLanguageShare(["The notifications are late and the sync is broken."], "it")).toBeGreaterThan(0.2)
     expect(otherLanguageShare(["Le notifiche arrivano tardi."], "it")).toBe(0)
   })

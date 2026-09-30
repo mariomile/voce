@@ -198,7 +198,10 @@ export function namesNotInData(texts: string[], data: string) {
   return [...names]
 }
 
-const NUMBER_WORDS = /(?<!\p{L})(due|tre|quattro|cinque|sette|otto|nove|dieci|metà|dozzina|two|three|four|five|six|seven|eight|nine|ten|half|dozen)(?!\p{L})/giu
+// A count written in words: a number word before who or what is counted, or a share ("metà", "half of"). "Le due
+// ragioni" or "the two problems", pointing back to things the sentence names, is not a count of the data.
+const NUMBER_WORDS =
+  /(?<!\p{L})(?:(?:due|tre|quattro|cinque|sette|otto|nove|dieci|two|three|four|five|six|seven|eight|nine|ten)\s+(?:su|di|out|of|feedback|persone|palestre|team|aziende|utenti|clienti|people|gyms|teams|companies|users|customers)|metà|dozzina|half|dozen)(?!\p{L})/giu
 export const numberWords = (texts: string[]) => texts.flatMap((t) => [...t.matchAll(NUMBER_WORDS)].map((m) => m[0]))
 
 const PEOPLE_WORDS = /(?<!\p{L})(clienti|cliente|utenti|utente|customers?|users?)(?!\p{L})/giu
