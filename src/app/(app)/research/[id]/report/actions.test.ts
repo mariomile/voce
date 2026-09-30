@@ -85,7 +85,7 @@ const THEMES = themesOutput(
       summary: "Chi ha scritto trova Pro caro per pochi utenti.",
       kind: "problem",
       sentiment: "negative",
-      feedback: [1, 2],
+      feedback: [1, 2, 5],
       quotes: [
         { feedback: 1, text: "pesa sui team piccoli" },
         { feedback: 2, text: "Pro costa troppo" },
@@ -186,14 +186,14 @@ describe("generateReport", () => {
     expect(content.question).toBe("Domanda di prova?")
     expect(content.summary).toEqual([
       "Il prezzo frena i team piccoli: 2 feedback a favore e 1 contro, su 5 letti.",
-      "Il tema più grande è il prezzo, con 2 feedback su 5.",
+      "Il tema più grande è il prezzo, con 3 feedback su 5.",
     ])
     expect(content.findings.map((f) => [f.title, f.count, f.share, f.quotes.map((q) => q.highlight)])).toEqual([
-      ["Il prezzo pesa sui team piccoli", 2, 40, ["Pro costa troppo per noi"]],
+      ["Il prezzo pesa sui team piccoli", 3, 60, ["Pro costa troppo per noi"]],
       ["Chiedono l'esportazione in PDF", 2, 40, ["risparmiare ore"]],
     ])
     expect(content.hypotheses[0]).toMatchObject({ verdict: "confirmed", supporting: 2, contradicting: 1, feedbackRead: 5 })
-    expect(content.limits.map((l) => l.key)).toEqual(["scope", "selfSelected", "unthemed", "small", "shortWindow"])
+    expect(content.limits.map((l) => l.key)).toEqual(["scope", "selfSelected", "small", "shortWindow"])
     // The texts of the quoted feedback come from the feedback, read under the session.
     const quoted = content.findings[0].quotes[0].feedbackId
     expect(report!.feedback[quoted]).toMatchObject({ text: TEXTS[1], channel: "Intervista" })

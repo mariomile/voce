@@ -719,7 +719,8 @@ export async function getReportSource(research: Pick<Research, "id" | "workspace
   const quoteRows = unwrap(themeQuotes).map((q) => ({ ...q, feedback: toFeedback(q.feedback) }));
   const themes = unwrap(themeRows)
     .filter((t) => countOf(t.id) > 0)
-    .sort((a, b) => countOf(b.id) - countOf(a.id))
+    // Ties by title: the ids the model reads (T1, T2...) stay the same for the same synthesis.
+    .sort((a, b) => countOf(b.id) - countOf(a.id) || a.title.localeCompare(b.title))
     .map((t) => ({
       id: t.id,
       title: t.title,
