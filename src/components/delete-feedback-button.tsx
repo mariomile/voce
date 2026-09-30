@@ -44,7 +44,7 @@ export function DeleteFeedbackButton({ feedbackId }: { feedbackId: string }) {
   return (
     <div ref={root} data-delete-feedback className="contents">
       {!confirming ? (
-        <Button ref={open} variant="link" className="text-sm text-ink-muted" onClick={() => toggle(true)}>
+        <Button ref={open} variant="text" className="text-sm" onClick={() => toggle(true)}>
           {t("button")}
         </Button>
       ) : (
@@ -56,10 +56,10 @@ export function DeleteFeedbackButton({ feedbackId }: { feedbackId: string }) {
         >
           <span className="text-sm text-ink-muted">{t("confirmQuestion")}</span>
           <div className="flex items-center gap-4">
-            <Button ref={cancel} variant="link" className="text-sm" onClick={() => toggle(false)} disabled={pending}>
+            <Button ref={cancel} variant="text" className="text-sm" onClick={() => toggle(false)} disabled={pending}>
               {t("cancel")}
             </Button>
-            <Button variant="link" className="text-sm text-problem" onClick={remove} disabled={pending}>
+            <Button variant="text" className="text-sm text-problem" onClick={remove} disabled={pending}>
               {pending ? t("pending") : t("confirm")}
             </Button>
           </div>
