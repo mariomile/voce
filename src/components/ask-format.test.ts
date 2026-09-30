@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import { createTranslator } from "use-intl/core"
 import { messages } from "@/i18n/messages/index"
 import { translator } from "@/test/next-intl"
-import { answerAsText, compactQuote, progressStep, splitAnswer } from "./ask-format"
+import { answerAsText, compactQuote, progressStep, sharePercent, splitAnswer } from "./ask-format"
 
 const t = translator("ask")
 const en = createTranslator({ locale: "en", timeZone: "Europe/Rome", messages: messages.en, namespace: "ask" })
@@ -71,6 +71,28 @@ describe("compactQuote", () => {
 
   it("a key phrase not in the text: the whole text, nothing marked", () => {
     expect(compactQuote("Testo intero.", "altro")).toEqual({ before: "Testo intero.", highlight: "", after: "", shortened: false })
+  })
+})
+
+describe("sharePercent", () => {
+  it("whole percent of the feedback read", () => {
+    expect(sharePercent(16, 200)).toBe("8%")
+    expect(sharePercent(1, 3)).toBe("33%")
+    expect(sharePercent(2, 3)).toBe("67%")
+    expect(sharePercent(200, 200)).toBe("100%")
+  })
+
+  it("under 1% but more than 0 reads <1%", () => {
+    expect(sharePercent(1, 1000)).toBe("<1%")
+    expect(sharePercent(4, 1000)).toBe("<1%")
+    expect(sharePercent(9, 1000)).toBe("<1%")
+    expect(sharePercent(10, 1000)).toBe("1%")
+  })
+
+  it("no feedback mentions it, or none was read: no percentage", () => {
+    expect(sharePercent(0, 200)).toBeNull()
+    expect(sharePercent(0, 0)).toBeNull()
+    expect(sharePercent(3, 0)).toBeNull()
   })
 })
 
