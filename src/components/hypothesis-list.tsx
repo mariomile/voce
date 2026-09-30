@@ -536,13 +536,13 @@ function ConfirmDelete({
   )
 }
 
-// What went wrong with a save or a delete. busy: an analysis of the Research is running (H7).
 // A hypothesis that joins a claim and its negation ("per compliance, non per scelta") is two claims: the verdict
 // cannot confirm one without the other. Only a note under the field, never a block.
 export function looksLikeTwoClaims(text: string) {
   return /(\s|,)(e non|non per|and not|not because)\s/i.test(text)
 }
 
+// What went wrong with a save or a delete. busy: an analysis of the Research is running (H7).
 export function FailureNote({ failure, t, message }: { failure: Failure | null; t: T; message: string }) {
   return (
     <p role="status" className="text-sm empty:hidden">
