@@ -16,7 +16,7 @@ const buttonStyles = cva(
         // Goes somewhere: the yellow underline says "this way".
         link: "rounded-none bg-transparent p-0 text-ink underline decoration-highlight decoration-3 underline-offset-4",
         // Acts in place (Modifica, Elimina, Annulla, Esci): a neutral underline, so the yellow keeps its meaning.
-        text: "rounded-none bg-transparent p-0 text-ink underline decoration-line-strong decoration-2 underline-offset-4 hover:decoration-ink",
+        text: "rounded-none bg-transparent p-0 text-ink underline decoration-ink-subtle decoration-2 underline-offset-4 hover:decoration-ink",
       },
       size: {
         default: "px-5 py-3 text-base",

@@ -58,7 +58,7 @@ export default async function SynthesisPage({ params, searchParams }: PageProps<
       <>
         {full && <LimitWarning usage={usage} />}
         <div className="mb-12">
-          <h2 className="mb-4 max-w-[24ch] font-serif text-5xl leading-snug font-normal tracking-snug">{tEmpty("heading")}</h2>
+          <p className="mb-4 max-w-[24ch] font-serif text-5xl leading-snug font-normal tracking-snug">{tEmpty("heading")}</p>
           <p className="max-w-[58ch] text-lg leading-relaxed text-ink-muted">{tEmpty("lede")}</p>
         </div>
         <HypothesisList researchId={research.id} hypotheses={hypotheses} step={1} />
@@ -151,7 +151,11 @@ export default async function SynthesisPage({ params, searchParams }: PageProps<
       <div
         className={cn(
           "mb-12 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-8",
-          invite ? "rounded-lg bg-highlight-soft p-6 sm:justify-between [&_p]:text-on-highlight" : "sm:justify-end"
+          invite && !limitNote
+            ? "rounded-lg bg-highlight-soft p-6 sm:justify-between [&_p]:text-on-highlight"
+            : invite
+              ? "sm:justify-between"
+              : "sm:justify-end"
         )}
       >
         {invite && (

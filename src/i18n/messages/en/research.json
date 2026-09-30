@@ -166,7 +166,8 @@
       "label": "Verdict only for {count, plural, one {1 hypothesis} other {# hypotheses}}",
       "running": "Verdict running…"
     },
-    "optional": "optional"
+    "optional": "optional",
+    "noVerdictCount": "{count} without a verdict"
   },
   "verdict": {
     "confirmed": "Confirmed",

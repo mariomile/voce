@@ -137,7 +137,7 @@ export function AnalyzeButton({
   }
 
   return (
-    <div className="flex max-w-[36ch] flex-col items-end gap-2 text-right">
+    <div className="flex max-w-[36ch] flex-col items-start gap-2 text-left sm:items-end sm:text-right">
       <Button
         variant={upToDate ? "secondary" : "default"}
         onClick={run}

@@ -159,6 +159,7 @@ export function HypothesisList({
 // "3 ipotesi: 2 confermate, 1 da rivedere", the words of the list of Research: the answer before the detail.
 function VerdictSummary({ hypotheses }: { hypotheses: Hypothesis[] }) {
   const t = useTranslations("research.list.row")
+  const tHypotheses = useTranslations("research.hypotheses")
   const verdicts = hypotheses.flatMap((h) => (h.verdict ? [hasLinks(h.verdict) ? h.verdict.verdict : "to_review"] : []))
   if (verdicts.length === 0) return null
   const count = (kind: string) => verdicts.filter((v) => v === kind).length
@@ -166,6 +167,7 @@ function VerdictSummary({ hypotheses }: { hypotheses: Hypothesis[] }) {
     count("confirmed") && t("confirmed", { count: count("confirmed") }),
     count("refuted") && t("refuted", { count: count("refuted") }),
     count("to_review") && t("toReview", { count: count("to_review") }),
+    hypotheses.length > verdicts.length && tHypotheses("noVerdictCount", { count: hypotheses.length - verdicts.length }),
   ].filter(Boolean)
   return (
     <p className="text-lg text-ink-muted">

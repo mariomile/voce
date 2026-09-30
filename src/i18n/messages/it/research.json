@@ -166,7 +166,8 @@
       "label": "Solo il verdetto di {count} ipotesi",
       "running": "Verdetto in corso…"
     },
-    "optional": "facoltative"
+    "optional": "facoltative",
+    "noVerdictCount": "{count} senza verdetto"
   },
   "verdict": {
     "confirmed": "Confermata",

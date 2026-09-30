@@ -107,7 +107,7 @@ Ogni componente è in `design/kit.css` e in `design/kit.html` con tutti i suoi s
 - `.btn-highlight` solo per spingere un'azione di valore quando il primario è già usato (per esempio "Passa a Pro"). Mai dentro una superficie gialla.
 - Il testo del pulsante dice cosa succede, con il numero se c'è: "Analizza 37 feedback", non "Continua".
 - `.link` (sottolineatura gialla) per azioni che portano altrove ("Leggi tutti i 58 feedback"), non per azioni che cambiano dati.
-- `.link-text` (sottolineatura `--color-line-strong`, inchiostro al passaggio del mouse) per le azioni sul posto: Modifica, Elimina, Annulla, Esci, "Spegni il link". Così il giallo resta un segnale: una pagina con 50 "Elimina" non diventa gialla.
+- `.link-text` (sottolineatura `--color-ink-subtle`, inchiostro al passaggio del mouse) per le azioni sul posto: Modifica, Elimina, Annulla, Esci, "Spegni il link". Così il giallo resta un segnale: una pagina con 50 "Elimina" non diventa gialla.
 - Un pulsante primario che rifarebbe lo stesso lavoro scende a secondario e dice perché: "Analizza" quando dall'ultima analisi non è arrivato nessun feedback.
 
 ### Filtri

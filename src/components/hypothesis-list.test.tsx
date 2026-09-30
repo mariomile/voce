@@ -96,7 +96,7 @@ describe("HypothesisList", () => {
 
   it("sums up the verdicts next to the title, with the words of the list of Research", () => {
     const html = render([withVerdict({}), { ...hypothesis(2), verdict: { ...confirmed, verdict: "refuted" } }, hypothesis(3)])
-    expect(html).toContain("3 ipotesi: 1 confermata, 1 smentita")
+    expect(html).toContain("3 ipotesi: 1 confermata, 1 smentita, 1 senza verdetto")
     expect(render([hypothesis(1)])).not.toContain("1 ipotesi:")
   })
 
