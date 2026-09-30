@@ -22,7 +22,7 @@
   "networkError": "It didn't go through: the connection isn't responding. Your text is still here, try again.",
   "submit": "Send",
   "submitting": "Sending…",
-  "footer": "Collected with Voce. No account needed.",
+  "footer": "Collected with Voce. Answers are analyzed with an AI (Anthropic). Don't write personal data: email is optional.",
   "unavailable": {
     "title": "This form isn't accepting new feedback right now.",
     "text": "If you want to write to {name}, use support in the app or on the site. Your message still reaches the same people.",

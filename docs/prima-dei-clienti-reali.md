@@ -21,6 +21,7 @@ Cose da risolvere prima di aprire Voce a clienti reali. Finché siamo in modalit
 
 ## Modulo pubblico
 
+- **Avviso privacy sul modulo.** Fatto (provvisorio): sotto il campo di risposta una riga dice che le risposte sono analizzate con un'AI (Anthropic) e chiede di non scrivere dati personali, l'email è facoltativa. Manca ancora la pagina privacy completa, a cui la riga dovrà rimandare (vedi "Legale").
 - **Chiave segreta su Vercel.** Il modulo pubblico ora salva passando dal server con `SUPABASE_SECRET_KEY`: senza questa variabile su Vercel il modulo non funziona.
 - **IP del visitatore.** Il limite per IP si fida di `x-real-ip` e `x-forwarded-for`, che Vercel imposta da sé. Se l'app gira dietro un altro proxy, va verificato che quelle intestazioni non arrivino dal visitatore.
 - **IP condivisi.** Il limite per IP (1.000 all'ora) conta tutti i moduli insieme. Dietro il NAT di un operatore mobile molti sconosciuti condividono lo stesso IP: con traffico vero, se si vedono rifiuti tra workspace diversi, contare per IP e workspace. E uno script da un solo IP può mandare 1.000 invii in pochi minuti in un solo workspace Pro, spingendo fuori dall'analisi (gli ultimi 500) i feedback veri: il tetto resta l'ora del workspace, e un Free si riempie subito. Da rivedere con dati veri (captcha o verifica leggera).
@@ -41,7 +42,7 @@ Cose da risolvere prima di aprire Voce a clienti reali. Finché siamo in modalit
 
 ## Legale
 
-- Da definire: privacy policy, termini di servizio, accordo sul trattamento dei dati (DPA) con i clienti, elenco dei sub-responsabili.
+- Da definire: pagina privacy completa (oggi c'è solo la riga provvisoria sul modulo pubblico), privacy policy, termini di servizio, accordo sul trattamento dei dati (DPA) con i clienti, elenco dei sub-responsabili.
 
 ## Fiscale
 

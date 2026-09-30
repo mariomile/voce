@@ -22,7 +22,7 @@
   "networkError": "Non è partito: la connessione non risponde. Il testo è ancora qui, riprova.",
   "submit": "Invia",
   "submitting": "Invio…",
-  "footer": "Raccolto con Voce. Non serve un account.",
+  "footer": "Raccolto con Voce. Le risposte vengono analizzate con un'AI (Anthropic). Non scrivere dati personali: l'email è facoltativa.",
   "unavailable": {
     "title": "Per ora questo modulo non accetta nuovi feedback.",
     "text": "Se vuoi scrivere a {name}, usa il supporto dall'app o dal sito. Il tuo messaggio arriva comunque alle stesse persone.",
