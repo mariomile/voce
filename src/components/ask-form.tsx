@@ -8,7 +8,7 @@ import { ask, type AskResult, type AskUsage } from "@/app/(app)/research/[id]/as
 import { AskAnswer } from "@/components/ask-answer"
 import { askErrors, answerSummary, askButtonLabel, failedMessage, limitNotice, quotaNote, slowMessage, type AskT } from "@/components/ask-copy"
 import { AskProgress, useElapsed } from "@/components/ask-progress"
-import { askSession, beginAsking, endAsking, useAskSession } from "@/components/ask-session"
+import { askSession, beginAsking, clearMissed, endAsking, useAskSession, type AskFailure } from "@/components/ask-session"
 import { suggestQuestions } from "@/components/ask-suggestions"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardText, CardTitle } from "@/components/ui/card"
@@ -21,7 +21,7 @@ const MAX_LENGTH = 300
 const COUNT_FROM = 250
 const SLOW_AFTER_MS = 15_000
 
-type Failure = Extract<AskResult, { ok: false }>["reason"] | "network"
+type Failure = AskFailure
 
 // The Chiedi tab: the question field, then the questions of this visit, newest on top. One question
 // in flight at a time. Enter sends, Shift+Enter goes to a new line. The focus stays in the field from
@@ -51,20 +51,34 @@ export function AskForm({
   const t = useTranslations("ask")
   const field = useRef<HTMLTextAreaElement>(null)
   const { entries, pending } = useAskSession(researchId)
-  const [question, setQuestion] = useState("")
-  const [failure, setFailure] = useState<Failure | null>(null)
-  // What the status region says once the question is over: the answer, or that it was copied.
-  const [announcement, setAnnouncement] = useState("")
+  // A question that failed while the PM was on another tab: shown now, with the question back in the field.
+  const [missed] = useState(() => askSession(researchId).missed)
+  const [question, setQuestion] = useState(missed?.question ?? "")
+  const [failure, setFailure] = useState<Failure | null>(missed?.failure ?? null)
+  // What the status region says once the question is over: the answer, or that it was copied. The
+  // count makes the same text, copied twice, a new announcement.
+  const [announcement, setAnnouncement] = useState({ text: "", count: 0 })
+  const announce = (text: string) => setAnnouncement((a) => ({ text, count: a.count + 1 }))
   // Null only right after the quota could not be read following an answered question: the quota
   // note is then left out rather than showing a stale number.
-  const [usage, setUsage] = useState<AskUsage | null>(initialUsage)
-  const [currentPlan, setCurrentPlan] = useState(plan)
+  const [usage, setUsage] = useState<AskUsage | null>(missed?.usage ?? initialUsage)
+  const [currentPlan, setCurrentPlan] = useState(missed?.plan ?? plan)
+  // Whether this form is on screen when the answer arrives: if not, a failure waits in the session.
+  const onScreen = useRef(false)
   // Set at once on submit: two Enters in a row make one call, before React re-renders.
   const sending = useRef(false)
   // After a suggestion fills the field, the caret goes to its end once the value is on screen.
   const caretToEnd = useRef(false)
   const slow = useElapsed(pending?.startedAt ?? null) >= SLOW_AFTER_MS
   const latestId = entries[0]?.id
+
+  useEffect(() => {
+    onScreen.current = true
+    if (missed) clearMissed(researchId)
+    return () => {
+      onScreen.current = false
+    }
+  }, [missed, researchId])
 
   // At a high zoom the answer can land below the fold: bring it into view, without animation.
   useEffect(() => {
@@ -92,7 +106,7 @@ export function AskForm({
     caretToEnd.current = true
     setQuestion(text)
     setFailure(null)
-    setAnnouncement("")
+    setAnnouncement({ text: "", count: 0 })
     field.current?.focus()
   }
 
@@ -105,7 +119,7 @@ export function AskForm({
     }
     sending.current = true
     setFailure(null)
-    setAnnouncement("")
+    setAnnouncement({ text: "", count: 0 })
     // The question moves from the field to the top of the page while Voce works; a failure puts it back.
     const sent = question
     setQuestion("")
@@ -115,24 +129,27 @@ export function AskForm({
       try {
         result = await ask(researchId, { question: sent })
       } catch {
-        setFailure("network")
+        // Nothing reached the server, or its answer did not reach the browser.
       }
-      endAsking(researchId, result?.ok ? result : null)
-      if (!result?.ok) setQuestion(sent)
       if (result?.ok) {
+        endAsking(researchId, result, onScreen.current)
         setUsage(result.usage)
-        setAnnouncement(
-          answerSummary(t, result.outcome === "answered" ? { ...result, quoteCount: result.quotes.length } : result)
-        )
-      } else if (result) {
-        setFailure(result.reason)
-        if (result.reason === "failed") setUsage(result.usage)
+        announce(answerSummary(t, result.outcome === "answered" ? { ...result, quoteCount: result.quotes.length } : result))
+      } else {
+        const failure = result ?? { reason: "network" as const }
         // The plan or the quota can have changed since the page loaded (upgrade from another
         // tab, month rollover): the notice must use what the server saw, not the page's props.
-        if (result.reason === "limit") {
-          setUsage(result.usage)
-          setCurrentPlan(result.plan)
+        const missed = {
+          question: sent,
+          failure: failure.reason,
+          usage: "usage" in failure ? failure.usage : undefined,
+          plan: "plan" in failure ? failure.plan : undefined,
         }
+        endAsking(researchId, missed, onScreen.current)
+        setQuestion(sent)
+        setFailure(missed.failure)
+        if (missed.usage) setUsage(missed.usage)
+        if (missed.plan) setCurrentPlan(missed.plan)
       }
       sending.current = false
       const el = field.current
@@ -210,11 +227,18 @@ export function AskForm({
       <div role="status" className="mt-6 empty:hidden">
         {pending ? (
           <span className="sr-only">{slow ? slowMessage(t) : t("form.reading", { count: feedbackConsidered })}</span>
-        ) : failure && failure !== "invalid" ? (
-          <FailureNote t={t} researchId={researchId} failure={failure} usage={usage} month={month} notice={notice} />
-        ) : announcement ? (
-          <span className="sr-only">{announcement}</span>
-        ) : null}
+        ) : (
+          <>
+            {failure && failure !== "invalid" && (
+              <FailureNote t={t} researchId={researchId} failure={failure} usage={usage} month={month} notice={notice} />
+            )}
+            {announcement.text && (
+              <span key={announcement.count} className="sr-only">
+                {announcement.text}
+              </span>
+            )}
+          </>
+        )}
       </div>
 
       {entries.length === 0 && !pending && !limitReached && suggestions.length > 0 && (
@@ -261,7 +285,7 @@ export function AskForm({
                 latest={entry.id === latestId && !pending}
                 canFollowUp={!limitReached}
                 onFollowUp={fill}
-                onAnnounce={setAnnouncement}
+                onAnnounce={announce}
               />
             </div>
           ))}

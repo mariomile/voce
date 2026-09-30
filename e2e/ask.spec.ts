@@ -219,6 +219,22 @@ test("E6: the answer did not arrive, and the question counts", async ({ page }) 
   await expect(field).toBeFocused()
 })
 
+test("E6 while on another tab: back on Chiedi, the message and the question are there", async ({ page }) => {
+  const { field } = await openAsk(page, "e6-away")
+  // LENTA holds the answer for 20 seconds, FUORI_SCHEMA makes it fail.
+  await page.keyboard.type("LENTA FUORI_SCHEMA sul PDF?")
+  await page.keyboard.press("Enter")
+  await expect(page.getByRole("region", { name: "Risposta in arrivo…" })).toBeVisible()
+  await page.getByRole("link", { name: "Feedback", exact: true }).click()
+  await expect(page).toHaveURL(/\/feedback$/)
+  await page.waitForTimeout(22_000)
+  await page.getByRole("link", { name: "Chiedi", exact: true }).click()
+  await expect(status(page)).toHaveText(
+    `La risposta non è arrivata. La domanda conta lo stesso tra quelle del mese: ti restano 9 domande di ${month}. Riprova tra poco.`
+  )
+  await expect(field).toHaveValue("LENTA FUORI_SCHEMA sul PDF?")
+})
+
 test("E7: the request does not reach Voce", async ({ page }) => {
   const { field } = await openAsk(page, "e7")
   await page.route("**/ask", (route) =>
