@@ -118,10 +118,16 @@ test("GET of the Chiedi tab with a forged next-action header still redirects to 
 
 const month = new Intl.DateTimeFormat("it-IT", { month: "long", timeZone: "Europe/Rome" }).format(new Date())
 // The month after the current one, on the Italian calendar: when the quota comes back.
-const nextMonth = () =>
-  new Intl.DateTimeFormat("it-IT", { month: "long", timeZone: "Europe/Rome" }).format(
-    new Date(new Date().getFullYear(), new Date().getMonth() + 1, 15)
+const nextMonth = () => {
+  // The runner may be on UTC: read the year and month on the Italian calendar, not the machine's.
+  const [year, current] = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", timeZone: "Europe/Rome" })
+    .format(new Date())
+    .split("-")
+    .map(Number)
+  return new Intl.DateTimeFormat("it-IT", { month: "long", timeZone: "Europe/Rome" }).format(
+    new Date(Date.UTC(year, current, 15))
   )
+}
 
 async function openAsk(page: import("@playwright/test").Page, label: string) {
   const user = await signedInUser(page, label)

@@ -618,7 +618,9 @@ describe("getUsage", () => {
   it("reads limits from the plan", async () => {
     const pro = await getUsage(as("fatturino"))
     expect(pro).toMatchObject({ plan: "pro", feedbackCount: 60, feedbackLimit: null, analysesLimit: 100 })
-    expect(pro.analysesThisMonth).toBeGreaterThan(0)
+    // The seed puts its latest analysis two days back; read the month as of that day, so the test holds on the 1st and 2nd.
+    const { analysesThisMonth } = await getUsage(as("fatturino"), new Date(Date.now() - 2 * 24 * 60 * 60 * 1000))
+    expect(analysesThisMonth).toBeGreaterThan(0)
     const free = await getUsage(as("ordinalo"))
     expect(free).toMatchObject({ plan: "free", feedbackCount: 100, feedbackLimit: 100, analysesLimit: 3 })
   })
