@@ -23,7 +23,11 @@ export default async function ResearchLayout({ children, params }: LayoutProps<"
   return (
     <Page>
       <header className="mb-8">
-        <Link href="/research" className="mb-4 inline-block text-md text-ink-muted hover:underline">
+        {/* On a touch screen the tap area reaches 44 px tall, like the text actions of the Button. */}
+        <Link
+          href="/research"
+          className="relative mb-4 inline-block text-md text-ink-muted hover:underline pointer-coarse:after:absolute pointer-coarse:after:-inset-x-2 pointer-coarse:after:-inset-y-3"
+        >
           <span aria-hidden="true">← </span>
           {t("header.back")}
         </Link>

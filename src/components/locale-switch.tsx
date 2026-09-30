@@ -24,7 +24,8 @@ export function LocaleSwitch({ className }: { className?: string }) {
             aria-pressed={locale === current}
             disabled={pending}
             onClick={() => startTransition(() => setLocale(locale))}
-            className="cursor-pointer uppercase underline-offset-4 opacity-60 hover:underline aria-pressed:underline aria-pressed:decoration-2 aria-pressed:opacity-100 disabled:cursor-wait"
+            // On a touch screen the tap area grows to 44 px tall and a little wider, without moving the letters.
+            className="relative cursor-pointer uppercase underline-offset-4 opacity-60 hover:underline aria-pressed:underline aria-pressed:decoration-2 aria-pressed:opacity-100 disabled:cursor-wait pointer-coarse:after:absolute pointer-coarse:after:-inset-x-1.5 pointer-coarse:after:-inset-y-3"
           >
             {locale}
           </button>

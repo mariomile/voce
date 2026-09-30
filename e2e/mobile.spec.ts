@@ -64,3 +64,24 @@ for (const width of [390, 1440])
     })
     expect(order.dom).toEqual(order.visual)
   })
+
+// Text actions are about 21 px tall: on a touch screen an invisible layer makes each one 44 px tall to the finger.
+test("on a phone the text actions take a tap 10 px above or below their text", async ({ page }) => {
+  const user = await signedInUser(page, "phone-taps")
+  await page.goto(`/research/${user.researchId}/collect`)
+  const bar = page.getByRole("banner")
+  for (const action of [
+    bar.getByRole("button", { name: "Esci" }),
+    bar.getByRole("button", { name: "English" }),
+    page.getByRole("link", { name: "Tutte le Research" }),
+    page.getByRole("button", { name: "Elimina la Research" }),
+  ]) {
+    const hits = await action.evaluate((el) => {
+      el.scrollIntoView({ block: "center" })
+      const box = el.getBoundingClientRect()
+      const x = box.left + box.width / 2
+      return [box.top - 10, box.bottom + 10].map((y) => el.contains(document.elementFromPoint(x, y)))
+    })
+    expect(hits, await action.textContent() ?? "").toEqual([true, true])
+  }
+})

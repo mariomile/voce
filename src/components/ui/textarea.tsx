@@ -10,7 +10,9 @@ const textareaVariants = cva("w-full border-0 placeholder:text-ink-subtle", {
     variant: {
       default:
         "resize-y rounded-sm bg-veil px-3 py-2 text-lg leading-normal aria-invalid:shadow-[inset_0_0_0_1.5px_var(--color-problem)]",
-      ask: "resize-none rounded-sm bg-paper px-4 py-3 text-2xl leading-normal shadow-[inset_0_0_0_1.5px_var(--color-ink-muted)] aria-invalid:shadow-[inset_0_0_0_1.5px_var(--color-problem)]",
+      // Focus: the ring sits on the edge (no offset) and the border turns ink, one solid frame instead of a
+      // ring floating around a grey border.
+      ask: "resize-none rounded-sm bg-paper px-4 py-3 text-2xl leading-normal shadow-[inset_0_0_0_1.5px_var(--color-ink-muted)] focus-visible:shadow-[inset_0_0_0_1.5px_var(--color-ink)] focus-visible:outline-offset-0 aria-invalid:shadow-[inset_0_0_0_1.5px_var(--color-problem)]",
       // The focus is the line turning ink, not the global ring: ring and line together read as a double border.
       line: "resize-none rounded-none border-b-2 border-line bg-transparent px-0 py-2 font-serif text-2xl leading-relaxed placeholder:text-ink-muted placeholder:italic focus:border-ink focus-visible:outline-hidden aria-invalid:border-problem",
     },
