@@ -1,0 +1,95 @@
+{
+  "page": {
+    "title": "Report",
+    "noSynthesis": {
+      "title": "The report starts from the summary.",
+      "text": "Analyze the feedback in the Summary: themes, counts and verdicts become a memo to send to your team or founders, with verified quotes.",
+      "action": "Go to the Summary"
+    },
+    "empty": {
+      "title": "A memo to defend the decision.",
+      "text": "Voce writes the answer to the question, the themes that weigh with their numbers, the verdict of each hypothesis, what the data does not say and the decisions to discuss. Voce computes the numbers from your data; the quotes are checked word for word.",
+      "fromSynthesis": "From the summary of {date}: {count} feedback read, {themes, plural, one {1 theme} other {# themes}}, {hypotheses, plural, =0 {no hypotheses} one {1 hypothesis} other {# hypotheses}}."
+    },
+    "generate": "Write the report",
+    "regenerate": "Rewrite",
+    "running": "Writing the report…",
+    "runningNote": "It takes about a minute. The report shows up here as soon as it is ready.",
+    "cost": "You will use 1 of your {limit} analyses for {month}.",
+    "generatedOn": "Report of {date}, from the summary of {synthesis}.",
+    "copy": "Copy as text",
+    "copied": "Copied",
+    "copiedNote": "Report copied: paste it into an email, Slack or a document.",
+    "copyFailed": "I can't copy it: select the text and copy it by hand.",
+    "print": "Print or save as PDF",
+    "done": "Report ready.",
+    "stale": {
+      "title": "The Research changed after this report.",
+      "newFeedback": "{count, plural, one {1 feedback arrived} other {# feedback arrived}} after the report, not in the summary yet.",
+      "newerSynthesis": "A newer summary, of {date}, is not in the report yet.",
+      "analyzeFirst": "Analyze them first in the Summary, then rewrite the report."
+    },
+    "otherLanguage": "This report is in Italian. Rewrite it to get it in English.",
+    "failures": {
+      "failed": "The report did not arrive and does not count toward this month's limit. Try again shortly.",
+      "busy": "An analysis is already running in this workspace. Try again when it is done.",
+      "noSynthesis": "This Research has no summary with themes yet: analyze it first in the Summary.",
+      "notFound": "I can't find this Research. It may have been deleted.",
+      "session": "Your session has expired. Sign in again to write the report.",
+      "sessionLink": "Sign in",
+      "network": "I can't reach Voce. If the report had already started, it shows up here when it is ready: reload the page in a minute."
+    },
+    "noThemes": {
+      "title": "The summary has no themes to put in the report.",
+      "text": "The themes of the last summary were discarded or have no feedback left. Analyze again in the Summary, then come back here."
+    }
+  },
+  "document": {
+    "eyebrow": "Voce report, {date}",
+    "inShort": "In short",
+    "findings": "What we found",
+    "findingsLede": "The themes that weigh most on the question, with how many feedback talk about them out of the {read} read by the summary.",
+    "feedbackLabel": "feedback",
+    "share": "{share}% of those read",
+    "kind": {
+      "problem": "Problem",
+      "opportunity": "Opportunity",
+      "praise": "Praise"
+    },
+    "hypotheses": "Hypotheses and verdicts",
+    "hypothesesNone": "No hypotheses written for this Research: the report describes, it does not test an idea.",
+    "verdict": {
+      "confirmed": "Confirmed",
+      "refuted": "Refuted",
+      "to_review": "To review",
+      "none": "No verdict"
+    },
+    "counts": "{supporting} for · {contradicting} against · out of {read} read",
+    "noVerdict": "No verdict yet: it comes with the next analysis.",
+    "inFavour": "For",
+    "against": "Against",
+    "unknowns": "What we don't know",
+    "limits": {
+      "scope": "Based on the {read} feedback read by the summary of {date}, from {channels, plural, one {1 channel} other {# channels}}, written from {start} to {end}.",
+      "selfSelected": "The people who wrote chose to: they do not necessarily stand for everyone the question is about.",
+      "partial": "The summary read the {read} most recent feedback out of {total}: the older ones are not counted.",
+      "unthemed": "{count} of the {read} feedback read are in none of the themes.",
+      "newSince": "{count, plural, one {1 feedback} other {# feedback}} that arrived after the summary {count, plural, one {is} other {are}} not counted.",
+      "simulated": "{count} feedback come from the {names} channel: they are test data, not real voices.",
+      "oneChannel": "All the feedback come from the {name} channel: other channels might say something else.",
+      "channelSkew": "{share}% of the feedback come from the {name} channel: other channels might say something else.",
+      "small": "With {read} feedback the numbers show a direction, not a measure.",
+      "shortWindow": "The feedback cover only {days} days.",
+      "noHypotheses": "No hypotheses written: the report describes, it does not test an idea.",
+      "unsettled": "{count, plural, one {1 hypothesis has} other {# hypotheses have}} no clear verdict."
+    },
+    "decisions": "What to decide now",
+    "decisionsNote": "Suggestions from Voce to discuss with the team: they are not conclusions of the data.",
+    "evidence": "Based on",
+    "evidenceTheme": "{title}: {count} feedback",
+    "evidenceHypothesis": "{text}: {verdict}",
+    "quoteSource": "{channel}, {date}",
+    "footer": "Written by Voce on {date} from the {count} feedback read by the summary. Voce computes the numbers from the data; the quotes are verified word for word against the feedback.",
+    "markdownTitle": "Report: {question}"
+  }
+}

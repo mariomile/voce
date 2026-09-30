@@ -493,6 +493,49 @@ describe("AI analysis functions and log", () => {
   })
 })
 
+describe("reports", () => {
+  it("only the members of the workspace read a report, and nobody but the server writes one", async () => {
+    // B's report, written as the server writes it: on a 'report' row of analyses.
+    const { data: reportRow } = await admin
+      .from("analyses")
+      .insert({ workspace_id: b.workspaceId, research_id: b.researchId, kind: "report", period_start: "2026-07-01", feedback_count: 1 })
+      .select("id")
+      .single()
+    const { error } = await admin.from("research_reports").insert({
+      workspace_id: b.workspaceId,
+      research_id: b.researchId,
+      analysis_id: reportRow!.id,
+      source_analysis_id: bIds.analysis,
+      locale: "it",
+      content: { summary: ["Il report di B."] },
+      feedback_count: 1,
+      model: "finto",
+    })
+    expect(error).toBeNull()
+
+    expect((await b.client.from("research_reports").select("content")).data).toEqual([{ content: { summary: ["Il report di B."] } }])
+    expect((await a.client.from("research_reports").select("id")).data).toEqual([])
+    expect((await anon().from("research_reports").select("id")).error?.code).toBe("42501")
+
+    const write = {
+      workspace_id: a.workspaceId,
+      research_id: a.researchId,
+      analysis_id: aIds.analysis,
+      source_analysis_id: aIds.analysis,
+      locale: "it",
+      content: {},
+      feedback_count: 1,
+      model: "finto",
+    }
+    for (const client of [anon(), a.client, b.client]) {
+      expect((await client.from("research_reports").insert(write)).error?.code).toBe("42501")
+      expect((await client.from("research_reports").update({ locale: "en" }).eq("workspace_id", b.workspaceId)).error?.code).toBe("42501")
+      const finish = { analysis: reportRow!.id, source: bIds.analysis, locale: "it", content: {}, feedback_count: 1, run: {} }
+      expect((await client.rpc("finish_report", finish)).error?.code).toBe("42501")
+    }
+  })
+})
+
 describe("analytics milestones", () => {
   it("nobody but the server reads or writes which events a workspace has sent", async () => {
     const { error } = await admin.from("analytics_milestones").insert({ workspace_id: a.workspaceId, event: "signed_up" })

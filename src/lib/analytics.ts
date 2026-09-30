@@ -28,6 +28,11 @@ export type RepeatedEvent =
       event: "research_synthesized"
       properties: { feedback_count: number; citation_count: number; hypothesis_count: number }
     }
+  // Every report saved: the feedback read by the synthesis it comes from, its themes and hypotheses.
+  | {
+      event: "report_generated"
+      properties: { feedback_count: number; theme_count: number; hypothesis_count: number }
+    }
 
 type Event = Milestone | RepeatedEvent
 

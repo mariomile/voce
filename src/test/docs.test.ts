@@ -106,6 +106,30 @@ describe("analytics.md: the Research events", () => {
   })
 })
 
+describe("analytics.md: the report", () => {
+  it("documents report_generated with its three counts, when it is sent, and that it skips analytics_milestones", () => {
+    const doc = readFileSync("docs/analytics.md", "utf8")
+    const row = doc.split("\n").find((line) => line.startsWith("| `report_generated`"))
+    expect(row).toBeDefined()
+    for (const property of ["`feedback_count`", "`theme_count`", "`hypothesis_count`"]) expect(row).toContain(property)
+    expect(row).toMatch(/ogni report/i)
+    expect(doc).toMatch(/`report_generated`[^\n]*non passa da `analytics_milestones`/)
+  })
+})
+
+describe("the reports migration", () => {
+  it("enables RLS on research_reports in the same file that creates it, and lets users only read", () => {
+    const creating = migrations.filter((f) =>
+      /create table public\.research_reports\b/.test(readFileSync(`supabase/migrations/${f}`, "utf8"))
+    )
+    expect(creating).toEqual(["20261005090100_research_reports.sql"])
+    const sql = readFileSync(`supabase/migrations/${creating[0]}`, "utf8")
+    expect(sql).toMatch(/alter table public\.research_reports enable row level security;/)
+    expect(sql).toMatch(/grant select on public\.research_reports to authenticated;/)
+    expect(sql).not.toMatch(/grant (insert|update|delete)[^;]*research_reports/)
+  })
+})
+
 describe("the ask files", () => {
   it("never use dangerouslySetInnerHTML", () => {
     const files = [
@@ -124,6 +148,8 @@ describe("the Research files", () => {
         .filter((f) => f.endsWith(".ts") || f.endsWith(".tsx"))
         .map((f) => `src/app/(app)/research/${f}`),
       "src/components/hypothesis-list.tsx",
+      "src/components/report-document.tsx",
+      "src/components/report-controls.tsx",
     ]
     expect(files.length).toBeGreaterThanOrEqual(20)
     for (const file of files) expect(readFileSync(file, "utf8"), file).not.toContain("dangerouslySetInnerHTML")

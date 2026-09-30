@@ -168,3 +168,34 @@
     animation: ask-highlighter 1.4s cubic-bezier(0.16, 1, 0.3, 1) infinite alternate;
   }
 }
+
+/* The report printed or saved as PDF: only the document, one column, on white. Only on the Report tab (the page
+   holds [data-report]): the app bar, the header of the Research and its tabs leave the page, and so does
+   whatever is marked print:hidden. */
+@media print {
+  @page {
+    margin: 16mm 18mm;
+  }
+  body:has([data-report]) :is(header, nav) {
+    display: none !important;
+  }
+  body:has([data-report]) main {
+    max-width: none;
+    padding: 0;
+  }
+  /* The rem sizes of the app, three quarters as big: a finding fits on a page with the others. */
+  html:has([data-report]) {
+    font-size: 12px;
+  }
+  [data-report] :is(blockquote, li) {
+    break-inside: avoid;
+  }
+  /* Browsers drop backgrounds when printing: the highlighter, the verdict signs and the numbered circles need them. */
+  [data-report] * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  [data-report] :is(h2, h3) {
+    break-after: avoid;
+  }
+}

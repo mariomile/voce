@@ -5,11 +5,12 @@ import { createClient } from "@supabase/supabase-js"
 import type { Database, Json } from "@/lib/database.types"
 import type { CheckedTheme } from "@/lib/analysis"
 import type { CheckedVerdict } from "@/lib/verdict"
+import type { ReportContent } from "@/lib/report"
 import type { Milestone } from "@/lib/analytics"
 import type { BillingState } from "@/lib/billing"
 
 // The secret key bypasses RLS, so it does only what the server alone may do: send a public form
-// submission with the visitor IP it sees, reserve, save or fail an AI analysis (themes and verdicts) or a question, and write the billing
+// submission with the visitor IP it sees, reserve, save or fail an AI analysis (themes, verdicts and reports) or a question, and write the billing
 // data from Stripe, and record which analytics events a workspace has sent. If users could do those,
 // they could skip the rate limits, write fake themes and costs, or give themselves Pro.
 
@@ -120,6 +121,29 @@ export async function finishVerdict(
   })
   if (error) throw error
   return { quotes: data[0].quotes_saved, verdicts: data[0].verdicts_saved }
+}
+
+// A report already checked by the server, on its 'report' row of analyses. The database checks its quotes again
+// against the saved feedback and fails with research_deleted, invalid_source or quote_not_in_feedback.
+// Returns the id of the report.
+export async function finishReport(input: {
+  analysisId: string
+  sourceAnalysisId: string
+  locale: string
+  content: ReportContent
+  feedbackCount: number
+  run: RunLog
+}): Promise<string> {
+  const { data, error } = await adminClient().rpc("finish_report", {
+    analysis: input.analysisId,
+    source: input.sourceAnalysisId,
+    locale: input.locale,
+    content: input.content as unknown as Json,
+    feedback_count: input.feedbackCount,
+    run: input.run,
+  })
+  if (error) throw error
+  return data
 }
 
 export async function failAnalysis(analysisId: string, message: string, run: RunLog) {

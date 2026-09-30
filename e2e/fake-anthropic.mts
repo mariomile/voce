@@ -8,7 +8,10 @@ import { createServer } from "node:http"
 // with LENTA gets its answer after 20 seconds. It answers every verdict (a prompt with <hypotheses_data>)
 // by confirming each hypothesis with the first feedback, linked and quoted in full, so the output passes
 // the checks in src/lib/verdict.ts; a hypothesis with FUORI_SCHEMA gets text that is not JSON for the whole
-// verdict, and so do the themes of feedback with TEMI_FUORI_SCHEMA. No real model is ever called.
+// verdict, and so do the themes of feedback with TEMI_FUORI_SCHEMA. It answers every report (a prompt with
+// <report_data>) with the three biggest themes, each quoting the start of its first quoted feedback, numbers only
+// as placeholders, and one decision on the first theme, so the output passes the checks in src/lib/report.ts.
+// No real model is ever called.
 // Both calls ask for structured output (output_config.format): a request without it is rejected,
 // so the test notices if the provider stops sending the schema.
 // GET /calls?marker=X counts how many prompts received so far contain X: how a test proves the
@@ -76,6 +79,35 @@ function verdictsFor(text: string) {
   }
 }
 
+type ReportData = {
+  themes: { id: string }[]
+  hypotheses: { id: string; verdict: string }[]
+  quotes: { n: number; themes: string[]; text: string }[]
+}
+
+function reportFor(text: string) {
+  const data: ReportData = JSON.parse(text.match(/<report_data>([\s\S]*)<\/report_data>/)?.[1] ?? "{}")
+  const judged = data.hypotheses.filter((h) => h.verdict !== "none")
+  return {
+    summary: [
+      "Il tema più grande raccoglie {T1.count} feedback su {read}.",
+      ...judged.map((h) => `Un'ipotesi ha {${h.id}.for} feedback a favore e {${h.id}.against} contro.`),
+      "Gli altri temi completano il quadro.",
+    ],
+    findings: data.themes.slice(0, 3).map((t) => {
+      const quote = data.quotes.find((q) => q.themes.includes(t.id))
+      return {
+        theme: t.id,
+        headline: `{${t.id}.count} feedback su {read} ne parlano.`,
+        why: "Conta per la decisione.",
+        quotes: quote ? [{ feedback: quote.n, text: quote.text.slice(0, 40).trim() }] : [],
+      }
+    }),
+    limits: ["Nessuno ha scritto dopo aver lasciato il prodotto."],
+    decisions: [{ decision: "Approfondisci il tema più grande", why: "È quello di cui si parla di più.", evidence: ["T1"] }],
+  }
+}
+
 function send(res: import("node:http").ServerResponse, status: number, body: unknown) {
   res.writeHead(status, { "content-type": "application/json" })
   res.end(JSON.stringify(body))
@@ -115,7 +147,15 @@ createServer((req, res) => {
       hypotheses.includes("FUORI_SCHEMA") ||
       (!question && !hypotheses && text.includes("TEMI_FUORI_SCHEMA"))
         ? "Ecco la risposta, senza JSON."
-        : JSON.stringify(question ? answerFor(text) : hypotheses ? verdictsFor(text) : themesFor(text))
+        : JSON.stringify(
+            question
+              ? answerFor(text)
+              : hypotheses
+                ? verdictsFor(text)
+                : text.includes("<report_data>")
+                  ? reportFor(text)
+                  : themesFor(text)
+          )
     const delay = question.includes("LENTA") ? 20_000 : 0
     setTimeout(() => {
       send(res, 200, {

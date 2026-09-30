@@ -470,6 +470,79 @@ export type Database = {
           },
         ]
       }
+      research_reports: {
+        Row: {
+          analysis_id: string
+          content: Json
+          cost_usd: number | null
+          created_at: string
+          duration_ms: number | null
+          feedback_count: number
+          id: string
+          input_tokens: number | null
+          locale: string
+          model: string
+          output_tokens: number | null
+          research_id: string
+          source_analysis_id: string
+          workspace_id: string
+        }
+        Insert: {
+          analysis_id: string
+          content: Json
+          cost_usd?: number | null
+          created_at?: string
+          duration_ms?: number | null
+          feedback_count: number
+          id?: string
+          input_tokens?: number | null
+          locale: string
+          model: string
+          output_tokens?: number | null
+          research_id: string
+          source_analysis_id: string
+          workspace_id: string
+        }
+        Update: {
+          analysis_id?: string
+          content?: Json
+          cost_usd?: number | null
+          created_at?: string
+          duration_ms?: number | null
+          feedback_count?: number
+          id?: string
+          input_tokens?: number | null
+          locale?: string
+          model?: string
+          output_tokens?: number | null
+          research_id?: string
+          source_analysis_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_reports_workspace_id_analysis_id_fkey"
+            columns: ["workspace_id", "analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analyses"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "research_reports_workspace_id_research_id_fkey"
+            columns: ["workspace_id", "research_id"]
+            isOneToOne: false
+            referencedRelation: "research"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "research_reports_workspace_id_source_analysis_id_fkey"
+            columns: ["workspace_id", "source_analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analyses"
+            referencedColumns: ["workspace_id", "id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           cancel_at: string | null
@@ -803,6 +876,17 @@ export type Database = {
         }
         Returns: Json
       }
+      finish_report: {
+        Args: {
+          analysis: string
+          content: Json
+          feedback_count: number
+          locale: string
+          run: Json
+          source: string
+        }
+        Returns: string
+      }
       finish_verdict: {
         Args: { analysis: string; run: Json; verdicts: Json }
         Returns: {
@@ -870,7 +954,7 @@ export type Database = {
       }
     }
     Enums: {
-      analysis_kind: "themes" | "verdict"
+      analysis_kind: "themes" | "verdict" | "report"
       analysis_status: "running" | "done" | "failed"
       hypothesis_verdict: "confirmed" | "refuted" | "to_review"
       member_role: "owner" | "member"
@@ -1012,7 +1096,7 @@ export const Constants = {
   },
   public: {
     Enums: {
-      analysis_kind: ["themes", "verdict"],
+      analysis_kind: ["themes", "verdict", "report"],
       analysis_status: ["running", "done", "failed"],
       hypothesis_verdict: ["confirmed", "refuted", "to_review"],
       member_role: ["owner", "member"],

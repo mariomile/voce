@@ -1,0 +1,95 @@
+{
+  "page": {
+    "title": "Report",
+    "noSynthesis": {
+      "title": "Il report parte dalla sintesi.",
+      "text": "Analizza i feedback nella Sintesi: temi, conteggi e verdetti diventano un memo da mandare al team o ai founder, con le citazioni verificate.",
+      "action": "Vai alla Sintesi"
+    },
+    "empty": {
+      "title": "Un memo per difendere la decisione.",
+      "text": "Voce scrive la risposta alla domanda, i temi che pesano con i loro numeri, il verdetto di ogni ipotesi, cosa i dati non dicono e le decisioni da discutere. I numeri li calcola Voce dai tuoi dati; le citazioni sono controllate parola per parola.",
+      "fromSynthesis": "Dalla sintesi del {date}: {count} feedback letti, {themes, plural, one {1 tema} other {# temi}}, {hypotheses, plural, =0 {nessuna ipotesi} one {1 ipotesi} other {# ipotesi}}."
+    },
+    "generate": "Genera il report",
+    "regenerate": "Rigenera",
+    "running": "Scrivo il report…",
+    "runningNote": "Ci vuole circa un minuto. Il report compare qui appena è pronto.",
+    "cost": "Userai 1 delle {limit} analisi di {month}.",
+    "generatedOn": "Report del {date}, dalla sintesi del {synthesis}.",
+    "copy": "Copia come testo",
+    "copied": "Copiato",
+    "copiedNote": "Report copiato: incollalo in un'email, in Slack o in un documento.",
+    "copyFailed": "Non riesco a copiare: seleziona il testo e copialo a mano.",
+    "print": "Stampa o salva PDF",
+    "done": "Report pronto.",
+    "stale": {
+      "title": "La Research è cambiata dopo questo report.",
+      "newFeedback": "{count, plural, one {1 feedback arrivato} other {# feedback arrivati}} dopo il report, non ancora nella sintesi.",
+      "newerSynthesis": "Una sintesi più recente, del {date}, non è ancora nel report.",
+      "analyzeFirst": "Analizzali prima nella Sintesi, poi rigenera il report."
+    },
+    "otherLanguage": "Questo report è in inglese. Rigeneralo per averlo in italiano.",
+    "failures": {
+      "failed": "Il report non è arrivato e non conta nel limite del mese. Riprova tra poco.",
+      "busy": "C'è già un'analisi in corso in questo workspace. Riprova quando è finita.",
+      "noSynthesis": "Questa Research non ha ancora una sintesi con temi: analizzala prima nella Sintesi.",
+      "notFound": "Non trovo questa Research. Forse è stata eliminata.",
+      "session": "La sessione è scaduta. Accedi di nuovo per generare il report.",
+      "sessionLink": "Accedi",
+      "network": "Non riesco a raggiungere Voce. Se il report era già partito, compare qui quando è pronto: ricarica la pagina tra un minuto."
+    },
+    "noThemes": {
+      "title": "La sintesi non ha temi da mettere nel report.",
+      "text": "I temi dell'ultima sintesi sono stati scartati o non hanno più feedback. Analizza di nuovo nella Sintesi, poi torna qui."
+    }
+  },
+  "document": {
+    "eyebrow": "Report di Voce, {date}",
+    "inShort": "In breve",
+    "findings": "Cosa abbiamo trovato",
+    "findingsLede": "I temi che pesano di più sulla domanda, con quanti feedback ne parlano sui {read} letti dalla sintesi.",
+    "feedbackLabel": "feedback",
+    "share": "{share}% dei letti",
+    "kind": {
+      "problem": "Problema",
+      "opportunity": "Opportunità",
+      "praise": "Apprezzamento"
+    },
+    "hypotheses": "Ipotesi e verdetti",
+    "hypothesesNone": "Nessuna ipotesi scritta per questa Research: il report descrive, non mette alla prova un'idea.",
+    "verdict": {
+      "confirmed": "Confermata",
+      "refuted": "Smentita",
+      "to_review": "Da rivedere",
+      "none": "Nessun verdetto"
+    },
+    "counts": "{supporting} a favore · {contradicting} contro · su {read} letti",
+    "noVerdict": "Nessun verdetto ancora: arriva con la prossima analisi.",
+    "inFavour": "A favore",
+    "against": "Contro",
+    "unknowns": "Cosa non sappiamo",
+    "limits": {
+      "scope": "Si basa sui {read} feedback letti dalla sintesi del {date}, da {channels, plural, one {1 canale} other {# canali}}, scritti dal {start} al {end}.",
+      "selfSelected": "Chi ha scritto ha scelto di farlo: non rappresenta per forza tutte le persone a cui pensa la domanda.",
+      "partial": "La sintesi ha letto i {read} feedback più recenti su {total}: i più vecchi non sono contati.",
+      "unthemed": "{count} feedback letti su {read} non stanno in nessuno dei temi.",
+      "newSince": "{count, plural, one {1 feedback arrivato} other {# feedback arrivati}} dopo la sintesi non {count, plural, one {è contato} other {sono contati}}.",
+      "simulated": "{count} feedback vengono dal canale {names}: sono dati di prova, non voci reali.",
+      "oneChannel": "Tutti i feedback vengono dal canale {name}: altri canali potrebbero dire altro.",
+      "channelSkew": "Il {share}% dei feedback viene dal canale {name}: altri canali potrebbero dire altro.",
+      "small": "Con {read} feedback i numeri indicano una direzione, non una misura.",
+      "shortWindow": "I feedback coprono solo {days} giorni.",
+      "noHypotheses": "Nessuna ipotesi scritta: il report descrive, non mette alla prova un'idea.",
+      "unsettled": "{count, plural, one {1 ipotesi è senza} other {# ipotesi sono senza}} un verdetto netto."
+    },
+    "decisions": "Cosa decidere adesso",
+    "decisionsNote": "Suggerimenti di Voce da discutere con il team: non sono conclusioni dei dati.",
+    "evidence": "Si basa su",
+    "evidenceTheme": "{title}: {count} feedback",
+    "evidenceHypothesis": "{text}: {verdict}",
+    "quoteSource": "{channel}, {date}",
+    "footer": "Generato da Voce il {date} dai {count} feedback letti dalla sintesi. I numeri li calcola Voce dai dati; le citazioni sono verificate parola per parola sui feedback.",
+    "markdownTitle": "Report: {question}"
+  }
+}

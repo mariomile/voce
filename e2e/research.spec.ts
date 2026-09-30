@@ -79,7 +79,7 @@ test("the app bar has Research and Piano, and Sintesi is current on the Research
 
   await page.goto(`/research/${user.researchId}`)
   const tabs = page.getByRole("navigation", { name: "Sezioni della Research" })
-  await expect(tabs.getByRole("link")).toHaveText(["Sintesi", "Chiedi", "Feedback", "Raccolta"])
+  await expect(tabs.getByRole("link")).toHaveText(["Sintesi", "Chiedi", "Report", "Feedback", "Raccolta"])
   await expect(tabs.getByRole("link", { name: "Sintesi" })).toHaveAttribute("aria-current", "page")
   await expect(tabs.getByRole("link", { name: "Raccolta" })).not.toHaveAttribute("aria-current", "page")
   await expect(bar.getByRole("link", { name: "Research" })).toHaveAttribute("aria-current", "page")
