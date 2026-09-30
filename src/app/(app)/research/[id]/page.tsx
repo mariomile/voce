@@ -1,3 +1,4 @@
+import { cn } from "cn"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { getLocale, getTranslations } from "next-intl/server"
@@ -5,13 +6,12 @@ import { AnalyzeButton } from "@/components/analyze-button"
 import { CollectionPaths } from "@/components/collection-paths"
 import { HypothesisList } from "@/components/hypothesis-list"
 import { LimitWarning } from "@/components/limit-warning"
-import { PageLede, PageMore } from "@/components/page"
+import { PageLede, PageMore, SectionHeading, StepNumber } from "@/components/page"
 import { Quote } from "@/components/quote"
 import { StatusMenu } from "@/components/status-menu"
 import { SynthesisOutcome } from "@/components/synthesis-outcome"
 import { ThemeRow } from "@/components/theme-row"
 import { buttonVariants } from "@/components/ui/button"
-import { Card, CardText, CardTitle } from "@/components/ui/card"
 import { ChipCount, chipVariants, FilterBar, FilterBarSep } from "@/components/ui/chip"
 import type { Locale } from "@/i18n/locale"
 import {
@@ -51,11 +51,27 @@ export default async function SynthesisPage({ params, searchParams }: PageProps<
   if (stats.feedbackCount === 0) {
     const [usage, origin] = await Promise.all([getUsage(research.workspaceId), getOrigin()])
     const full = usage.feedbackLimit !== null && usage.feedbackCount >= usage.feedbackLimit
+    // The loop in three numbered steps, in the order a PM follows: what they expect to find (optional),
+    // the ways to collect, then what the analysis will give.
+    const tEmpty = await getTranslations("themes.page.emptyNoFeedback")
     return (
       <>
         {full && <LimitWarning usage={usage} />}
+        <div className="mb-12">
+          <h2 className="mb-4 max-w-[24ch] font-serif text-5xl leading-snug font-normal tracking-snug">{tEmpty("heading")}</h2>
+          <p className="max-w-[58ch] text-lg leading-relaxed text-ink-muted">{tEmpty("lede")}</p>
+        </div>
+        <HypothesisList researchId={research.id} hypotheses={hypotheses} step={1} />
         <CollectionPaths research={research} origin={origin} />
-        <HypothesisList researchId={research.id} hypotheses={hypotheses} />
+        <section aria-labelledby="analyze-title">
+          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b-2 border-ink pb-4">
+            <SectionHeading id="analyze-title">
+              <StepNumber step={3} />
+              {tEmpty("analyzeTitle")}
+            </SectionHeading>
+          </div>
+          <p className="max-w-[64ch] py-5 text-base text-ink-muted">{tEmpty("analyzeText")}</p>
+        </section>
       </>
     )
   }
@@ -93,6 +109,21 @@ export default async function SynthesisPage({ params, searchParams }: PageProps<
     note: tSynthesis("analyze.cost.one", { limit: quota.limit, month: quota.month }),
     limitNote,
   }
+  const since = verdictOnly.feedbackSinceThemes
+  const invite = !analysis
+    ? {
+        title: t("page.emptyNoAnalysis.readyTitle"),
+        text: `${localeList(
+          dashboard.channels.map((c) => t("page.emptyNoAnalysis.channelLine", { count: c.count, name: c.name })),
+          locale
+        )}.`,
+      }
+    : since
+      ? {
+          title: tSynthesis("newSince.title", { count: since }),
+          text: tSynthesis("newSince.text", { date: formatDate(analysis.createdAt, locale) }),
+        }
+      : null
   const path = `/research/${research.id}`
   const visible = showAll ? dashboard.themes : dashboard.themes.slice(0, VISIBLE_THEMES)
   const hidden = dashboard.themes.slice(visible.length)
@@ -114,7 +145,21 @@ export default async function SynthesisPage({ params, searchParams }: PageProps<
   return (
     <SynthesisOutcome>
       {limitReached && <LimitWarning usage={usage} />}
-      <div className="mb-10 flex justify-end">
+      {/* The state of the analysis and its button, in one band: soft yellow when there is something to read
+          (the first analysis, or feedback arrived after the last one). The button keeps its place in the tree
+          in every state, so it keeps the focus when the analysis lands and the page refreshes. */}
+      <div
+        className={cn(
+          "mb-12 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-8",
+          invite ? "rounded-lg bg-highlight-soft p-6 sm:justify-between [&_p]:text-on-highlight" : "sm:justify-end"
+        )}
+      >
+        {invite && (
+          <div>
+            <div className="mb-1 text-xl leading-snug font-bold">{invite.title}</div>
+            <p className="text-base">{invite.text}</p>
+          </div>
+        )}
         <AnalyzeButton
           researchId={research.id}
           count={perimeter}
@@ -123,16 +168,21 @@ export default async function SynthesisPage({ params, searchParams }: PageProps<
           hypothesisCount={hypotheses.length}
           notes={notes}
           limitNote={limitNote}
+          upToDate={
+            analysis && verdictOnly.feedbackSinceThemes === 0
+              ? tSynthesis("analyze.upToDate", { date: formatDate(analysis.createdAt, locale) })
+              : undefined
+          }
         />
       </div>
       <HypothesisList researchId={research.id} hypotheses={hypotheses} verdictOnly={verdictOnly} />
       <section aria-labelledby="synthesis-title">
         <div className="mb-6">
-          <h2 id="synthesis-title" className="mb-2 text-4xl leading-tight font-bold tracking-tight">
+          <SectionHeading id="synthesis-title" className="mb-2">
             {analysis
               ? tSynthesis("themesTitle")
               : t("page.emptyNoAnalysis.title", { count: dashboard.feedbackCount })}
-          </h2>
+          </SectionHeading>
           <PageLede>
             {analysis
               ? tSynthesis.rich("lede", {
@@ -157,16 +207,6 @@ export default async function SynthesisPage({ params, searchParams }: PageProps<
 
         {!analysis && (
           <>
-            <Card variant="soft" className="mb-8">
-              <CardTitle>{t("page.emptyNoAnalysis.readyTitle")}</CardTitle>
-              <CardText>
-                {localeList(
-                  dashboard.channels.map((c) => t("page.emptyNoAnalysis.channelLine", { count: c.count, name: c.name })),
-                  locale
-                )}
-                .
-              </CardText>
-            </Card>
             <div className="grid grid-cols-1 gap-x-12 sm:grid-cols-2">
               {dashboard.recentFeedback.map((f) => (
                 <Quote
@@ -200,7 +240,7 @@ export default async function SynthesisPage({ params, searchParams }: PageProps<
             </FilterBar>
 
             {visible.map((theme, i) => (
-              <ThemeRow key={theme.id} theme={theme} compact={i >= FULL_THEMES} />
+              <ThemeRow key={theme.id} theme={theme} compact={i >= FULL_THEMES} trendNote={i === 0} />
             ))}
 
             {dashboard.themes.length === 0 && (

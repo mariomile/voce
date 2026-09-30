@@ -27,5 +27,5 @@ export function Trend({ weeks, compact = false }: { weeks: number[]; compact?: b
 
 export function TrendNote() {
   const t = useTranslations("themes.trend")
-  return <p className="mt-2 text-xs leading-normal text-ink-subtle">{t("note")}</p>
+  return <p className="mt-2 text-xs leading-normal text-ink-muted">{t("note")}</p>
 }

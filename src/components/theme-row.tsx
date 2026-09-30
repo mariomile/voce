@@ -12,7 +12,16 @@ import { formatDate } from "@/lib/format"
 // Kit: .theme, three columns (number and trend, content, controls).
 // Compact from the fourth theme on: no summary, one quote. Under the number, how the theme moved since
 // the previous analysis of the Research: "+{k} dal {data}" or "Nuovo".
-export function ThemeRow({ theme, compact = false }: { theme: ThemeSummary; compact?: boolean }) {
+// trendNote: the caption of the trend, once per list (on the first row), not on every theme.
+export function ThemeRow({
+  theme,
+  compact = false,
+  trendNote = false,
+}: {
+  theme: ThemeSummary
+  compact?: boolean
+  trendNote?: boolean
+}) {
   const t = useTranslations("themes")
   const tCommon = useTranslations("common")
   const tChanges = useTranslations("research.synthesis.changes")
@@ -26,25 +35,28 @@ export function ThemeRow({ theme, compact = false }: { theme: ThemeSummary; comp
         compact ? "py-6" : "py-8"
       )}
     >
-      <div>
-        <Stat value={theme.feedbackCount} label={compact ? undefined : t("row.feedbackLabel")} compact={compact} />
-        {theme.change?.kind === "more" && (
-          <div className="mt-1 text-sm text-ink-muted tabular-nums">
-            {tChanges("themeDelta", { count: theme.change.count, date: formatDate(theme.change.since, locale) })}
-          </div>
-        )}
-        {theme.change?.kind === "new" && (
-          <Badge className="mt-2">
-            {tChanges("newTheme")}
-          </Badge>
-        )}
-        <Trend weeks={theme.trend} compact={compact} />
-        {!compact && <TrendNote />}
+      {/* On a phone the number and its trend share one line, so the title stays near the top. */}
+      <div className="grid grid-cols-[auto_1fr] items-end gap-x-6 sm:block">
+        <div>
+          <Stat value={theme.feedbackCount} label={compact ? undefined : t("row.feedbackLabel")} compact={compact} />
+          {theme.change?.kind === "more" && (
+            <div className="mt-1 text-sm text-ink-muted tabular-nums">
+              {tChanges("themeDelta", { count: theme.change.count, date: formatDate(theme.change.since, locale) })}
+            </div>
+          )}
+          {theme.change?.kind === "new" && <Badge className="mt-2">{tChanges("newTheme")}</Badge>}
+        </div>
+        <div className="max-w-[240px] sm:max-w-none">
+          <Trend weeks={theme.trend} compact={compact} />
+          {!compact && trendNote && <TrendNote />}
+        </div>
       </div>
       <div>
         <div className="flex items-baseline gap-4">
           <Badge variant={theme.kind}>{tCommon(`kind.${theme.kind}`)}</Badge>
-          <span className="text-sm text-ink-muted">{tCommon(`sentiment.${theme.sentiment}`)}</span>
+          {!SAME_TONE[theme.kind].includes(theme.sentiment) && (
+            <span className="text-sm text-ink-muted">{tCommon(`sentiment.${theme.sentiment}`)}</span>
+          )}
         </div>
         <h3
           className={cn(
@@ -81,6 +93,13 @@ export function ThemeRow({ theme, compact = false }: { theme: ThemeSummary; comp
       <ThemeControls themeId={theme.id} priority={theme.priority} status={theme.status} />
     </article>
   )
+}
+
+// The tone says something only when it is not the one the kind already implies.
+export const SAME_TONE: Record<ThemeSummary["kind"], ThemeSummary["sentiment"][]> = {
+  problem: ["negative"],
+  praise: ["positive"],
+  opportunity: [],
 }
 
 export function Stat({

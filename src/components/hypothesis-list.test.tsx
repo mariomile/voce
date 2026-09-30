@@ -87,9 +87,32 @@ describe("HypothesisList", () => {
   })
 
   it("the verdict word comes from research.verdict, not from the model, with a decorative sign", () => {
-    expect(render([withVerdict({})])).toMatch(/<span aria-hidden="true">✓<\/span> ?Confermata/)
-    expect(render([withVerdict({ verdict: "refuted" })])).toMatch(/<span aria-hidden="true">✕<\/span> ?Smentita/)
-    expect(render([withVerdict({ verdict: "to_review" })])).toMatch(/<span aria-hidden="true">\?<\/span> ?Da rivedere/)
+    const sign = (icon: string, word: string) =>
+      new RegExp(`<span aria-hidden="true"[^>]*><svg[^>]*lucide-${icon}[\\s\\S]*?</span>[\\s\\S]*?<p[^>]*>${word}</p>`)
+    expect(render([withVerdict({})])).toMatch(sign("check", "Confermata"))
+    expect(render([withVerdict({ verdict: "refuted" })])).toMatch(sign("x", "Smentita"))
+    expect(render([withVerdict({ verdict: "to_review" })])).toMatch(sign("circle-question-mark", "Da rivedere"))
+  })
+
+  it("sums up the verdicts next to the title, with the words of the list of Research", () => {
+    const html = render([withVerdict({}), { ...hypothesis(2), verdict: { ...confirmed, verdict: "refuted" } }, hypothesis(3)])
+    expect(html).toContain("3 ipotesi: 1 confermata, 1 smentita")
+    expect(render([hypothesis(1)])).not.toContain("1 ipotesi:")
+  })
+
+  it("shows the first quote for and against, the others behind a button that says how many", () => {
+    const html = render([withVerdict({})])
+    expect(html).toMatch(/<button[^>]*aria-expanded="false"[^>]*>Mostra altre 3 citazioni<\/button>/)
+    // The others are on the page, hidden until asked.
+    expect(html.match(/<div id="[^"]*-more-quotes[^"]*" hidden="">/g)).toHaveLength(2)
+    expect(render([withVerdict({ quotesFor: [quote(1), quote(2)], quotesAgainst: [] })])).toContain(">Mostra un&#x27;altra citazione<")
+    expect(render([withVerdict({ quotesFor: [quote(1)], quotesAgainst: [quote(4)] })])).not.toContain("Mostra")
+  })
+
+  it("step: the number of the section in a Research without feedback, and facoltative while empty", () => {
+    const html = renderToStaticMarkup(<HypothesisList researchId={RESEARCH} hypotheses={[]} step={1} />)
+    expect(html).toMatch(/<h2[^>]*><span aria-hidden="true"[^>]*>1<\/span>Ipotesi<\/h2>/)
+    expect(html).toContain(">facoltative<")
   })
 
   it("shows the word, counts from verdict_feedback and the read count, the reasoning, up to 3 for and 2 against with channel and date and no customer name", () => {

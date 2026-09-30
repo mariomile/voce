@@ -116,12 +116,17 @@
       "themesFailedFirst": "The themes didn't come through and don't count toward this month's limit. The hypothesis verdict is ready below.",
       "verdictFailed": "The verdict didn't come through and doesn't count toward this month's limit: the hypotheses still show the previous verdict. Try again with “Verdict only”.",
       "verdictFailedNextAnalysis": "The verdict didn't come through and doesn't count toward this month's limit: the hypotheses still show the previous verdict. It comes with the next analysis.",
-      "themesOnlyNote": "You have 1 analysis left for {month}: enough for the themes, not for the verdict, which uses another one. The hypothesis verdict is available again on {nextMonth} 1, or right away with Pro."
+      "themesOnlyNote": "You have 1 analysis left for {month}: enough for the themes, not for the verdict, which uses another one. The hypothesis verdict is available again on {nextMonth} 1, or right away with Pro.",
+      "upToDate": "No new feedback after the analysis of {date}."
     },
     "changes": {
       "line": "Since the analysis of {date}: {feedback, plural, one {1 more feedback} other {# more feedback}}, {themes, plural, one {1 new theme} other {# new themes}}.",
       "themeDelta": "+{count} since {date}",
       "newTheme": "New"
+    },
+    "newSince": {
+      "title": "{count, plural, one {1 new feedback to analyze} other {# new feedback to analyze}}",
+      "text": "Arrived after the analysis of {date}: the themes and verdicts below don't count them yet."
     }
   },
   "hypotheses": {
@@ -160,7 +165,8 @@
     "verdictOnly": {
       "label": "Verdict only for {count, plural, one {1 hypothesis} other {# hypotheses}}",
       "running": "Verdict running…"
-    }
+    },
+    "optional": "optional"
   },
   "verdict": {
     "confirmed": "Confirmed",
@@ -172,7 +178,9 @@
     "noEvidence": "None of the {read} feedback read mentions it.",
     "writtenAfter": "Written on {date}. Of the {read} feedback read, {count, plural, one {1 arrived after} other {# arrived after}}.",
     "writtenBefore": "Written on {date}. All {read} feedback read had already arrived when you wrote it: the verdict rereads them, it doesn't test it against new feedback.",
-    "arrivedAfterVerdict": "{count, plural, one {1 feedback has arrived} other {# feedback have arrived}} since this verdict."
+    "arrivedAfterVerdict": "{count, plural, one {1 feedback has arrived} other {# feedback have arrived}} since this verdict.",
+    "moreQuotes": "Show {count, plural, one {one more quote} other {# more quotes}}",
+    "fewerQuotes": "Show fewer quotes"
   },
   "delete": {
     "open": "Delete the Research",

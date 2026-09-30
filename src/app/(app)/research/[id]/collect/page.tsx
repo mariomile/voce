@@ -70,6 +70,7 @@ export default async function CollectPage({ params }: PageProps<"/research/[id]/
             <CardMeta>
               <Link href={formPath} className="hover:underline">
                 {new URL(origin).host}
+                <wbr />
                 {formPath}
               </Link>
             </CardMeta>
@@ -83,7 +84,7 @@ export default async function CollectPage({ params }: PageProps<"/research/[id]/
               </Link>
             </CardActions>
           </CardBody>
-          <QrCode url={`${origin}${formPath}`} />
+          <QrCode url={`${origin}${formPath}`} className="justify-self-start" />
         </Card>
         <FormLinkControls researchId={research.id} enabled={research.formEnabled} />
         {/* Same default as get_public_form in the database. */}

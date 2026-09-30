@@ -36,6 +36,18 @@ describe("ThemeRow", () => {
     expect(same).not.toContain("+")
   })
 
+  it("shows the tone only when the kind does not already say it", () => {
+    expect(renderToStaticMarkup(<ThemeRow theme={theme} />)).not.toContain("Tono negativo")
+    expect(renderToStaticMarkup(<ThemeRow theme={{ ...theme, sentiment: "mixed" }} />)).toContain("Tono misto")
+    expect(renderToStaticMarkup(<ThemeRow theme={{ ...theme, kind: "praise", sentiment: "positive" }} />)).not.toContain("Tono positivo")
+    expect(renderToStaticMarkup(<ThemeRow theme={{ ...theme, kind: "opportunity", sentiment: "positive" }} />)).toContain("Tono positivo")
+  })
+
+  it("the caption of the trend only where asked: once per list", () => {
+    expect(renderToStaticMarkup(<ThemeRow theme={theme} />)).not.toContain("Ultime 13 settimane")
+    expect(renderToStaticMarkup(<ThemeRow theme={theme} trendNote />)).toContain("Ultime 13 settimane")
+  })
+
   it("links to the theme inside its Research, with the title as h3", () => {
     const html = renderToStaticMarkup(<ThemeRow theme={theme} />)
     expect(html).toMatch(
