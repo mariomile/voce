@@ -1,6 +1,6 @@
 # Analytics
 
-Voce manda a PostHog solo gli eventi che servono a misurare l'attivazione del brief: la quota di nuovi workspace che eseguono la prima analisi AI entro 24 ore dalla registrazione, e il passaggio a Pro. In più un evento ripetibile, `question_answered`, per misurare se i PM tornano a fare domande ai feedback (iniziativa "Chiedi ai tuoi feedback"), e i due eventi della Research (iniziativa "Research"): `first_research_collected`, quando una Research arriva a 5 feedback, e `research_synthesized`, a ogni sintesi.
+Voce manda a PostHog solo gli eventi che servono a misurare l'attivazione del brief: la quota di nuovi workspace che eseguono la prima analisi AI entro 24 ore dalla registrazione, e il passaggio a Pro. In più un evento ripetibile, `question_answered`, per misurare se i PM tornano a fare domande ai feedback (iniziativa "Chiedi ai tuoi feedback"), e i due eventi della Research (iniziativa "Research"): `first_research_collected`, quando una Research arriva a 5 feedback, e `research_synthesized`, a ogni sintesi. Infine `report_generated`, a ogni report di una Research salvato.
 
 ## Come funziona
 
@@ -22,11 +22,14 @@ Voce manda a PostHog solo gli eventi che servono a misurare l'attivazione del br
 | `upgraded_to_pro` | La prima volta che il webhook Stripe porta il workspace su Pro | nessuna |
 | `first_research_collected` | Il feedback che porta una Research del workspace ad almeno 5 feedback, dal modulo pubblico, dalle note di intervista o dal CSV: una volta per workspace. Il sesto feedback e il quinto di un'altra Research non la mandano. I workspace che avevano già 5 feedback prima della migrazione della Research la hanno già in `analytics_milestones` e non la mandano | nessuna |
 | `research_synthesized` | A ogni sintesi di una Research (il clic su "Analizza", "Solo il verdetto", "Analizza le risposte" della sala) con almeno una parte `done`, temi o verdetto. Non parte se falliscono entrambe, né per le sintesi rifiutate (occupato, quota finita, senza feedback, senza sessione) | `feedback_count`: feedback mandati al modello; `citation_count`: citazioni verificate salvate dal database in quella sintesi (temi e verdetto); `hypothesis_count`: ipotesi che hanno ricevuto un verdetto in quella sintesi, 0 per i soli temi, per la sala e con una sola analisi rimasta |
+| `report_generated` | A ogni report di una Research ("Genera il report" o "Rigenera") salvato dal database, dopo il ricontrollo delle citazioni. Non parte per i report falliti, né per quelli rifiutati (senza sintesi, occupato, quota finita, senza sessione) | `feedback_count`: feedback letti dalla sintesi da cui viene il report; `theme_count`: temi mandati al modello; `hypothesis_count`: ipotesi della Research |
 | `question_answered` | A ogni domanda a Chiedi chiusa con una risposta (`answered`) o senza prove (`no_evidence`), dopo che il database ha ricontrollato le citazioni. Non parte per le domande fallite, rifiutate per quota, occupato, non valide, senza sessione o senza feedback | `citation_count`: citazioni verificate mostrate, da 0 a 5; `outcome`: `answered` o `no_evidence` |
 
 Il momento dell'evento è quello in cui l'azione avviene sul server (`timestamp`).
 
 **`question_answered` è ripetibile e non passa da `analytics_milestones`:** parte a ogni risposta, con `trackEvent` in `src/lib/analytics.ts`, che manda la stessa richiesta dei milestone (stesso URL, stessa identità, dopo la risposta, niente senza chiave) senza registrare nulla. Le domande fallite non mandano eventi: si contano in `question_runs`.
+
+**Anche `report_generated` è ripetibile e non passa da `analytics_milestones`:** parte con `trackEvent` alla fine di `generateReport`. Nessun testo del report, della domanda, dei temi o delle citazioni: solo i tre conteggi.
 
 **Anche `research_synthesized` è ripetibile e non passa da `analytics_milestones`:** parte con `trackEvent` alla fine di `synthesize`. `first_research_collected` invece è un evento di attivazione: il vincolo della tabella accetta cinque eventi, i quattro di prima e `first_research_collected`. Il controllo "almeno 5 feedback nella Research" si fa solo con la chiave, dentro la funzione che `trackMilestone` esegue dopo la risposta.
 

@@ -6,7 +6,9 @@ import { z } from "zod";
 
 import type { Tables } from "./database.types";
 import { ANALYSIS_MAX_FEEDBACK, selectFeedback } from "./analysis";
-import { monthOf } from "./format";
+import { isoDateOf, monthOf } from "./format";
+import type { ReportContent, ReportSource } from "./report";
+import { DEFAULT_LOCALE, isLocale, type Locale } from "@/i18n/locale";
 import { FORM_SLUG_PATTERN, PLAN_LIMITS } from "./plans";
 import { formState, PUBLIC_FORM_CHANNEL, type RoomStatus } from "./room";
 import { questionUsage } from "./supabase/admin";
@@ -640,6 +642,202 @@ export async function getTheme(research: Pick<Research, "id" | "workspaceId">, t
     quotes,
     analysis,
     feedback,
+  };
+}
+
+// What the report of a Research is built from, read under the session: its last done themes analysis, the themes of
+// it that are not discarded and still have feedback (biggest first) with their verified quotes, the hypotheses
+// with their verdicts, the numbers of the Research, and the sample of quoted feedback with the themes and
+// hypotheses each belongs to. Null without a done themes analysis.
+export async function getReportSource(research: Pick<Research, "id" | "workspaceId" | "question">): Promise<ReportSource | null> {
+  const supabase = await createClient();
+  const synthesis = unwrap(
+    await supabase
+      .from("analyses")
+      .select("id, created_at, feedback_count")
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id)
+      .eq("kind", "themes")
+      .eq("status", "done")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+  );
+  if (!synthesis) return null;
+  const [themeRows, stats, channels, hypotheses, arrivedAfter] = await Promise.all([
+    supabase
+      .from("themes")
+      .select("id, title, kind, summary")
+      .eq("workspace_id", research.workspaceId)
+      .eq("analysis_id", synthesis.id)
+      .neq("status", "discarded"),
+    getResearchStats(research),
+    channelCounts(research.workspaceId, research.id),
+    listHypotheses(research),
+    countFeedbackAfter(research, synthesis.created_at),
+  ]);
+  const themeIds = unwrap(themeRows).map((t) => t.id);
+  const [themeStats, themeQuotes, links] = await Promise.all([
+    supabase.from("theme_stats").select("theme_id, feedback_count").eq("workspace_id", research.workspaceId).in("theme_id", themeIds),
+    supabase
+      .from("theme_feedback")
+      .select(`theme_id, highlight, feedback (${FEEDBACK_COLUMNS})`)
+      .eq("workspace_id", research.workspaceId)
+      .in("theme_id", themeIds)
+      .not("quote_rank", "is", null)
+      .order("quote_rank"),
+    themeLinks(research.workspaceId, themeIds),
+  ]);
+  const countOf = (id: string) => unwrap(themeStats).find((s) => s.theme_id === id)?.feedback_count ?? 0;
+  const quoteRows = unwrap(themeQuotes).map((q) => ({ ...q, feedback: toFeedback(q.feedback) }));
+  const themes = unwrap(themeRows)
+    .filter((t) => countOf(t.id) > 0)
+    .sort((a, b) => countOf(b.id) - countOf(a.id))
+    .map((t) => ({
+      id: t.id,
+      title: t.title,
+      kind: t.kind,
+      summary: t.summary,
+      count: countOf(t.id),
+      quotes: quoteRows.filter((q) => q.theme_id === t.id).map((q) => ({ feedbackId: q.feedback.id, highlight: q.highlight! })),
+    }));
+  const shown = new Set(themes.map((t) => t.id));
+
+  // The quoted feedback, the themes' first, then the verdicts', each once.
+  const sampled = new Map<string, Feedback>();
+  for (const theme of themes)
+    for (const q of quoteRows.filter((q) => q.theme_id === theme.id)) sampled.set(q.feedback.id, q.feedback);
+  for (const h of hypotheses)
+    for (const q of [...(h.verdict?.quotesFor ?? []), ...(h.verdict?.quotesAgainst ?? [])])
+      if (!sampled.has(q.feedbackId))
+        sampled.set(q.feedbackId, { id: q.feedbackId, workspaceId: research.workspaceId, text: q.text, channel: q.channel, customer: null, email: null, receivedAt: q.receivedAt });
+  const stances = unwrap(
+    await supabase
+      .from("verdict_feedback")
+      .select("hypothesis_id, feedback_id, stance")
+      .eq("workspace_id", research.workspaceId)
+      .in("feedback_id", [...sampled.keys()])
+  );
+  const hypothesisIds = new Set(hypotheses.map((h) => h.id));
+
+  return {
+    question: research.question,
+    synthesis: { analysisId: synthesis.id, createdAt: synthesis.created_at, feedbackRead: synthesis.feedback_count },
+    feedbackTotal: stats.feedbackCount,
+    arrivedAfter,
+    channels,
+    firstReceivedAt: stats.firstReceivedAt ?? isoDateOf(new Date(synthesis.created_at)),
+    lastReceivedAt: stats.lastReceivedAt ?? isoDateOf(new Date(synthesis.created_at)),
+    themedCount: new Set(links.filter((l) => shown.has(l.theme_id)).map((l) => l.feedback_id)).size,
+    themes,
+    hypotheses: hypotheses.map((h) => ({
+      id: h.id,
+      text: h.text,
+      verdict: h.verdict && {
+        value: h.verdict.verdict,
+        reasoning: h.verdict.reasoning,
+        supporting: h.verdict.supporting,
+        contradicting: h.verdict.contradicting,
+        feedbackRead: h.verdict.feedbackRead,
+      },
+      quotes: [
+        ...(h.verdict?.quotesFor.slice(0, 1).map((q) => ({ feedbackId: q.feedbackId, highlight: q.highlight!, stance: "for" as const })) ?? []),
+        ...(h.verdict?.quotesAgainst.slice(0, 1).map((q) => ({ feedbackId: q.feedbackId, highlight: q.highlight!, stance: "against" as const })) ?? []),
+      ],
+    })),
+    sample: [...sampled.values()].map((f) => ({
+      feedbackId: f.id,
+      text: f.text,
+      channel: f.channel,
+      receivedAt: f.receivedAt,
+      themeIds: links.filter((l) => l.feedback_id === f.id && shown.has(l.theme_id)).map((l) => l.theme_id),
+      hypotheses: stances
+        .filter((s) => s.feedback_id === f.id && hypothesisIds.has(s.hypothesis_id))
+        .map((s) => ({ id: s.hypothesis_id, stance: s.stance })),
+    })),
+  };
+}
+
+// Every link between these themes and their feedback, a page at a time: the API returns at most 1,000 rows,
+// and 500 feedback in up to 3 themes each can make 1,500.
+async function themeLinks(workspaceId: string, themeIds: string[]) {
+  const supabase = await createClient();
+  const page = 1000;
+  const links: { theme_id: string; feedback_id: string }[] = [];
+  for (let from = 0; ; from += page) {
+    const rows = unwrap(
+      await supabase
+        .from("theme_feedback")
+        .select("theme_id, feedback_id")
+        .eq("workspace_id", workspaceId)
+        .in("theme_id", themeIds)
+        .order("theme_id")
+        .order("feedback_id")
+        .range(from, from + page - 1)
+    );
+    links.push(...rows);
+    if (rows.length < page) return links;
+  }
+}
+
+// The latest report of a Research, or null. newFeedback: feedback that entered Voce after it; newerSynthesisAt:
+// when a themes or verdict analysis done after it started. feedback: the quoted feedback that still exist, by id,
+// read under the session: a feedback deleted after the report leaves it.
+export type LatestReport = {
+  id: string;
+  createdAt: string;
+  locale: Locale;
+  feedbackCount: number;
+  content: ReportContent;
+  newFeedback: number;
+  newerSynthesisAt: string | null;
+  feedback: Record<string, { text: string; channel: string; receivedAt: string }>;
+};
+
+export async function getLatestReport(research: Pick<Research, "id" | "workspaceId">): Promise<LatestReport | null> {
+  const supabase = await createClient();
+  const row = unwrap(
+    await supabase
+      .from("research_reports")
+      .select("id, created_at, locale, feedback_count, content")
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+  );
+  if (!row) return null;
+  const content = row.content as unknown as ReportContent;
+  const quoted = [
+    ...content.findings.flatMap((f) => f.quotes.map((q) => q.feedbackId)),
+    ...content.hypotheses.flatMap((h) => h.quotes.map((q) => q.feedbackId)),
+  ];
+  const [newFeedback, newer, feedback] = await Promise.all([
+    countFeedbackAfter(research, row.created_at),
+    supabase
+      .from("analyses")
+      .select("created_at")
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id)
+      .in("kind", ["themes", "verdict"])
+      .eq("status", "done")
+      .gt("created_at", row.created_at)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase.from("feedback").select("id, text, channel, received_at").eq("workspace_id", research.workspaceId).in("id", [...new Set(quoted)]),
+  ]);
+  return {
+    id: row.id,
+    createdAt: row.created_at,
+    locale: isLocale(row.locale) ? row.locale : DEFAULT_LOCALE,
+    feedbackCount: row.feedback_count,
+    content,
+    newFeedback,
+    newerSynthesisAt: unwrap(newer)?.created_at ?? null,
+    feedback: Object.fromEntries(
+      unwrap(feedback).map((f) => [f.id, { text: f.text, channel: f.channel, receivedAt: f.received_at }])
+    ),
   };
 }
 

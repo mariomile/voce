@@ -122,6 +122,23 @@ describe("trackEvent", () => {
     })
   })
 
+  it("RepeatedEvent carries report_generated with three counts and no text", async () => {
+    expectTypeOf<Extract<RepeatedEvent, { event: "report_generated" }>["properties"]>().toEqualTypeOf<{
+      feedback_count: number
+      theme_count: number
+      hypothesis_count: number
+    }>()
+    trackEvent(user.workspaceId, {
+      event: "report_generated",
+      properties: { feedback_count: 200, theme_count: 8, hypothesis_count: 3 },
+    })
+    await settle()
+    expect(sent()[0]).toMatchObject({
+      event: "report_generated",
+      properties: { feedback_count: 200, theme_count: 8, hypothesis_count: 3, $process_person_profile: false, $geoip_disable: true },
+    })
+  })
+
   it("sends question_answered with only citation_count and outcome", async () => {
     trackEvent(user.workspaceId, { event: "question_answered", properties: { citation_count: 3, outcome: "answered" } })
     await settle()
