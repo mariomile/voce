@@ -44,7 +44,8 @@ export function DeleteFeedbackButton({ feedbackId }: { feedbackId: string }) {
   return (
     <div ref={root} data-delete-feedback className="contents">
       {!confirming ? (
-        <Button ref={open} variant="text" className="text-sm" onClick={() => toggle(true)}>
+        // At the table's right edge: the touch area stops there, or the table would scroll sideways by 8 px.
+        <Button ref={open} variant="text" className="text-sm pointer-coarse:after:right-0" onClick={() => toggle(true)}>
           {t("button")}
         </Button>
       ) : (
@@ -59,7 +60,7 @@ export function DeleteFeedbackButton({ feedbackId }: { feedbackId: string }) {
             <Button ref={cancel} variant="text" className="text-sm" onClick={() => toggle(false)} disabled={pending}>
               {t("cancel")}
             </Button>
-            <Button variant="text" className="text-sm text-problem" onClick={remove} disabled={pending}>
+            <Button variant="text" className="text-sm text-problem pointer-coarse:after:right-0" onClick={remove} disabled={pending}>
               {pending ? t("pending") : t("confirm")}
             </Button>
           </div>

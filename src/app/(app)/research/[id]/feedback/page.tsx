@@ -87,7 +87,7 @@ export default async function FeedbackPage({ params, searchParams }: PageProps<"
             <TableBody>
               {feedback.map((f) => (
                 <TableRow key={f.id}>
-                  <TableCell className="max-w-[64ch]">
+                  <TableCell className="max-w-[64ch] wrap-anywhere">
                     <span className="whitespace-pre-line">{f.text}</span>
                     {/* On a phone the side columns would squeeze the text: they become one line under it. */}
                     <span className="mt-1 block text-sm text-ink-muted sm:hidden">

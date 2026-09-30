@@ -85,3 +85,14 @@ test("on a phone the text actions take a tap 10 px above or below their text", a
     expect(hits, await action.textContent() ?? "").toEqual([true, true])
   }
 })
+
+// A feedback with a long unbroken string (a pasted link) and the Elimina at the table's edge: on a phone the
+// feedback table does not scroll sideways.
+test("on a phone the feedback table does not scroll sideways", async ({ page }) => {
+  const user = await signedInUser(page, "phone-table")
+  await insertFeedback(user, [`Il link esempio.it/?id=${"FATTURA".repeat(20)} non si apre.`])
+  await page.goto(`/research/${user.researchId}/feedback`)
+  const table = page.locator('[data-slot="table-container"]')
+  await expect(table.getByRole("button", { name: "Elimina" })).toBeVisible()
+  expect(await table.evaluate((el) => el.scrollWidth - el.clientWidth)).toBe(0)
+})
