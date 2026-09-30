@@ -122,7 +122,7 @@ Ogni componente è in `design/kit.css` e in `design/kit.html` con tutti i suoi s
 `.field` contiene `.field-label` (con `.field-optional` se facoltativo), il campo, poi `.field-hint`, `.field-count` o `.field-error`.
 
 - `.input` e `.textarea` (fondo velo) nell'app.
-- `.input-line` e `.textarea-line` (a riga, textarea in serif) solo nel modulo pubblico, dove si scrive come su un foglio.
+- `.input-line` e `.textarea-line` (a riga, textarea in serif) solo nel modulo pubblico, dove si scrive come su un foglio. Riga di 2 px: col focus diventa inchiostro, ed è l'unico segno del focus (niente anello, che sopra la riga fa una doppia linea). Segnaposto in `--color-ink-muted`, in corsivo nella textarea: in `ink-subtle` (3,0:1) su un telefono non si legge.
 - `.textarea-ask` per la domanda di Chiedi: fondo carta, bordo interno di 1,5 px in `--color-ink-muted`, testo sans 20, `rows="2"`, niente ridimensionamento. Il velo su carta (1,11:1) da un proiettore non si vede; il bordo `ink-muted` regge 5,9:1, sopra i 3:1 dei confini di un controllo.
 - Errore: `aria-invalid="true"` sul campo, `.field-error` sotto, collegato con `aria-describedby`. Il messaggio dice come rimediare.
 - `.field-quiet` rende l'etichetta leggera: quando il valore conta più del nome (priorità e stato di un tema).
@@ -192,6 +192,10 @@ Composti dai componenti sopra, servono alle schermate della B.
 - **Modulo pubblico**: `.form-page`; `.form-ask` con `.form-brand` (`.avatar` con l'iniziale del workspace), `.form-ask-title` e `.form-ask-text` su `.surface-highlight`; `.form-body` con i campi a riga e il pulsante in fondo; `.form-foot`. `.form-message` per inviato e non disponibile, `.form-message-title.is-long` quando il messaggio è lungo.
   - La domanda (`.form-ask-title`) la sceglie il PM, con default "Cosa vuoi dire al team di …?". Va a capo su qualsiasi lunghezza; mentre si scrive, `.form-ask.is-compact` la riduce e nasconde il sottotitolo.
   - La domanda è testo scritto dal PM e mostrato a sconosciuti: sempre come testo, mai come HTML. Massimo 140 caratteri.
+  - Si apre da telefono, dal QR code: con la tastiera aperta resta visibile circa 400 px di pagina, e "Invia" deve starci. Ordine: il campo del feedback (4 righe, cresce col testo fino a 192 px poi scorre dentro), subito sotto "Invia", poi l'email chiusa dietro "Vuoi essere ricontattato? Lascia la tua email" (quasi nessuno la lascia), in fondo la nota. Il contatore compare solo oltre l'80% del limite.
+  - Tastiera: nel feedback iniziale maiuscola, niente correttore rosso (con la tastiera in inglese sottolineerebbe ogni parola italiana), Invio va a capo e non invia. Nell'email tastiera email, niente maiuscole né correzioni, tasto "Invia" che manda il modulo.
+  - Se la rete cade durante l'invio, il messaggio sta sopra "Invia" e il testo resta nel campo.
+  - Pagina a tutto schermo (`viewport-fit=cover`) con i padding `env(safe-area-inset-*)`, `theme-color` giallo, niente zoom al doppio tocco né lampo grigio al tocco.
 - **Landing**: l'unica superficie che esce dal sistema sobrio, perché si guarda da un proiettore e da un telefono e deve arrivare in pochi secondi. Stessi colori e stessi font, a scala da manifesto; le regole stanno in `src/app/landing.css` (classi `l-*`) e non entrano nell'app.
   - Il primo schermo è tutto giallo: il titolo in Hanken 900 fino a 200 px, la frase chiave in una fascia inchiostro con testo giallo (l'evidenziatore rovesciato). Un solo pulsante grande.
   - Il numero guida, alla lettera: "58" alto un terzo dello schermo, a cavallo tra il giallo e il bianco.

@@ -11,7 +11,8 @@ const textareaVariants = cva("w-full border-0 placeholder:text-ink-subtle", {
       default:
         "resize-y rounded-sm bg-veil px-3 py-2 text-lg leading-normal aria-invalid:shadow-[inset_0_0_0_1.5px_var(--color-problem)]",
       ask: "resize-none rounded-sm bg-paper px-4 py-3 text-2xl leading-normal shadow-[inset_0_0_0_1.5px_var(--color-ink-muted)] aria-invalid:shadow-[inset_0_0_0_1.5px_var(--color-problem)]",
-      line: "resize-none rounded-none border-b-[1.5px] border-line bg-transparent px-0 py-2 font-serif text-2xl leading-relaxed placeholder:italic focus:border-ink aria-invalid:border-problem",
+      // The focus is the line turning ink, not the global ring: ring and line together read as a double border.
+      line: "resize-none rounded-none border-b-2 border-line bg-transparent px-0 py-2 font-serif text-2xl leading-relaxed placeholder:text-ink-muted placeholder:italic focus:border-ink focus-visible:outline-hidden aria-invalid:border-problem",
     },
   },
   defaultVariants: { variant: "default" },
