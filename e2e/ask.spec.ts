@@ -41,6 +41,7 @@ test("ask a question from the keyboard and read the answer", async ({ page }) =>
   await expect(answer).toBeVisible()
   await expect(answer.getByText("feedback ne parla", { exact: true })).toBeVisible()
   await expect(answer.getByText("1", { exact: true })).toBeVisible()
+  await expect(answer.getByText("100% dei 1 letti", { exact: true })).toBeVisible()
   await expect(answer.locator("blockquote")).toHaveCount(1)
   await expect(answer.locator("blockquote mark")).toHaveText(feedback)
   await expect(answer.locator("blockquote cite")).toContainText("Supporto")

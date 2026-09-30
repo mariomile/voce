@@ -9,6 +9,14 @@ export type AskAnswered = Omit<Extract<AskResult, { outcome: "answered" }>, "ok"
 export type AskNoEvidence = Omit<Extract<AskResult, { outcome: "no_evidence" }>, "ok" | "usage">
 export type AskOutcome = AskAnswered | AskNoEvidence
 
+// The share of the feedback read that mention it: whole percent, "<1%" when more than 0 but under 1%.
+// None when nothing mentions it or nothing was read.
+export function sharePercent(count: number, considered: number) {
+  if (count <= 0 || considered <= 0) return null
+  const percent = (count / considered) * 100
+  return percent < 1 ? "<1%" : `${Math.round(percent)}%`
+}
+
 // The first sentence leads the answer, the rest reads smaller under it. A sentence ends at . ! or ?
 // followed by a space and a capital letter (or an opening quote), so "1.5" and "per es. nei" stay whole.
 export function splitAnswer(answer: string) {

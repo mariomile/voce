@@ -11,6 +11,7 @@ import {
   compactQuote,
   fullQuote,
   quoteSource,
+  sharePercent,
   splitAnswer,
   type AskAnswered,
   type AskOutcome,
@@ -118,13 +119,14 @@ function Answered({ result, onFollowUp }: { result: AskAnswered; onFollowUp?: (q
   const t = useTranslations("ask")
   const { lead, rest } = splitAnswer(result.answer)
   const more = onFollowUp ? followUps(t, result) : []
+  const share = sharePercent(result.feedbackCount, result.feedbackConsidered)
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-[148px_1fr] sm:gap-10">
       <div className="flex items-baseline gap-4 sm:block">
         <Stat value={result.feedbackCount} />
         <p className="text-md sm:mt-2">
           <span className="block text-ink">{countLabel(t, result.feedbackCount)}</span>
-          <span className="block text-ink-muted">{t("answer.of", { count: result.feedbackConsidered })}</span>
+          {share && <span className="block text-ink-muted">{t("answer.share", { percent: share, count: result.feedbackConsidered })}</span>}
         </p>
       </div>
       <div className="min-w-0">

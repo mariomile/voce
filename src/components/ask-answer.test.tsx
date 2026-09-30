@@ -33,9 +33,13 @@ describe("AskAnswer, the latest answer", () => {
 
   it("the count with how many were read, the first sentence large and the rest under it", () => {
     const markup = html(answered())
-    expect(text(markup)).toContain("2feedback ne parlanosu 212 letti")
+    expect(text(markup)).toContain("2feedback ne parlano&lt;1% dei 212 letti")
     expect(markup).toMatch(/<p class="[^"]*text-3xl[^"]*">La banca si scollega spesso e va ricollegata a mano\.<\/p>/)
     expect(markup).toMatch(/<p class="[^"]*text-ink-muted[^"]*">Succede soprattutto il lunedì\.<\/p>/)
+  })
+
+  it("the share of the feedback read that mention it, in whole percent", () => {
+    expect(text(html(answered({ feedbackCount: 16, feedbackConsidered: 200, feedbackTotal: 200 })))).toContain("16feedback ne parlano8% dei 200 letti")
   })
 
   it("a long feedback shows its key phrase and opens to the whole text; a short one shows whole", () => {
@@ -82,6 +86,7 @@ describe("AskAnswer, the latest answer", () => {
     const markup = html({ outcome: "no_evidence", question: "Cosa dicono della privacy?", feedbackConsidered: 212, feedbackTotal: 212 })
     expect(markup).toContain("Risposta a «Cosa dicono della privacy?»")
     expect(text(markup)).toContain("Non trovo feedback che ne parlano.")
+    expect(markup).not.toContain("% dei")
     expect(text(markup)).toContain(
       "Letti 212 feedback di questa Research. Prova con altre parole, per esempio il nome della funzione come lo scrivono i clienti."
     )
