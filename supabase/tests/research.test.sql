@@ -89,10 +89,10 @@ select public.create_research((select id from ws where name = 'a'), '  Perché i
 select public.create_research((select id from ws where name = 'a'), 'Seconda domanda?');
 
 select results_eq(
-  $$select r.question, r.form_enabled, r.form_question is null, r.form_slug ~ '^[a-z0-9-]{3,60}$', r.form_slug like 'area-a-%'
+  $$select r.question, r.form_enabled, r.form_question, r.form_slug ~ '^[a-z0-9-]{3,60}$', r.form_slug like 'area-a-%'
     from public.research r where r.id = (select id from a_research)$$,
-  $$values ('Perché i team piccoli non passano a Pro?', true, true, true, true)$$,
-  'create_research makes a unique slug matching the pattern, form enabled and null form question'
+  $$values ('Perché i team piccoli non passano a Pro?', true, 'Perché i team piccoli non passano a Pro?', true, true)$$,
+  'create_research makes a unique slug matching the pattern, form enabled and the form asking the Research question'
 );
 select is(
   (select count(distinct form_slug)::integer from public.research where workspace_id = (select id from ws where name = 'a')),
