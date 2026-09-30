@@ -59,7 +59,7 @@
     "noEvidenceBody": "Letti {count} feedback di questa Research. Prova con altre parole, per esempio il nome della funzione come lo scrivono i clienti.",
     "writtenAll": "Cosa hanno scritto",
     "writtenPartial": "Cosa hanno scritto: {quotes} dei {total} feedback",
-    "perimeterPartial": "Letti i {considered} feedback più recenti di questa Research, su {total}: i più vecchi non entrano nella risposta. {keep}",
+    "perimeterPartial": "Letti i {considered} feedback più recenti di questa Research, su {total}: i più vecchi non entrano nella risposta.",
     "of": "su {count} letti",
     "readAll": "Leggi tutto il feedback",
     "readLess": "Mostra solo la frase",
@@ -67,9 +67,7 @@
     "copied": "Copiata",
     "copiedStatus": "Risposta copiata: domanda, risposta e citazioni con le fonti.",
     "copyFailed": "Non riesco a copiare da qui: seleziona il testo e copialo a mano.",
-    "session": "Le risposte restano qui finché non ricarichi la pagina. Per tenerne una, usa Copia.",
-    "keep": "La risposta non resta su questa pagina: se ti serve, copiala.",
-    "perimeterFull": "Letti {count} feedback di questa Research. {keep}"
+    "session": "Le risposte restano qui finché non ricarichi la pagina. Per tenerne una, usa Copia."
   },
   "suggest": {
     "title": "Prova a chiedere",

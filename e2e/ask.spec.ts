@@ -46,13 +46,53 @@ test("ask a question from the keyboard and read the answer", async ({ page }) =>
   await expect(answer.locator("blockquote cite")).toContainText("Supporto")
   await expect(field).toBeFocused()
 
-  // A second question replaces the first answer.
-  await page.keyboard.press("ControlOrMeta+a")
+  // The answer emptied the field. A second question goes on top; the first folds into one line.
+  await expect(field).toHaveValue("")
   await page.keyboard.type("E dei report?")
   await page.keyboard.press("Enter")
   await expect(page.getByRole("region", { name: "Risposta a «E dei report?»" })).toBeVisible()
-  await expect(page.getByRole("region", { name: /Risposta a «Cosa chiedono del PDF\?»/ })).toHaveCount(0)
   await expect(field).toBeFocused()
+  const first = page.getByRole("region", { name: "Risposta a «Cosa chiedono del PDF?»" })
+  await expect(first.locator("blockquote")).toHaveCount(0)
+  await first.getByRole("button", { name: /Cosa chiedono del PDF\?/ }).click()
+  await expect(first.getByRole("button", { name: /Cosa chiedono del PDF\?/ })).toHaveAttribute("aria-expanded", "true")
+  await expect(first.locator("blockquote")).toHaveCount(1)
+
+  // The answers stay while moving between the tabs, and go away with a reload.
+  await page.getByRole("link", { name: "Feedback", exact: true }).click()
+  await expect(page).toHaveURL(/\/feedback$/)
+  await page.getByRole("link", { name: "Chiedi", exact: true }).click()
+  await expect(page.getByRole("region", { name: /^Risposta a/ })).toHaveCount(2)
+  await expect(page.getByText("Le risposte restano qui finché non ricarichi la pagina. Per tenerne una, usa Copia.")).toBeVisible()
+  await page.reload()
+  await expect(page.getByLabel("La tua domanda")).toBeFocused()
+  await expect(page.getByRole("region", { name: /^Risposta a/ })).toHaveCount(0)
+})
+
+test("a suggested question and a follow-up fill the field without sending, and Copia copies the answer", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"])
+  const { field } = await openAsk(page, "suggest")
+  // No themes and no hypotheses in this Research: the starters.
+  await page.getByRole("button", { name: "Cosa chiedono più spesso i clienti?" }).click()
+  await expect(field).toHaveValue("Cosa chiedono più spesso i clienti?")
+  await expect(field).toBeFocused()
+  await expect(page.getByRole("region", { name: /^Risposta a/ })).toHaveCount(0)
+  await page.keyboard.press("Enter")
+  const answer = page.getByRole("region", { name: "Risposta a «Cosa chiedono più spesso i clienti?»" })
+  await expect(answer).toBeVisible()
+
+  await answer.getByRole("button", { name: "Copia" }).click()
+  await expect(answer.getByRole("button", { name: "Copiata" })).toBeVisible()
+  await expect(status(page)).toHaveText("Risposta copiata: domanda, risposta e citazioni con le fonti.")
+  const copied = await page.evaluate(() => navigator.clipboard.readText())
+  expect(copied).toContain("Domanda: Cosa chiedono più spesso i clienti?")
+  expect(copied).toContain("1 feedback ne parla, su 1 letti.")
+  expect(copied).toMatch(/- “Vorrei esportare il report mensile in PDF\.” \(Supporto, \d+ \w+\)/)
+
+  await answer.getByRole("button", { name: "Cosa propongono?" }).click()
+  await expect(field).toHaveValue("Su «Cosa chiedono più spesso i clienti?»: cosa propongono i clienti come soluzione?")
+  await expect(field).toBeFocused()
+  await expect(page.getByRole("region", { name: /^Risposta a/ })).toHaveCount(1)
 })
 
 test("the Chiedi tab without a session goes to /login", async ({ page }) => {
@@ -306,8 +346,18 @@ test("waiting state and the 15-second message", async ({ page }) => {
   await expect(field).toHaveAttribute("readonly", "")
   await expect(field).toBeFocused()
   await expect(status(page)).toHaveText("Sto leggendo 1 feedback…")
+  // The question moves to the top of the page, with what Voce is doing.
+  await expect(field).toHaveValue("")
+  const working = page.getByRole("region", { name: "Risposta in arrivo…" })
+  await expect(working.getByRole("heading", { name: "LENTA sul PDF?" })).toBeVisible()
+  await expect(working.getByRole("listitem")).toHaveText([
+    "Leggo l'unico feedback di questa Research",
+    "Cerco quelli che rispondono alla domanda",
+    "Controllo che ogni citazione sia scritta così dal cliente",
+  ])
   await page.clock.runFor(15_000)
   await expect(status(page)).toHaveText("Ci vuole più del solito. La risposta arriva: resta su questa pagina.")
+  await expect(working.getByText("Ci vuole più del solito. La risposta arriva: resta su questa pagina.")).toBeVisible()
   await expect(field).toBeFocused()
   // The fake Anthropic API answers after 20 real seconds.
   await expect(page.getByRole("region", { name: "Risposta a «LENTA sul PDF?»" })).toBeVisible({ timeout: 30_000 })

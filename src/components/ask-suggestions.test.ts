@@ -71,6 +71,11 @@ describe("suggestQuestions", () => {
     expect(first.question).toMatch(/^Chi conferma e chi smentisce «(parola )+parola…»\?$/)
   })
 
+  it("the full stop of a hypothesis does not end up inside the quotation marks", () => {
+    const [first] = suggestQuestions(t, { hypotheses: [{ text: "La banca che salta pesa di più.", verdict: "confirmed" }], themes: [] })
+    expect(first.question).toBe("Chi smentisce «La banca che salta pesa di più», e perché?")
+  })
+
   it("the same question twice shows once", () => {
     const twice = suggestQuestions(t, { hypotheses: [], themes: [topics.themes[1], topics.themes[1]] })
     expect(twice).toHaveLength(1)

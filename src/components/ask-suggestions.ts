@@ -22,14 +22,14 @@ export function suggestQuestions(t: AskT, topics: AskTopics): Suggestion[] {
   const fromHypotheses = topics.hypotheses.slice(0, MAX_HYPOTHESES).map(
     (h): Suggestion => ({
       question: t(`suggest.${h.verdict === "confirmed" || h.verdict === "refuted" ? HYPOTHESIS_TEMPLATE[h.verdict] : "hypothesisOpen"}`, {
-        text: shorten(h.text, TOPIC_LENGTH),
+        text: shorten(withoutFullStop(h.text), TOPIC_LENGTH),
       }),
       source: "hypothesis",
     })
   )
   const fromThemes = topics.themes.map(
     (theme): Suggestion => ({
-      question: t(`suggest.${THEME_TEMPLATE[theme.kind]}`, { title: shorten(theme.title, TOPIC_LENGTH) }),
+      question: t(`suggest.${THEME_TEMPLATE[theme.kind]}`, { title: shorten(withoutFullStop(theme.title), TOPIC_LENGTH) }),
       source: "theme",
     })
   )
@@ -54,6 +54,9 @@ export function followUps(t: AskT, result: AskOutcome) {
   if (phrase) items.push({ label: t("followUp.others"), question: t("followUp.othersQuestion", { quote: shorten(phrase, 150) }) })
   return items
 }
+
+// "…di più.», e perché?": the sentence goes inside the template, its full stop does not.
+const withoutFullStop = (text: string) => text.trim().replace(/[.;:]+$/, "")
 
 // Cut on a word boundary; the ellipsis says the text was shortened.
 export function shorten(text: string, max: number) {

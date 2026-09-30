@@ -21,6 +21,10 @@ export function splitAnswer(answer: string) {
 // Up to this length a feedback is shown whole; a longer one shows its key phrase, with the ellipses.
 const WHOLE_UP_TO = 200
 
+// The ellipsis after a key phrase that is cut from a longer feedback. None when the phrase ends its
+// sentence: "rilievi.…" reads as a typo, and the ellipsis before it already says the text was cut.
+const tail = (highlight: string, cut: boolean) => (cut && !/[.!?…]["”»)]?$/.test(highlight.trim()) ? "…" : "")
+
 export type QuoteParts = { before: string; highlight: string; after: string; shortened: boolean }
 
 export function compactQuote(text: string, highlight: string): QuoteParts {
@@ -28,7 +32,7 @@ export function compactQuote(text: string, highlight: string): QuoteParts {
   if (at < 0) return { before: text, highlight: "", after: "", shortened: false }
   const end = at + highlight.length
   if (text.length <= WHOLE_UP_TO) return { before: text.slice(0, at), highlight, after: text.slice(end), shortened: false }
-  return { before: at > 0 ? "…" : "", highlight, after: end < text.length ? "…" : "", shortened: at > 0 || end < text.length }
+  return { before: at > 0 ? "…" : "", highlight, after: tail(highlight, end < text.length), shortened: at > 0 || end < text.length }
 }
 
 export function fullQuote(text: string, highlight: string): QuoteParts {
@@ -73,7 +77,7 @@ export function answerAsText(t: AskT, result: AskOutcome, locale: Locale) {
       const phrase =
         at < 0
           ? quote.text
-          : `${at > 0 ? "…" : ""}${quote.highlight}${at + quote.highlight.length < quote.text.length ? "…" : ""}`
+          : `${at > 0 ? "…" : ""}${quote.highlight}${tail(quote.highlight, at + quote.highlight.length < quote.text.length)}`
       lines.push(`- “${phrase}” (${quoteSource(quote, locale)})`)
     }
   }

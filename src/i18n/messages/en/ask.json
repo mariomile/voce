@@ -59,7 +59,7 @@
     "noEvidenceBody": "Read {count} feedback of this Research. Try different words, for example the feature name the way customers write it.",
     "writtenAll": "What they wrote",
     "writtenPartial": "What they wrote: {quotes} of {total} feedback",
-    "perimeterPartial": "Read the {considered} most recent feedback of this Research, out of {total}: older ones aren't part of the answer. {keep}",
+    "perimeterPartial": "Read the {considered} most recent feedback of this Research, out of {total}: older ones aren't part of the answer.",
     "of": "out of {count} read",
     "readAll": "Read the whole feedback",
     "readLess": "Show the key phrase only",
@@ -67,9 +67,7 @@
     "copied": "Copied",
     "copiedStatus": "Answer copied: question, answer and quotes with their sources.",
     "copyFailed": "Can't copy from here: select the text and copy it by hand.",
-    "session": "Answers stay here until you reload the page. To keep one, use Copy.",
-    "keep": "The answer doesn't stay on this page: copy it if you need it.",
-    "perimeterFull": "Read {count} feedback of this Research. {keep}"
+    "session": "Answers stay here until you reload the page. To keep one, use Copy."
   },
   "suggest": {
     "title": "Try asking",

@@ -48,12 +48,16 @@ describe("compactQuote", () => {
   const long = `${"Prima parte del feedback molto lunga. ".repeat(5)}La frase chiave. ${"E poi il resto del feedback. ".repeat(4)}`.trim()
 
   it("a long feedback shows only its key phrase, and the ellipses say it was cut", () => {
-    expect(compactQuote(long, "La frase chiave.")).toEqual({ before: "…", highlight: "La frase chiave.", after: "…", shortened: true })
+    expect(compactQuote(long, "La frase chiave")).toEqual({ before: "…", highlight: "La frase chiave", after: "…", shortened: true })
+  })
+
+  it("a key phrase that ends its sentence takes no ellipsis after it: the one before says it was cut", () => {
+    expect(compactQuote(long, "La frase chiave.")).toMatchObject({ before: "…", after: "" })
   })
 
   it("no ellipsis on the side where the key phrase touches the edge", () => {
-    const text = `La frase chiave all'inizio. ${"Resto. ".repeat(40)}`.trim()
-    expect(compactQuote(text, "La frase chiave all'inizio.")).toMatchObject({ before: "", after: "…", shortened: true })
+    const text = `La frase chiave all'inizio, ${"resto. ".repeat(40)}`.trim()
+    expect(compactQuote(text, "La frase chiave all'inizio")).toMatchObject({ before: "", after: "…", shortened: true })
   })
 
   it("a short feedback shows whole, with the key phrase marked", () => {
@@ -96,6 +100,11 @@ describe("answerAsText", () => {
         "- “Jira me lo dà.” (Intervista, 18 settembre)",
       ].join("\n")
     )
+  })
+
+  it("a key phrase that ends its sentence inside a longer feedback: the ellipsis only before it", () => {
+    const quote = { text: "Siamo una banca. Serve tracciabilità. E altro.", highlight: "Serve tracciabilità.", channel: "Supporto", receivedAt: "2026-08-18" }
+    expect(answerAsText(t, { ...answered, quotes: [quote] }, "it")).toContain("- “…Serve tracciabilità.” (Supporto, 18 agosto)")
   })
 
   it("in English", () => {
