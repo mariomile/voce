@@ -103,7 +103,7 @@ test("with hypotheses, Analizza le risposte also runs the verdict: its word and 
   await expect(page.getByRole("heading", { name: "Il verdetto" })).toBeVisible()
   await expect(page.getByText("I clienti vogliono il PDF")).toBeVisible()
   await expect(page.getByText("Confermata")).toBeVisible()
-  await expect(page.getByText("1 a favore · 0 contro · su 2 letti")).toBeVisible()
+  await expect(page.getByText("1 feedback a favore · 0 contro · su 2 letti")).toBeVisible()
   // The fake model quotes a whole feedback: the quote never reaches the projector.
   for (const response of responses) await expect(page.getByText(response)).toHaveCount(0)
 

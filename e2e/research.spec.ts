@@ -603,3 +603,15 @@ test("the Raccolta without a session: the notes and the deletion say E-SESS inst
   const { data } = await admin.from("research").select("id").eq("id", user.researchId)
   expect(data).toHaveLength(1)
 })
+
+test("after a CSV import the header counts the new feedback without a reload", async ({ page }) => {
+  const user = await signedInUser(page, "import")
+  await page.goto(`/research/${user.researchId}/collect`)
+  await expect(page.getByText("Ancora nessun feedback. Il modulo è attivo.")).toBeVisible()
+  const csv = "testo,canale,data\nLa banca si scollega ogni lunedì.,Sondaggio,2026-09-20\nMandare le fatture è velocissimo.,Sondaggio,2026-09-21\n"
+  await page.locator('input[type=file][accept*=".csv"]').setInputFiles({ name: "feedback.csv", mimeType: "text/csv", buffer: Buffer.from(csv) })
+  await page.getByRole("button", { name: /^Importa/ }).click()
+  await expect(page.getByText(/Importat[oi] .* in questa Research/).first()).toBeVisible()
+  await expect(page.getByText("2 feedback da 1 canale, dal 20 settembre al 21 settembre.")).toBeVisible()
+  await expect(page.getByText("Ancora nessun feedback. Il modulo è attivo.")).toHaveCount(0)
+})

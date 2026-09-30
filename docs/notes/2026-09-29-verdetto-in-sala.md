@@ -25,6 +25,15 @@ Piano: `docs/plans/2026-09-29-verdetto-in-sala.md`. Per la masterclass PHC26 del
 - E2E `e2e/room.spec.ts`: il nuovo "with hypotheses, Analizza le risposte also runs the verdict: its word and counts, never the quotes" (parola, conteggi, nessun testo dei feedback, righe `themes` e `verdict` nel database) e il controllo che senza ipotesi il pulsante "Verdetto" non c'è; "the verdict that did not come says so, and a verdict without this click's themes shows alone" (il finto modello Anthropic ora fa fallire i temi di feedback con `TEMI_FUORI_SCHEMA`).
 - Screenshot a 1920x1080 e 853x480 (1280x720 al 150%), con 1 e 3 ipotesi e 230 risposte: nessuno scorrimento in nessuno dei 4.
 
+## Allineamento con main (30 settembre)
+
+Il PR è stato unito con main dopo #30 (conteggi del verdetto completi, una riga di evidenza per feedback), #31, #32, #33, #34, #25/#26 e #27.
+
+- **Conteggi veri, citazioni esempi.** `supporting` e `contradicting` di `listHypotheses` ora sono tutti i feedback a favore e contro, non un campione: la sala li mostra senza cambiare codice. Le citazioni restano fuori dalla sala come prima.
+- **Stesse parole della Sintesi.** `research.verdict.counts` dopo #32 dice "{n} feedback a favore · {m} contro · su {r} letti": aggiornati `room-screen.test.tsx`, `e2e/room.spec.ts` e `DESIGN.md`.
+- **Test della sala sul nuovo formato del modello.** `sala/actions.test.ts` costruisce le risposte finte con `themesOutput` e `verdictOutput` (righe `assignments` ed `evidence`); tolti da `synthesize.test.ts` i due test della modalità `"room"` arrivati da main.
+- **Il verdetto non rallenta i temi.** Temi e verdetto partono insieme; in produzione (ultime 3 analisi con ipotesi) il verdetto ha sempre finito prima dei temi: 26 s contro 35 s, 9 s contro 23 s, 8,5 s contro 52 s. Senza ipotesi la sala fa una sola chiamata, come prima.
+
 ## Cosa resta
 
 - Con 5 ipotesi lunghe la vista può superare l'altezza di uno schermo 853x480: provato fino a 3.

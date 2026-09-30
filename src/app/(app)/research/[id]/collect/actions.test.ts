@@ -323,7 +323,7 @@ describe("the Research of another workspace", () => {
       expect(await setFormQuestion(other.researchId, "Presa?")).toEqual({ ok: false })
       expect(await addNotes("non-un-uuid", valid)).toEqual({ ok: false, reason: "invalid", fields: [] })
       const { data } = await admin.from("research").select("form_slug, form_enabled, form_question").eq("id", other.researchId).single()
-      expect(data).toEqual({ form_slug: other.formSlug, form_enabled: true, form_question: null })
+      expect(data).toEqual({ form_slug: other.formSlug, form_enabled: true, form_question: "Domanda di prova?" })
       const { count } = await admin.from("feedback").select("id", { count: "exact", head: true }).eq("research_id", other.researchId)
       expect(count).toBe(0)
     } finally {

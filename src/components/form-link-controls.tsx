@@ -22,7 +22,7 @@ export function FormLinkControls({ researchId, enabled }: { researchId: string; 
   }
 
   return (
-    <div className="mt-4 flex flex-wrap items-center gap-3 text-base text-ink-muted">
+    <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 text-base text-ink-muted">
       {confirming ? (
         <>
           <span className="mr-2">{t("regenerateWarning")}</span>
@@ -35,10 +35,11 @@ export function FormLinkControls({ researchId, enabled }: { researchId: string; 
         </>
       ) : (
         <>
-          <Button variant="secondary" disabled={pending} onClick={() => run(() => setFormEnabled(researchId, !enabled))}>
+          {/* Actions on the link itself, quieter than sharing it: text buttons, not pills. */}
+          <Button variant="text" disabled={pending} onClick={() => run(() => setFormEnabled(researchId, !enabled))}>
             {enabled ? t("disable") : t("enable")}
           </Button>
-          <Button variant="secondary" disabled={pending} onClick={() => setConfirming(true)}>
+          <Button variant="text" disabled={pending} onClick={() => setConfirming(true)}>
             {t("regenerate")}
           </Button>
         </>

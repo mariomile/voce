@@ -1,5 +1,7 @@
 "use client"
 
+import { cn } from "cn"
+import { Check, CircleHelp, X } from "lucide-react"
 import { useLocale, useTranslations } from "next-intl"
 import Link from "next/link"
 import { useEffect, useRef, useState, useTransition } from "react"
@@ -15,6 +17,7 @@ import { failureMessage, verdictsMessage } from "@/components/analyze-button"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Field, FieldError, FieldHint, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { SectionHeading, StepNumber } from "@/components/page"
 import { Quote } from "@/components/quote"
 import { useVerdictFailure } from "@/components/synthesis-outcome"
 import type { Locale } from "@/i18n/locale"
@@ -37,14 +40,17 @@ const unreachable = { ok: false as const, reason: "failed" as const }
 // it is off, with the month's analyses used up.
 type VerdictOnly = { feedbackSinceThemes: number | null; note: string; limitNote?: string }
 
+// step: its number in the loop of a Research without feedback.
 export function HypothesisList({
   researchId,
   hypotheses,
   verdictOnly,
+  step,
 }: {
   researchId: string
   hypotheses: Hypothesis[]
   verdictOnly?: VerdictOnly
+  step?: number
 }) {
   const t = useTranslations("research.hypotheses")
   const tAnalyze = useTranslations("research.synthesis.analyze")
@@ -66,9 +72,14 @@ export function HypothesisList({
 
   return (
     <section aria-labelledby="hypotheses-title" className="mb-14">
-      <h2 id="hypotheses-title" ref={heading} tabIndex={-1} className="mb-2 text-xl font-bold outline-none">
-        {t("title")}
-      </h2>
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b-2 border-ink pb-4">
+        <SectionHeading id="hypotheses-title" ref={heading} tabIndex={-1} className="outline-none">
+          {step && <StepNumber step={step} />}
+          {t("title")}
+        </SectionHeading>
+        {step && hypotheses.length === 0 && <p className="text-lg text-ink-muted">{t("optional")}</p>}
+        <VerdictSummary hypotheses={hypotheses} />
+      </div>
 
       {hypotheses.length > 0 && (
         <ul>
@@ -87,7 +98,7 @@ export function HypothesisList({
       )}
 
       {hypotheses.length === 0 && !open && (
-        <div className="flex items-center justify-between gap-8 border-t border-line py-4">
+        <div className="flex flex-col items-start justify-between gap-4 py-5 sm:flex-row sm:items-center sm:gap-8">
           <p className="max-w-[64ch] text-base text-ink-muted">{t("emptyText")}</p>
           <Button ref={write} variant="secondary" onClick={() => setOpen(true)}>
             {t("write")}
@@ -142,6 +153,26 @@ export function HypothesisList({
         {verdictFailed && tAnalyze(canVerdictOnly ? "verdictFailed" : "verdictFailedNextAnalysis")}
       </p>
     </section>
+  )
+}
+
+// "3 ipotesi: 2 confermate, 1 da rivedere", the words of the list of Research: the answer before the detail.
+function VerdictSummary({ hypotheses }: { hypotheses: Hypothesis[] }) {
+  const t = useTranslations("research.list.row")
+  const tHypotheses = useTranslations("research.hypotheses")
+  const verdicts = hypotheses.flatMap((h) => (h.verdict ? [hasLinks(h.verdict) ? h.verdict.verdict : "to_review"] : []))
+  if (verdicts.length === 0) return null
+  const count = (kind: string) => verdicts.filter((v) => v === kind).length
+  const parts = [
+    count("confirmed") && t("confirmed", { count: count("confirmed") }),
+    count("refuted") && t("refuted", { count: count("refuted") }),
+    count("to_review") && t("toReview", { count: count("to_review") }),
+    hypotheses.length > verdicts.length && tHypotheses("noVerdictCount", { count: hypotheses.length - verdicts.length }),
+  ].filter(Boolean)
+  return (
+    <p className="text-lg text-ink-muted">
+      {t("hypothesesWithVerdicts", { count: hypotheses.length, verdicts: parts.join(", ") })}
+    </p>
   )
 }
 
@@ -231,6 +262,7 @@ function NewHypothesis({
   const [failure, setFailure] = useState<Failure | null>(null)
   const [pending, startTransition] = useTransition()
   const fieldError = failure === "invalid" ? t("errors.empty") : failure === "too_long" ? t("errors.tooLong") : null
+  const twoClaims = looksLikeTwoClaims(text)
 
   function submit(event: React.FormEvent) {
     event.preventDefault()
@@ -250,8 +282,8 @@ function NewHypothesis({
   }
 
   return (
-    <form noValidate onSubmit={submit} className="flex items-start gap-4 border-t border-line pt-4">
-      <Field className="flex-1">
+    <form noValidate onSubmit={submit} className="flex flex-col items-start gap-4 border-t border-line pt-5 sm:flex-row">
+      <Field className="w-full flex-1">
         <FieldLabel htmlFor="new-hypothesis">{t("label")}</FieldLabel>
         <Input
           ref={field}
@@ -260,7 +292,9 @@ function NewHypothesis({
           value={text}
           readOnly={pending}
           aria-invalid={fieldError ? true : undefined}
-          aria-describedby={fieldError ? "new-hypothesis-error" : "new-hypothesis-hint"}
+          aria-describedby={
+            fieldError ? "new-hypothesis-error" : twoClaims ? "new-hypothesis-hint new-hypothesis-two-claims" : "new-hypothesis-hint"
+          }
           onChange={(event) => {
             setText(event.target.value)
             onChange()
@@ -272,14 +306,15 @@ function NewHypothesis({
         ) : (
           <FieldHint id="new-hypothesis-hint">{t("hint")}</FieldHint>
         )}
+        {!fieldError && twoClaims && <FieldHint id="new-hypothesis-two-claims">{t("twoClaims")}</FieldHint>}
       </Field>
-      <div className="mt-7 flex max-w-[36ch] flex-col gap-2">
+      <div className="flex max-w-[36ch] flex-col gap-2 sm:mt-7">
         <div className="flex items-center gap-4">
           <Button type="submit" variant="secondary" aria-disabled={pending || undefined}>
             {pending ? t("adding") : t("add")}
           </Button>
           {onCancel && (
-            <Button type="button" variant="link" onClick={onCancel}>
+            <Button type="button" variant="text" onClick={onCancel}>
               {t("cancel")}
             </Button>
           )}
@@ -309,7 +344,7 @@ function HypothesisRow({ hypothesis, t, onDeleted }: { hypothesis: Hypothesis; t
   }
 
   return (
-    <li className="grid grid-cols-1 gap-3 border-t border-line py-5 sm:grid-cols-[148px_1fr] sm:gap-6">
+    <li className="grid grid-cols-1 gap-4 border-t border-line py-8 first:border-t-0 sm:grid-cols-[148px_1fr] sm:gap-8">
       {/* The column of the verdict, as wide as the number column of the themes. */}
       <div>{hypothesis.verdict && <VerdictWord verdict={hypothesis.verdict} />}</div>
       <div>
@@ -317,19 +352,19 @@ function HypothesisRow({ hypothesis, t, onDeleted }: { hypothesis: Hypothesis; t
           <EditHypothesis hypothesis={hypothesis} t={t} onClose={() => close("edit")} />
         ) : (
           <>
-            <h3 className="max-w-[64ch] text-lg leading-snug font-semibold">{hypothesis.text}</h3>
+            <h3 className="max-w-[48ch] text-2xl leading-snug font-bold tracking-snug">{hypothesis.text}</h3>
             {hypothesis.verdict ? (
-              <VerdictDetail verdict={hypothesis.verdict} writtenAt={hypothesis.writtenAt} />
+              <VerdictDetail verdict={hypothesis.verdict} writtenAt={hypothesis.writtenAt} id={`hypothesis-${hypothesis.id}`} />
             ) : (
               <p className="mt-1 text-base text-ink-muted">{t("noVerdict")}</p>
             )}
             {mode === "confirm" ? (
               <ConfirmDelete hypothesis={hypothesis} t={t} onCancel={() => close("delete")} onDeleted={onDeleted} />
             ) : (
-              <div className="mt-3 flex gap-6">
+              <div className="mt-4 flex gap-6">
                 <Button
                   ref={edit}
-                  variant="link"
+                  variant="text"
                   aria-label={t("editName", { text: hypothesis.text })}
                   onClick={() => setMode("edit")}
                 >
@@ -337,7 +372,7 @@ function HypothesisRow({ hypothesis, t, onDeleted }: { hypothesis: Hypothesis; t
                 </Button>
                 <Button
                   ref={remove}
-                  variant="link"
+                  variant="text"
                   aria-label={t("deleteName", { text: hypothesis.text })}
                   onClick={() => setMode("confirm")}
                 >
@@ -407,7 +442,7 @@ function EditHypothesis({ hypothesis, t, onClose }: { hypothesis: Hypothesis; t:
             <Button type="submit" variant="secondary" aria-disabled={pending || undefined}>
               {pending ? t("saving") : t("save")}
             </Button>
-            <Button type="button" variant="link" onClick={() => !pending && onClose()}>
+            <Button type="button" variant="text" onClick={() => !pending && onClose()}>
               {t("cancel")}
             </Button>
           </div>
@@ -421,68 +456,114 @@ function EditHypothesis({ hypothesis, t, onClose }: { hypothesis: Hypothesis; t:
 // A verdict without any verified link has nothing to show but that: "Da rivedere", whatever the model said.
 const hasLinks = (verdict: Verdict) => verdict.supporting + verdict.contradicting > 0
 
-// The word carries the meaning; the sign is decorative. Both in ink: the colors belong to the kinds of theme.
+// The answer of the Research, so the heaviest type of the app. The word carries the meaning; the sign is
+// decorative. Ink for a verdict, muted for "Da rivedere": the colors belong to the kinds of theme.
 const WORDS = {
-  confirmed: { sign: "✓", key: "confirmed" },
-  refuted: { sign: "✕", key: "refuted" },
-  to_review: { sign: "?", key: "toReview" },
+  confirmed: { Icon: Check, key: "confirmed" },
+  refuted: { Icon: X, key: "refuted" },
+  to_review: { Icon: CircleHelp, key: "toReview" },
 } as const
 
 function VerdictWord({ verdict }: { verdict: Verdict }) {
   const t = useTranslations("research.verdict")
-  const word = WORDS[hasLinks(verdict) ? verdict.verdict : "to_review"]
+  const kind = hasLinks(verdict) ? verdict.verdict : "to_review"
+  const { Icon, key } = WORDS[kind]
   return (
-    <>
-      <p className="text-2xl leading-tight font-bold">
-        <span aria-hidden="true">{word.sign}</span> {t(word.key)}
-      </p>
-      {hasLinks(verdict) && (
-        <p className="mt-1 text-[13px] text-ink-muted">
-          {t("counts", { supporting: verdict.supporting, contradicting: verdict.contradicting, read: verdict.feedbackRead })}
+    <div className="flex items-center gap-3 sm:block">
+      <span
+        aria-hidden="true"
+        className={cn(
+          "inline-flex size-8 shrink-0 items-center justify-center rounded-full sm:mb-2",
+          kind === "to_review" ? "bg-veil text-ink-muted" : "bg-ink text-highlight"
+        )}
+      >
+        <Icon className="size-5" strokeWidth={3} />
+      </span>
+      <div>
+        <p
+          className={cn(
+            "text-2xl leading-tight font-black tracking-tight",
+            kind === "to_review" && "font-extrabold text-ink-muted"
+          )}
+        >
+          {t(key)}
         </p>
-      )}
-    </>
+        {hasLinks(verdict) && (
+          <p className="mt-1 text-sm text-ink-muted tabular-nums">
+            {t("counts", { supporting: verdict.supporting, contradicting: verdict.contradicting, read: verdict.feedbackRead })}
+          </p>
+        )}
+      </div>
+    </div>
   )
 }
 
-// The reasoning of Voce (muted, as text), the verified quotes for and against with channel and date, and
-// how many of the feedback read arrived after the hypothesis, and after the verdict.
-function VerdictDetail({ verdict, writtenAt }: { verdict: Verdict; writtenAt: string }) {
+// The reasoning of Voce (muted, as text), the first verified quote for and against side by side with channel
+// and date, the others behind "Mostra", then how many of the feedback read arrived after the hypothesis,
+// and after the verdict. Every quote is on the page (hidden until asked), so search and tests find them.
+function VerdictDetail({ verdict, writtenAt, id }: { verdict: Verdict; writtenAt: string; id: string }) {
   const t = useTranslations("research.verdict")
   const locale = useLocale() as Locale
+  const [open, setOpen] = useState(false)
   const date = formatDate(writtenAt, locale)
+  const more = Math.max(0, verdict.quotesFor.length - 1) + Math.max(0, verdict.quotesAgainst.length - 1)
+  const moreId = `${id}-more-quotes`
+  const sides = [
+    { title: t("inFavour"), quotes: verdict.quotesFor },
+    { title: t("against"), quotes: verdict.quotesAgainst },
+  ].filter((side) => side.quotes.length > 0)
   return (
-    <div className="mt-1 max-w-[64ch] text-base text-ink-muted">
-      <p>{hasLinks(verdict) ? verdict.reasoning : t("noEvidence", { read: verdict.feedbackRead })}</p>
-      <VerdictQuotes title={t("inFavour")} quotes={verdict.quotesFor} locale={locale} />
-      <VerdictQuotes title={t("against")} quotes={verdict.quotesAgainst} locale={locale} />
-      <p className="mt-3">
+    <div className="mt-2 text-base text-ink-muted">
+      <p className="max-w-[64ch]">{hasLinks(verdict) ? verdict.reasoning : t("noEvidence", { read: verdict.feedbackRead })}</p>
+      {sides.length > 0 && (
+        <div className={cn("mt-5 grid grid-cols-1 gap-x-10 gap-y-6", sides.length > 1 && "lg:grid-cols-2")}>
+          {sides.map((side) => (
+            <div key={side.title}>
+              <p className="border-b border-line pb-2 text-sm font-semibold text-ink">{side.title}</p>
+              <VerdictQuotes quotes={side.quotes.slice(0, 1)} locale={locale} />
+              <div id={side === sides[0] ? moreId : `${moreId}-2`} hidden={!open}>
+                <VerdictQuotes quotes={side.quotes.slice(1)} locale={locale} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {more > 0 && (
+        <Button
+          variant="text"
+          className="mt-4 text-md"
+          aria-expanded={open}
+          aria-controls={sides.length > 1 ? `${moreId} ${moreId}-2` : moreId}
+          onClick={() => setOpen(!open)}
+        >
+          {open ? t("fewerQuotes") : t("moreQuotes", { count: more })}
+        </Button>
+      )}
+      <p className="mt-4 max-w-[64ch] text-sm">
         {verdict.arrivedAfter > 0
           ? t("writtenAfter", { date, read: verdict.feedbackRead, count: verdict.arrivedAfter })
           : t("writtenBefore", { date, read: verdict.feedbackRead })}
       </p>
-      {verdict.arrivedAfterVerdict > 0 && <p>{t("arrivedAfterVerdict", { count: verdict.arrivedAfterVerdict })}</p>}
+      {verdict.arrivedAfterVerdict > 0 && (
+        <p className="mt-1 max-w-[64ch] text-sm font-semibold text-ink">
+          {t("arrivedAfterVerdict", { count: verdict.arrivedAfterVerdict })}
+        </p>
+      )}
     </div>
   )
 }
 
-function VerdictQuotes({ title, quotes, locale }: { title: string; quotes: VerdictQuote[]; locale: Locale }) {
-  if (quotes.length === 0) return null
-  return (
-    <div className="mt-4">
-      <p className="text-sm font-semibold text-ink">{title}</p>
-      {quotes.map((q) => (
-        <Quote
-          key={q.feedbackId}
-          text={q.text}
-          highlight={q.highlight}
-          size="sm"
-          cite={`${q.channel}, ${formatDate(q.receivedAt, locale)}`}
-          className="mt-2 text-ink"
-        />
-      ))}
-    </div>
-  )
+function VerdictQuotes({ quotes, locale }: { quotes: VerdictQuote[]; locale: Locale }) {
+  return quotes.map((q) => (
+    <Quote
+      key={q.feedbackId}
+      text={q.text}
+      highlight={q.highlight}
+      size="sm"
+      cite={`${q.channel}, ${formatDate(q.receivedAt, locale)}`}
+      className="mt-3 text-ink"
+    />
+  ))
 }
 
 // H6 in the row. The focus starts on Annulla, the choice that destroys nothing; Tab reaches the delete
@@ -520,7 +601,7 @@ function ConfirmDelete({
     >
       <p className="mb-2 text-base">{t("deleteConfirm")}</p>
       <div className="flex items-center gap-6">
-        <Button variant="link" autoFocus onClick={() => !pending && onCancel()}>
+        <Button variant="text" autoFocus onClick={() => !pending && onCancel()}>
           {t("cancel")}
         </Button>
         <Button variant="secondary" aria-disabled={pending || undefined} onClick={confirm}>
@@ -530,6 +611,12 @@ function ConfirmDelete({
       <FailureNote failure={failure} t={t} message={t("errors.deleteFailed")} />
     </div>
   )
+}
+
+// A hypothesis that joins a claim and its negation ("per compliance, non per scelta") is two claims: the verdict
+// cannot confirm one without the other. Only a note under the field, never a block.
+export function looksLikeTwoClaims(text: string) {
+  return /(\s|,)(e non|non per|and not|not because)\s/i.test(text)
 }
 
 // What went wrong with a save or a delete. busy: an analysis of the Research is running (H7).

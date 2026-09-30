@@ -49,7 +49,7 @@ export function ResearchForm({ cancelHref }: { cancelHref?: string }) {
 
   return (
     <form noValidate onSubmit={submit} className="flex max-w-[860px] flex-col items-start gap-4 sm:flex-row">
-      <Field className="flex-1">
+      <Field className="w-full flex-1">
         <FieldLabel htmlFor="research-question">{t("label")}</FieldLabel>
         <Input
           ref={field}
@@ -73,13 +73,13 @@ export function ResearchForm({ cancelHref }: { cancelHref?: string }) {
           <FieldCount>{t("count", { count: length, max: RESEARCH_QUESTION_MAX_LENGTH })}</FieldCount>
         </div>
       </Field>
-      <div className="mt-7 flex max-w-[36ch] flex-col gap-2">
+      <div className="flex max-w-[36ch] flex-col gap-2 sm:mt-7">
         <div className="flex items-center gap-4">
           <Button type="submit" aria-disabled={pending || undefined}>
             {pending ? t("creating") : t("create")}
           </Button>
           {cancelHref && (
-            <Link href={cancelHref} className={buttonVariants({ variant: "link" })}>
+            <Link href={cancelHref} className={buttonVariants({ variant: "text" })}>
               {t("cancel")}
             </Link>
           )}

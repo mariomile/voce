@@ -1,0 +1,1445 @@
+{
+ "about": "Coverage eval (Research 'Jira' in production, 29 September 2026): 200 simulated feedback on whether Jira still fits modern product teams, from /tmp/voce-jira/gen.py, in the order of the CSV that was imported. topic is the group the generator wrote them in (a slowness and interface, b workflow and configuration, c roadmap and discovery outside Jira, d cost, e integrations, f positive or neutral incl. compliance, g alternatives, h migration and reasons to stay, i AI features, j reporting, off_topic noise). One themes call and one verdict call. Checks read the output after the app's checks, what the product manager sees.",
+ "research_question": "Voglio capire se Jira non è più adeguato per i team di prodotto moderni",
+ "threshold": {
+  "coverage": 0.9,
+  "constraints_as_praise": 0,
+  "slow_recall": 0.85,
+  "discovery_for_min": 12
+ },
+ "checks": {
+  "coverage": "Share of the on-topic feedback (topic not off_topic) that end up in at least one theme. At least 0.9.",
+  "constraints_as_praise": "constraint_ids are feedback that stay on Jira because of a rule, an audit, a mandate or the cost of leaving: a constraint, not praise. A theme of kind praise with at least 3 of them, or at least 40% of its feedback among them, is a violation. Zero violations.",
+  "slow_recall": "The hypothesis 'Jira è lento' links for at least 85% of slow_ids (the feedback that say it is slow): the count next to a verdict counts every feedback on that side, not a sample.",
+  "discovery_for_min": "The hypothesis on roadmap and discovery links at least this many feedback for (topic c has 20)."
+ },
+ "constraint_ids": [
+  "j134",
+  "j183",
+  "j094",
+  "j075",
+  "j088",
+  "j048",
+  "j121",
+  "j063",
+  "j067",
+  "j034"
+ ],
+ "slow_ids": [
+  "j026",
+  "j158",
+  "j064",
+  "j124",
+  "j193",
+  "j079",
+  "j123"
+ ],
+ "hypotheses": [
+  "Jira è troppo lento e complesso per i team di prodotto piccoli e medi",
+  "La roadmap e la discovery vivono fuori da Jira",
+  "Le grandi aziende restano su Jira per compliance e audit, non per scelta",
+  "Jira è lento"
+ ],
+ "feedback": [
+  {
+   "id": "j001",
+   "topic": "b",
+   "text": "Da founder: non voglio un amministratore di sistema per lo strumento dei ticket. Voglio che si configuri in dieci minuti e poi sparisca.",
+   "channel": "Sondaggio",
+   "received_days_ago": 21
+  },
+  {
+   "id": "j002",
+   "topic": "h",
+   "text": "Migrare otto anni di storico è un incubo. Allegati, link tra ticket, campi custom. Il costo di uscita è il vero lock-in.",
+   "channel": "Sondaggio",
+   "received_days_ago": 10
+  },
+  {
+   "id": "j003",
+   "topic": "b",
+   "text": "Il nostro PMO vuole certi campi, i dev ne vogliono altri, alla fine il ticket è un compromesso che non serve a nessuno dei due.",
+   "channel": "Sondaggio",
+   "received_days_ago": 14
+  },
+  {
+   "id": "j004",
+   "topic": "a",
+   "text": "Tempi di risposta accettabili per noi, ma la densità di informazioni sulla pagina del ticket è eccessiva. Commenti, worklog, link, campi custom, sviluppo, rilasci: non si capisce cosa conta davvero.",
+   "channel": "Sondaggio",
+   "received_days_ago": 3
+  },
+  {
+   "id": "j005",
+   "topic": "c",
+   "text": "Come PM ho bisogno di collegare un'ipotesi a un'intervista e poi a una feature. In Jira posso collegare solo ticket a ticket, e un'intervista non è un ticket.",
+   "channel": "Sondaggio",
+   "received_days_ago": 35
+  },
+  {
+   "id": "j006",
+   "topic": "h",
+   "text": "L'export completo dei dati esiste, ma importarlo altrove richiede script scritti a mano. Ci abbiamo messo tre settimane, e alcune relazioni tra ticket le abbiamo perse comunque.",
+   "channel": "Sondaggio",
+   "received_days_ago": 0
+  },
+  {
+   "id": "j007",
+   "topic": "j",
+   "text": "Burndown charts are theater. Nobody on my team looks at them except the day before a steering committee.",
+   "channel": "Sondaggio",
+   "received_days_ago": 19
+  },
+  {
+   "id": "j008",
+   "topic": "h",
+   "text": "Molti colleghi hanno Jira nel CV e nelle abitudini. Nei colloqui i candidati chiedono se lo usiamo, e non sempre in senso negativo.",
+   "channel": "Sondaggio",
+   "received_days_ago": 16
+  },
+  {
+   "id": "j009",
+   "topic": "f",
+   "text": "I report di velocity e burndown sono fatti bene e i nostri EM li usano davvero.",
+   "channel": "Sondaggio",
+   "received_days_ago": 26
+  },
+  {
+   "id": "j010",
+   "topic": "c",
+   "text": "Abbiamo provato a fare discovery dentro Jira con un progetto dedicato. Dopo un mese le opportunità erano diventate ticket in stato To Do e nessuno le guardava più.",
+   "channel": "Sondaggio",
+   "received_days_ago": 12
+  },
+  {
+   "id": "j011",
+   "topic": "d",
+   "text": "prezzi ok per noi, siamo in 8",
+   "channel": "Sondaggio",
+   "received_days_ago": 43
+  },
+  {
+   "id": "j012",
+   "topic": "i",
+   "text": "le feature ai non sono incluse nel nostro piano quindi per noi non esistono",
+   "channel": "Sondaggio",
+   "received_days_ago": 33
+  },
+  {
+   "id": "j013",
+   "topic": "f",
+   "text": "Ho lavorato con strumenti più belli, ma quando dovevamo coordinare 12 team su un rilascio unico l'unico che reggeva era Jira.",
+   "channel": "Sondaggio",
+   "received_days_ago": 28
+  },
+  {
+   "id": "j014",
+   "topic": "f",
+   "text": "Lo usiamo da sei anni in un team di 30. Ha i suoi difetti, ma ci ha seguito dalla startup alla scaleup senza dover cambiare strumento. Poche cose lo possono dire.",
+   "channel": "Sondaggio",
+   "received_days_ago": 52
+  },
+  {
+   "id": "j015",
+   "topic": "f",
+   "text": "Mi trovo bene. Uso le board kanban, le automazioni base e basta. È semplice se non lo complichi.",
+   "channel": "Sondaggio",
+   "received_days_ago": 37
+  },
+  {
+   "id": "j016",
+   "topic": "h",
+   "text": "Lo lasceremmo domani se non fosse per i report che il management guarda ogni lunedì.",
+   "channel": "Sondaggio",
+   "received_days_ago": 46
+  },
+  {
+   "id": "j017",
+   "topic": "d",
+   "text": "Tra licenza base, plugin per il tracciamento del tempo, plugin per i test e plugin per i report, il costo totale è molto più alto di quello che avevamo messo a budget.",
+   "channel": "Sondaggio",
+   "received_days_ago": 31
+  },
+  {
+   "id": "j018",
+   "topic": "c",
+   "text": "Non è pensato per le domande. È pensato per le risposte già trovate.",
+   "channel": "Sondaggio",
+   "received_days_ago": 20
+  },
+  {
+   "id": "j019",
+   "topic": "c",
+   "text": "PM in un team di 4. Per noi la discovery è una lavagna e un documento condiviso. Jira ci serve dopo, quando sappiamo cosa fare, e a quel punto quasi non ci serve più.",
+   "channel": "Sondaggio",
+   "received_days_ago": 16
+  },
+  {
+   "id": "j020",
+   "topic": "b",
+   "text": "Tropppa burocrazia per un team di 6 persone, davvero",
+   "channel": "Sondaggio",
+   "received_days_ago": 48
+  },
+  {
+   "id": "j021",
+   "topic": "d",
+   "text": "Mi occupo di ops e finance. Ogni anno faccio la revisione delle licenze e trovo decine di utenti inattivi. Il modello a postazione su uno strumento così trasversale è punitivo.",
+   "channel": "Sondaggio",
+   "received_days_ago": 49
+  },
+  {
+   "id": "j022",
+   "topic": "f",
+   "text": "Per il nostro team funziona. Abbiamo tenuto la configurazione al minimo: tre stati, niente campi custom. Chi si lamenta di Jira spesso l'ha sovra-configurato.",
+   "channel": "Sondaggio",
+   "received_days_ago": 50
+  },
+  {
+   "id": "j023",
+   "topic": "c",
+   "text": "Mi piacerebbe vedere in un unico posto perché stiamo facendo una cosa, non solo cosa e quando.",
+   "channel": "Sondaggio",
+   "received_days_ago": 17
+  },
+  {
+   "id": "j024",
+   "topic": "b",
+   "text": "Per aggiungere uno stato al workflow devo aprire una richiesta all'admin di Jira. Che a sua volta ha una coda. Su Jira.",
+   "channel": "Sondaggio",
+   "received_days_ago": 57
+  },
+  {
+   "id": "j025",
+   "topic": "a",
+   "text": "Vorrei che le notifiche email fossero meno. Ne ricevo decine al giorno e le ho filtrate tutte in una cartella che non apro mai, quindi quando qualcuno mi tagga davvero me lo perdo.",
+   "channel": "Sondaggio",
+   "received_days_ago": 41
+  },
+  {
+   "id": "j026",
+   "topic": "a",
+   "text": "Aprire una issue ci mette 4-5 secondi. Moltiplicalo per tutte le volte che lo faccio in una giornata da PM e capisci perché il lunedì mattina lo odio.",
+   "channel": "Sondaggio",
+   "received_days_ago": 18
+  },
+  {
+   "id": "j027",
+   "topic": "c",
+   "text": "Designer: faccio test utente ogni due settimane e metto i risultati in un doc. Il link al doc finisce nel ticket e nessuno lo apre, lo vedo dagli accessi.",
+   "channel": "Sondaggio",
+   "received_days_ago": 52
+  },
+  {
+   "id": "j028",
+   "topic": "g",
+   "text": "Shortcut più Productboard da due anni. Nessuna nostalgia.",
+   "channel": "Sondaggio",
+   "received_days_ago": 37
+  },
+  {
+   "id": "j029",
+   "topic": "h",
+   "text": "La migrazione tecnica è la parte facile. Convincere 12 team a cambiare abitudini è la parte difficile.",
+   "channel": "Sondaggio",
+   "received_days_ago": 53
+  },
+  {
+   "id": "j030",
+   "topic": "off_topic",
+   "text": "La macchinetta del caffè al terzo piano è di nuovo rotta",
+   "channel": "Sondaggio",
+   "received_days_ago": 30
+  },
+  {
+   "id": "j031",
+   "topic": "d",
+   "text": "Come no-profit abbiamo uno sconto e per noi fa la differenza. Non cambieremmo solo per il prezzo.",
+   "channel": "Sondaggio",
+   "received_days_ago": 50
+  },
+  {
+   "id": "j032",
+   "topic": "b",
+   "text": "Sono EM in un'azienda grande, ci serve un'autorizzazione centrale anche per creare una board nuova. Di solito passa una settimana. Nel frattempo il team lavora su un foglio condiviso e poi nessuno migra i dati.",
+   "channel": "Sondaggio",
+   "received_days_ago": 3
+  },
+  {
+   "id": "j033",
+   "topic": "j",
+   "text": "Jira ti dice quanti ticket hai chiuso, non se hai risolto un problema per il cliente. Output, non outcome.",
+   "channel": "Sondaggio",
+   "received_days_ago": 53
+  },
+  {
+   "id": "j034",
+   "topic": "f",
+   "text": "Lavoriamo nella difesa. Ci serve la versione installata nel nostro datacenter, senza cloud. Poche alternative lo permettono.",
+   "channel": "Sondaggio",
+   "received_days_ago": 16
+  },
+  {
+   "id": "j035",
+   "topic": "f",
+   "text": "Honestly, our Jira is fast and clean. We spent a week on a cleanup with a good admin and it changed everything.",
+   "channel": "Sondaggio",
+   "received_days_ago": 25
+  },
+  {
+   "id": "j036",
+   "topic": "i",
+   "text": "Mi piacerebbe un'AI che mi dica quali ticket del backlog sono duplicati o morti. Ne abbiamo 2000 aperti e nessuno li guarderà mai.",
+   "channel": "Sondaggio",
+   "received_days_ago": 56
+  },
+  {
+   "id": "j037",
+   "topic": "c",
+   "text": "Le roadmap in Jira funzionano per il delivery, non per comunicare. Al consiglio di amministrazione porto sempre una slide fatta a mano.",
+   "channel": "Sondaggio",
+   "received_days_ago": 3
+  },
+  {
+   "id": "j038",
+   "topic": "f",
+   "text": "As QA lead I find it convenient: bugs, linked test cases, environments. Everything in one place.",
+   "channel": "Sondaggio",
+   "received_days_ago": 49
+  },
+  {
+   "id": "j039",
+   "topic": "g",
+   "text": "Productboard per discovery e roadmap, Jira per il delivery. L'integrazione tra i due è il punto debole: ogni tanto gli stati non si sincronizzano e me ne accorgo in riunione.",
+   "channel": "Sondaggio",
+   "received_days_ago": 3
+  },
+  {
+   "id": "j040",
+   "topic": "b",
+   "text": "Chi disegna il workflow non è chi lo usa tutti i giorni, e si vede",
+   "channel": "Sondaggio",
+   "received_days_ago": 38
+  },
+  {
+   "id": "j041",
+   "topic": "f",
+   "text": "Faccio la PM da otto anni e l'ho usato in quattro aziende. La differenza la fa sempre chi lo amministra.",
+   "channel": "Sondaggio",
+   "received_days_ago": 51
+  },
+  {
+   "id": "j042",
+   "topic": "d",
+   "text": "Startup early stage: il piano gratuito ci bastava, poi siamo cresciuti oltre la soglia degli utenti e il salto è stato brusco. Abbiamo colto l'occasione per guardarci intorno.",
+   "channel": "Sondaggio",
+   "received_days_ago": 19
+  },
+  {
+   "id": "j043",
+   "topic": "f",
+   "text": "Come compliance officer ho bisogno di vedere chi ha approvato cosa e quando. Jira me lo dà. Che sia bello o no mi interessa poco.",
+   "channel": "Sondaggio",
+   "received_days_ago": 11
+  },
+  {
+   "id": "j044",
+   "topic": "f",
+   "text": "Nessun problema particolare. Lo usiamo per sprint e bug, fa quello che deve.",
+   "channel": "Sondaggio",
+   "received_days_ago": 38
+  },
+  {
+   "id": "j045",
+   "topic": "d",
+   "text": "Paghiamo licenze per stakeholder che aprono Jira una volta al mese per leggere lo stato di un progetto. Non ha senso.",
+   "channel": "Sondaggio",
+   "received_days_ago": 18
+  },
+  {
+   "id": "j046",
+   "topic": "off_topic",
+   "text": "Bel sondaggio, la prossima volta più corto grazie",
+   "channel": "Sondaggio",
+   "received_days_ago": 14
+  },
+  {
+   "id": "j047",
+   "topic": "g",
+   "text": "Provato Notion come issue tracker per tre mesi, abbandonato. Ottimo per scrivere, scarso per tracciare.",
+   "channel": "Sondaggio",
+   "received_days_ago": 14
+  },
+  {
+   "id": "j048",
+   "topic": "f",
+   "text": "Grande azienda manifatturiera, reparto IT di 150 persone. Jira è integrato con il nostro change management e con l'SSO aziendale. Cambiare non è in discussione.",
+   "channel": "Sondaggio",
+   "received_days_ago": 36
+  },
+  {
+   "id": "j049",
+   "topic": "e",
+   "text": "Integrazione con il nostro sistema di CI fatta in casa, si rompe a ogni cambio di API e la sistema sempre la stessa persona.",
+   "channel": "Sondaggio",
+   "received_days_ago": 16
+  },
+  {
+   "id": "j050",
+   "topic": "g",
+   "text": "Notion per tutto: documenti, roadmap, task. Non è perfetto per gli sprint ma avere tutto in un posto vale di più.",
+   "channel": "Sondaggio",
+   "received_days_ago": 32
+  },
+  {
+   "id": "j051",
+   "topic": "g",
+   "text": "Passati a Linear sei mesi fa. Il team non tornerebbe indietro. È veloce, ha opinioni forti e ci ha costretti a semplificare il processo.",
+   "channel": "Sondaggio",
+   "received_days_ago": 45
+  },
+  {
+   "id": "j052",
+   "topic": "b",
+   "text": "Our Jira admin left last year and now nobody dares to change anything. We're stuck with a setup nobody understands.",
+   "channel": "Sondaggio",
+   "received_days_ago": 26
+  },
+  {
+   "id": "j053",
+   "topic": "f",
+   "text": "Nessuna lamentela vera. Qualche lentezza ogni tanto, niente di grave.",
+   "channel": "Sondaggio",
+   "received_days_ago": 44
+  },
+  {
+   "id": "j054",
+   "topic": "b",
+   "text": "Ogni sprint metà del planning se ne va a discutere di story point e sottotask invece che di cosa costruire. Non è colpa solo dello strumento, ma lo strumento spinge in quella direzione.",
+   "channel": "Sondaggio",
+   "received_days_ago": 38
+  },
+  {
+   "id": "j055",
+   "topic": "c",
+   "text": "Usiamo le timeline di Jira per la roadmap trimestrale. Al team va bene, al management no: vogliono vedere risultati attesi, non epic.",
+   "channel": "Sondaggio",
+   "received_days_ago": 1
+  },
+  {
+   "id": "j056",
+   "topic": "i",
+   "text": "Le nuove funzioni AI riassumono i ticket lunghi. Utile, ma non risolve il problema che i ticket sono lunghi.",
+   "channel": "Sondaggio",
+   "received_days_ago": 38
+  },
+  {
+   "id": "j057",
+   "topic": "f",
+   "text": "Regulated industry here, medical devices. We need traceability from requirement to test to release. Jira plus a couple of add-ons does it, and auditors already know how to read it.",
+   "channel": "Sondaggio",
+   "received_days_ago": 45
+  },
+  {
+   "id": "j058",
+   "topic": "f",
+   "text": "Senior engineer, dieci anni di Jira. Lo odiavo, adesso lo trovo prevedibile. Dopo averne provati altri, la prevedibilità ha un valore.",
+   "channel": "Sondaggio",
+   "received_days_ago": 20
+  },
+  {
+   "id": "j059",
+   "topic": "g",
+   "text": "We moved to Linear and velocity didn't change. Morale did.",
+   "channel": "Sondaggio",
+   "received_days_ago": 48
+  },
+  {
+   "id": "j060",
+   "topic": "b",
+   "text": "Screen scheme, issue type scheme, field configuration scheme... chi ha progettato questo sistema aveva un debole per gli schemi",
+   "channel": "Sondaggio",
+   "received_days_ago": 13
+  },
+  {
+   "id": "j061",
+   "topic": "a",
+   "text": "Too many clicks for simple things. Moving a ticket to another sprint shouldn't need a modal.",
+   "channel": "Sondaggio",
+   "received_days_ago": 29
+  },
+  {
+   "id": "j062",
+   "topic": "h",
+   "text": "Abbiamo iniziato la migrazione e dopo due mesi eravamo con metà team su uno strumento e metà sull'altro. Il peggio dei due mondi. Siamo tornati indietro.",
+   "channel": "Sondaggio",
+   "received_days_ago": 18
+  },
+  {
+   "id": "j063",
+   "topic": "h",
+   "text": "L'azienda madre impone Jira a tutte le controllate. Fine della discussione.",
+   "channel": "Sondaggio",
+   "received_days_ago": 6
+  },
+  {
+   "id": "j064",
+   "topic": "a",
+   "text": "La board con 300 ticket scatta. Il nostro team di 9 dev ha smesso di usarla durante lo standup e ora condividiamo uno spreadsheet, che è assurdo se ci pensi.",
+   "channel": "Sondaggio",
+   "received_days_ago": 53
+  },
+  {
+   "id": "j065",
+   "topic": "g",
+   "text": "Abbiamo usato Height per un anno. Bello, con l'AI integrata, ma avevamo dubbi sul futuro del prodotto e siamo tornati indietro.",
+   "channel": "Sondaggio",
+   "received_days_ago": 0
+  },
+  {
+   "id": "j066",
+   "topic": "b",
+   "text": "Subtask inside story inside epic inside initiative. Four levels just to say we're building the login page.",
+   "channel": "Sondaggio",
+   "received_days_ago": 48
+  },
+  {
+   "id": "j067",
+   "topic": "h",
+   "text": "Leaving Jira sounds great in a retro. Then someone asks who's going to migrate the compliance tickets and the room goes quiet.",
+   "channel": "Sondaggio",
+   "received_days_ago": 32
+  },
+  {
+   "id": "j068",
+   "topic": "f",
+   "text": "Va bene cosi, niente da segnalare",
+   "channel": "Sondaggio",
+   "received_days_ago": 6
+  },
+  {
+   "id": "j069",
+   "topic": "d",
+   "text": "Il costo è giustificato se lo usi davvero tutto. Noi ne usiamo forse un quinto.",
+   "channel": "Sondaggio",
+   "received_days_ago": 53
+  },
+  {
+   "id": "j070",
+   "topic": "d",
+   "text": "Il passaggio obbligato dalla versione server al cloud ci ha costretti a rinegoziare tutto. Costi più alti, stesse funzionalità che usavamo prima.",
+   "channel": "Sondaggio",
+   "received_days_ago": 0
+  },
+  {
+   "id": "j071",
+   "topic": "g",
+   "text": "ClickUp ci ha convinti per il prezzo e per la flessibilità verso i team non tecnici. Marketing e ops lo usano volentieri, cosa che con Jira non era mai successa.",
+   "channel": "Sondaggio",
+   "received_days_ago": 55
+  },
+  {
+   "id": "j072",
+   "topic": "f",
+   "text": "Il mio team è contento. Non ci facciamo troppe domande.",
+   "channel": "Sondaggio",
+   "received_days_ago": 3
+  },
+  {
+   "id": "j073",
+   "topic": "e",
+   "text": "API rate limits bit us when we tried to sync with our data warehouse. Reporting ended up being a nightly export.",
+   "channel": "Sondaggio",
+   "received_days_ago": 47
+  },
+  {
+   "id": "j074",
+   "topic": "f",
+   "text": "Le dipendenze tra issue di team diversi sono l'unica cosa che ci tiene insieme durante il PI planning.",
+   "channel": "Sondaggio",
+   "received_days_ago": 58
+  },
+  {
+   "id": "j075",
+   "topic": "f",
+   "text": "Healthcare company. Every change to patient-facing software has to be traceable for regulators. Jira's history and approvals are part of our validated process, so changing tool means revalidating everything.",
+   "channel": "Sondaggio",
+   "received_days_ago": 43
+  },
+  {
+   "id": "j076",
+   "topic": "a",
+   "text": "Faccio la designer in una scaleup da circa 200 persone. Il mio lavoro vive in Figma, Jira lo vedo solo quando qualcuno mi tagga. Ogni volta è come entrare in un ufficio anagrafe: sportelli, moduli, e la sensazione di aver sbagliato fila.",
+   "channel": "Sondaggio",
+   "received_days_ago": 38
+  },
+  {
+   "id": "j077",
+   "topic": "g",
+   "text": "tutti parlano di linear ma a me sembra un Jira più bello con meno funzioni, non una cosa diversa",
+   "channel": "Sondaggio",
+   "received_days_ago": 48
+  },
+  {
+   "id": "j078",
+   "topic": "a",
+   "text": "App mobile praticamente inutilizzabile, la apro solo per le notifiche e poi passo al portatile.",
+   "channel": "Sondaggio",
+   "received_days_ago": 37
+  },
+  {
+   "id": "j079",
+   "topic": "a",
+   "text": "UI lenta, soprattutto sui progetti vecchi con migliaia di issue.",
+   "channel": "Sondaggio",
+   "received_days_ago": 51
+  },
+  {
+   "id": "j080",
+   "topic": "e",
+   "text": "Il bello di Jira è che tutto ci si integra. Il brutto è che tutto ci si integra, e ogni integrazione aggiunge campi.",
+   "channel": "Sondaggio",
+   "received_days_ago": 51
+  },
+  {
+   "id": "j081",
+   "topic": "b",
+   "text": "Ops qui. Abbiamo provato a usarlo per le richieste interne, tipo onboarding dei nuovi assunti e acquisti. Troppo rigido per noi, siamo tornati ai moduli e a una casella email condivisa.",
+   "channel": "Sondaggio",
+   "received_days_ago": 59
+  },
+  {
+   "id": "j082",
+   "topic": "a",
+   "text": "Da engineering manager passo più tempo a sistemare filtri JQL che a parlare con il team. La ricerca è potente, ma nel mio gruppo nessuno oltre a me la sa usare, quindi di fatto sono diventato il centralino dei filtri.",
+   "channel": "Sondaggio",
+   "received_days_ago": 4
+  },
+  {
+   "id": "j083",
+   "topic": "c",
+   "text": "Da noi la roadmap vive in tre posti diversi e nessuno dei tre è aggiornato. Almeno sul delivery Jira è la fonte di verità.",
+   "channel": "Sondaggio",
+   "received_days_ago": 8
+  },
+  {
+   "id": "j084",
+   "topic": "a",
+   "text": "Sono designer, entro in Jira due volte a settimana e ogni volta non trovo niente. Troppi menu, troppi campi, troppi pulsanti che sembrano fare la stessa cosa.",
+   "channel": "Sondaggio",
+   "received_days_ago": 24
+  },
+  {
+   "id": "j085",
+   "topic": "f",
+   "text": "Per chi fa scrum da manuale Jira è ancora il riferimento.",
+   "channel": "Sondaggio",
+   "received_days_ago": 43
+  },
+  {
+   "id": "j086",
+   "topic": "e",
+   "text": "L'integrazione con GitHub funziona, ma il collegamento tra PR e ticket salta appena qualcuno scrive male la chiave nel nome del branch.",
+   "channel": "Sondaggio",
+   "received_days_ago": 41
+  },
+  {
+   "id": "j087",
+   "topic": "g",
+   "text": "Stiamo valutando Linear ma il nostro team di sicurezza chiede cose che forse ci sono solo sul piano più alto. Vedremo.",
+   "channel": "Sondaggio",
+   "received_days_ago": 44
+  },
+  {
+   "id": "j088",
+   "topic": "f",
+   "text": "I nostri auditor esterni conoscono Jira. Se portiamo un altro strumento dobbiamo spiegare da capo come funziona la tracciabilità. È un costo nascosto che nessuno mette nei confronti tra strumenti.",
+   "channel": "Sondaggio",
+   "received_days_ago": 5
+  },
+  {
+   "id": "j089",
+   "topic": "g",
+   "text": "Shortcut è stato il compromesso giusto per il nostro team di 20: più strutturato di una bacheca semplice, meno pesante di Jira.",
+   "channel": "Sondaggio",
+   "received_days_ago": 48
+  },
+  {
+   "id": "j090",
+   "topic": "f",
+   "text": "Neutro. Per me è come la posta elettronica: nessuno la ama, tutti la usano.",
+   "channel": "Sondaggio",
+   "received_days_ago": 44
+  },
+  {
+   "id": "j091",
+   "topic": "e",
+   "text": "Il webhook verso il nostro strumento di gestione incidenti ha smesso di funzionare per una settimana e nessuno se n'è accorto.",
+   "channel": "Sondaggio",
+   "received_days_ago": 44
+  },
+  {
+   "id": "j092",
+   "topic": "e",
+   "text": "Slack integration is noisy. You either get every single update or nothing at all.",
+   "channel": "Sondaggio",
+   "received_days_ago": 22
+  },
+  {
+   "id": "j093",
+   "topic": "g",
+   "text": "Linear is great until you need to explain to the CFO what 40 engineers did last quarter. Then you miss Jira's reports.",
+   "channel": "Sondaggio",
+   "received_days_ago": 7
+  },
+  {
+   "id": "j094",
+   "topic": "f",
+   "text": "Audit SOX: ogni deploy in produzione deve avere un ticket approvato collegato. È tutto tracciato in Jira e i nostri controlli automatici si basano proprio su quello. Per noi cambiare strumento significa rifare mezzo framework di controllo, riscrivere le procedure, rifare la formazione e passare un altro ciclo di audit con il rischio di rilievi. Nessun guadagno di velocità dei team di sviluppo giustifica quel rischio, almeno non per un'azienda quotata come la nostra.",
+   "channel": "Sondaggio",
+   "received_days_ago": 30
+  },
+  {
+   "id": "j095",
+   "topic": "g",
+   "text": "Switched our 6-person team to GitHub Projects. Free, close to the code, zero admin. Good enough is good enough.",
+   "channel": "Sondaggio",
+   "received_days_ago": 25
+  },
+  {
+   "id": "j096",
+   "topic": "d",
+   "text": "Per-seat pricing kills cross-functional collaboration. We keep sales and support out of Jira just to save money, then complain they don't know what we ship.",
+   "channel": "Sondaggio",
+   "received_days_ago": 31
+  },
+  {
+   "id": "j097",
+   "topic": "i",
+   "text": "AI search across Jira and Confluence is actually useful. First time in years I found an old decision in under a minute.",
+   "channel": "Sondaggio",
+   "received_days_ago": 48
+  },
+  {
+   "id": "j098",
+   "topic": "j",
+   "text": "I gadget delle dashboard sembrano fermi a dieci anni fa. Funzionano, ma sono brutti e poco flessibili.",
+   "channel": "Sondaggio",
+   "received_days_ago": 41
+  },
+  {
+   "id": "j099",
+   "topic": "a",
+   "text": "Jira feels like it was designed by a committee whose members never met each other. Every screen follows a different logic.",
+   "channel": "Sondaggio",
+   "received_days_ago": 55
+  },
+  {
+   "id": "j100",
+   "topic": "f",
+   "text": "Per noi Jira funziona benissimo. Il problema di solito è come lo si configura, non lo strumento.",
+   "channel": "Sondaggio",
+   "received_days_ago": 12
+  },
+  {
+   "id": "j101",
+   "topic": "c",
+   "text": "Il problema non è Jira in sé. È che il product management moderno è fatto di domande aperte, e Jira è fatto di cose da chiudere.",
+   "channel": "Sondaggio",
+   "received_days_ago": 49
+  },
+  {
+   "id": "j102",
+   "topic": "g",
+   "text": "GitHub Projects is enough for us. The code is there, the issues are there, the PRs are there. Why add another tool?",
+   "channel": "Sondaggio",
+   "received_days_ago": 26
+  },
+  {
+   "id": "j103",
+   "topic": "c",
+   "text": "I nostri OKR non hanno nessun legame con i ticket. Ogni trimestre qualcuno fa un collegamento manuale per la presentazione al board e poi lo butta via.",
+   "channel": "Sondaggio",
+   "received_days_ago": 16
+  },
+  {
+   "id": "j104",
+   "topic": "d",
+   "text": "Cost isn't really the issue for us, the add-ons are. Every basic thing we need turns out to be a paid marketplace app.",
+   "channel": "Sondaggio",
+   "received_days_ago": 38
+  },
+  {
+   "id": "j105",
+   "topic": "f",
+   "text": "It's boring and it works. For a 400-person engineering org, boring is a feature.",
+   "channel": "Sondaggio",
+   "received_days_ago": 16
+  },
+  {
+   "id": "j106",
+   "topic": "f",
+   "text": "Non è moderno ma è affidabile. Mai perso un dato, mai un disservizio che ricordi.",
+   "channel": "Sondaggio",
+   "received_days_ago": 48
+  },
+  {
+   "id": "j107",
+   "topic": "e",
+   "text": "Le integrazioni sono il motivo per cui restiamo. Deploy, test automatici, feature flag: tutto passa da lì e funziona.",
+   "channel": "Sondaggio",
+   "received_days_ago": 6
+  },
+  {
+   "id": "j108",
+   "topic": "e",
+   "text": "Integrazioni ottime con il resto della suite dello stesso vendor. Con tutto il resto dipende dal plugin di turno e da chi lo mantiene.",
+   "channel": "Sondaggio",
+   "received_days_ago": 40
+  },
+  {
+   "id": "j109",
+   "topic": "h",
+   "text": "Il costo del cambio lo pagano PM ed EM, il beneficio lo vedono i dev. Per questo la decisione non si prende mai.",
+   "channel": "Sondaggio",
+   "received_days_ago": 51
+  },
+  {
+   "id": "j110",
+   "topic": "d",
+   "text": "Sommando Jira, Confluence e le app del marketplace per 25 persone, è diventata una delle prime voci di spesa software. Ne vale la pena? Onestamente non ne sono sicuro.",
+   "channel": "Sondaggio",
+   "received_days_ago": 31
+  },
+  {
+   "id": "j111",
+   "topic": "f",
+   "text": "Per la nostra certificazione ISO 27001 la gestione delle change request passa da Jira. L'auditor chiede la cronologia del ticket e la troviamo in un minuto.",
+   "channel": "Sondaggio",
+   "received_days_ago": 41
+  },
+  {
+   "id": "j112",
+   "topic": "f",
+   "text": "We tried to leave twice. Came back twice. The grass isn't greener, it's just a different shade of grass.",
+   "channel": "Sondaggio",
+   "received_days_ago": 4
+  },
+  {
+   "id": "j113",
+   "topic": "c",
+   "text": "La roadmap la teniamo su una slide, la discovery su Notion, le interviste su Drive. Jira vede solo quello che è già stato deciso.",
+   "channel": "Sondaggio",
+   "received_days_ago": 23
+  },
+  {
+   "id": "j114",
+   "topic": "b",
+   "text": "Permessi incomprensibili. Il nostro designer freelance non riusciva a vedere l'epic su cui stava lavorando e ci abbiamo messo due giorni a capire quale schema lo bloccava.",
+   "channel": "Sondaggio",
+   "received_days_ago": 52
+  },
+  {
+   "id": "j115",
+   "topic": "f",
+   "text": "I permessi granulari per noi sono fondamentali: lavoriamo con fornitori esterni che devono vedere solo alcuni progetti.",
+   "channel": "Sondaggio",
+   "received_days_ago": 29
+  },
+  {
+   "id": "j116",
+   "topic": "a",
+   "text": "As a new hire, onboarding into our Jira took me longer than onboarding into the codebase. That says something.",
+   "channel": "Sondaggio",
+   "received_days_ago": 14
+  },
+  {
+   "id": "j117",
+   "topic": "j",
+   "text": "Per i report agli stakeholder esportiamo in un foglio e rifacciamo i grafici. Le dashboard native non piacciono a nessuno fuori da engineering.",
+   "channel": "Sondaggio",
+   "received_days_ago": 17
+  },
+  {
+   "id": "j118",
+   "topic": "f",
+   "text": "Mi piace JQL. Una volta imparato, nessun altro strumento ti permette ricerche così precise.",
+   "channel": "Sondaggio",
+   "received_days_ago": 9
+  },
+  {
+   "id": "j119",
+   "topic": "b",
+   "text": "PM here. I spend Friday afternoons cleaning tickets so the board looks sane for Monday's planning. That's not product work, that's janitorial work.",
+   "channel": "Sondaggio",
+   "received_days_ago": 44
+  },
+  {
+   "id": "j120",
+   "topic": "e",
+   "text": "Vorrei che i ticket di supporto e i bug di prodotto fossero la stessa cosa. Invece li copiamo a mano da un sistema all'altro.",
+   "channel": "Sondaggio",
+   "received_days_ago": 6
+  },
+  {
+   "id": "j121",
+   "topic": "f",
+   "text": "In una multinazionale lo standard conta più della preferenza del singolo team. Jira è lo standard.",
+   "channel": "Sondaggio",
+   "received_days_ago": 19
+  },
+  {
+   "id": "j122",
+   "topic": "c",
+   "text": "Jira is where ideas go to become tickets, not where ideas are born. Discovery happens everywhere else.",
+   "channel": "Sondaggio",
+   "received_days_ago": 48
+  },
+  {
+   "id": "j123",
+   "topic": "a",
+   "text": "Il problema non è una feature specifica, è la sensazione generale. Ogni click pesa. Con un team di 5 persone non ha senso pagare questo attrito tutti i giorni.",
+   "channel": "Sondaggio",
+   "received_days_ago": 35
+  },
+  {
+   "id": "j124",
+   "topic": "a",
+   "text": "Search is slow and weirdly bad. I type the exact title of a ticket and it shows me five others first.",
+   "channel": "Sondaggio",
+   "received_days_ago": 14
+  },
+  {
+   "id": "j125",
+   "topic": "d",
+   "text": "Da founder guardo il costo totale: licenze più il tempo che la gente perde dentro lo strumento. Il secondo pesa molto più del primo.",
+   "channel": "Sondaggio",
+   "received_days_ago": 59
+  },
+  {
+   "id": "j126",
+   "topic": "c",
+   "text": "The product brief lives in a doc, the spec in another doc, the tickets in Jira and the actual decisions in Slack. Jira is just the last mile.",
+   "channel": "Sondaggio",
+   "received_days_ago": 46
+  },
+  {
+   "id": "j127",
+   "topic": "f",
+   "text": "Siamo una banca. Tracciabilità di ogni modifica, workflow di approvazione, audit trail esportabile: nessun altro strumento che abbiamo valutato ci dava tutto questo insieme.",
+   "channel": "Sondaggio",
+   "received_days_ago": 42
+  },
+  {
+   "id": "j128",
+   "topic": "f",
+   "text": "Abbiamo un'integrazione profonda con il service desk dello stesso vendor. Per il nostro modello operativo, supporto di primo livello che scala direttamente ai team di sviluppo, è un vantaggio enorme che nessun concorrente ci ha saputo replicare nelle demo.",
+   "channel": "Sondaggio",
+   "received_days_ago": 36
+  },
+  {
+   "id": "j129",
+   "topic": "h",
+   "text": "Vorremmo lasciarlo ma abbiamo centinaia di automazioni e dashboard che usano anche altri reparti. Non si tocca.",
+   "channel": "Sondaggio",
+   "received_days_ago": 22
+  },
+  {
+   "id": "j130",
+   "topic": "f",
+   "text": "The roadmap features got better lately. Not best in class, but good enough that we dropped a separate tool.",
+   "channel": "Sondaggio",
+   "received_days_ago": 8
+  },
+  {
+   "id": "j131",
+   "topic": "b",
+   "text": "Campi obbligatori ovunque. Per aprire un bug ne servono nove, metà dei quali nessuno legge mai.",
+   "channel": "Sondaggio",
+   "received_days_ago": 52
+  },
+  {
+   "id": "j132",
+   "topic": "e",
+   "text": "Engineer here: the API is decent, I wrote a small script that creates tickets from my terminal. Without it I wouldn't use Jira at all.",
+   "channel": "Sondaggio",
+   "received_days_ago": 31
+  },
+  {
+   "id": "j133",
+   "topic": "b",
+   "text": "Abbiamo 14 workflow diversi per 6 team. Nessuno sa più perché esistano. Toccarli fa paura.",
+   "channel": "Sondaggio",
+   "received_days_ago": 3
+  },
+  {
+   "id": "j134",
+   "topic": "f",
+   "text": "Lavoro in un gruppo con più di tremila persone. Jira è l'unico strumento che tutti conoscono. Cambiarlo vorrebbe dire rifare formazione a migliaia di persone per un guadagno incerto.",
+   "channel": "Sondaggio",
+   "received_days_ago": 37
+  },
+  {
+   "id": "j135",
+   "topic": "h",
+   "text": "Siamo passati da Jira a Notion e dopo un anno siamo tornati su Jira. Notion non reggeva gli sprint con 40 sviluppatori.",
+   "channel": "Sondaggio",
+   "received_days_ago": 49
+  },
+  {
+   "id": "j136",
+   "topic": "i",
+   "text": "Con gli agenti di coding i ticket li leggono anche le macchine. Jira non è pensato per questo: troppe informazioni sparse in campi diversi, commenti che si contraddicono, allegati che un agente non apre.",
+   "channel": "Sondaggio",
+   "received_days_ago": 39
+  },
+  {
+   "id": "j137",
+   "topic": "a",
+   "text": "Lavoro in ops, non sono tecnica. Ogni volta che devo aprire una richiesta al team prodotto mi perdo tra progetti, tipi di issue e componenti. Alla fine scrivo su Slack al PM e lui la apre per me.",
+   "channel": "Sondaggio",
+   "received_days_ago": 29
+  },
+  {
+   "id": "j138",
+   "topic": "g",
+   "text": "Il confronto non è Jira contro Linear. È strumenti per chi esegue contro strumenti per chi decide, e nessuno dei due risolve la parte decisionale.",
+   "channel": "Sondaggio",
+   "received_days_ago": 6
+  },
+  {
+   "id": "j139",
+   "topic": "off_topic",
+   "text": "Non uso Jira. Cosa sarebbe?",
+   "channel": "Sondaggio",
+   "received_days_ago": 28
+  },
+  {
+   "id": "j140",
+   "topic": "a",
+   "text": "Keyboard shortcuts exist but half of them clash with the browser. Developer experience clearly isn't a priority.",
+   "channel": "Sondaggio",
+   "received_days_ago": 30
+  },
+  {
+   "id": "j141",
+   "topic": "b",
+   "text": "La flessibilità è il suo punto forte e il suo problema. Ogni team l'ha piegato a modo suo e ora i report tra team diversi non si riescono a fare.",
+   "channel": "Sondaggio",
+   "received_days_ago": 19
+  },
+  {
+   "id": "j142",
+   "topic": "a",
+   "text": "Il backlog grooming su Jira è una sofferenza visiva. Drag and drop che salta, liste infinite, nessun modo decente di vedere il contesto di una storia senza aprirla.",
+   "channel": "Sondaggio",
+   "received_days_ago": 14
+  },
+  {
+   "id": "j143",
+   "topic": "b",
+   "text": "I campi custom sono esplosi: ne abbiamo più di cento a livello di istanza. Qualcuno dovrebbe fare pulizia, ma nessuno vuole rompere i report di qualcun altro, quindi crescono e basta.",
+   "channel": "Sondaggio",
+   "received_days_ago": 44
+  },
+  {
+   "id": "j144",
+   "topic": "f",
+   "text": "Retention policy, export completo, log di accesso: quando un cliente enterprise ci ha chiesto di dimostrare i nostri controlli, Jira ci ha semplificato la vita.",
+   "channel": "Sondaggio",
+   "received_days_ago": 53
+  },
+  {
+   "id": "j145",
+   "topic": "i",
+   "text": "Uso un assistente AI esterno per scrivere i ticket e poi li incollo in Jira. Funziona meglio di quello integrato.",
+   "channel": "Sondaggio",
+   "received_days_ago": 28
+  },
+  {
+   "id": "j146",
+   "topic": "f",
+   "text": "Jira is fine. People blame the tool for their process.",
+   "channel": "Sondaggio",
+   "received_days_ago": 47
+  },
+  {
+   "id": "j147",
+   "topic": "c",
+   "text": "Head of Product in una scaleup fintech. Delivery in Jira, strategia e discovery altrove. Mi sta anche bene così, ma il passaggio di contesto tra i due mondi lo pago io ogni settimana, riscrivendo le stesse cose in tre formati diversi per tre pubblici diversi. Il team di sviluppo vede il ticket, il CEO vede la slide, i designer vedono Figma, e nessuno vede il ragionamento che tiene insieme le tre cose. Se qualcuno risolvesse solo quel pezzo, pagherei volentieri.",
+   "channel": "Sondaggio",
+   "received_days_ago": 28
+  },
+  {
+   "id": "j148",
+   "topic": "d",
+   "text": "Al rinnovo il prezzo per utente è salito di nuovo. Con 40 persone inizia a essere una voce che il CFO nota e su cui fa domande.",
+   "channel": "Sondaggio",
+   "received_days_ago": 30
+  },
+  {
+   "id": "j149",
+   "topic": "j",
+   "text": "Da EM uso i report per capire dove si bloccano le cose. Per questo Jira resta il migliore che ho provato.",
+   "channel": "Sondaggio",
+   "received_days_ago": 13
+  },
+  {
+   "id": "j150",
+   "topic": "i",
+   "text": "L'AI che scrive i criteri di accettazione è carina ma inventa requisiti. L'ho dovuta correggere ogni volta.",
+   "channel": "Sondaggio",
+   "received_days_ago": 10
+  },
+  {
+   "id": "j151",
+   "topic": "off_topic",
+   "text": "test test prova non considerare",
+   "channel": "Sondaggio",
+   "received_days_ago": 5
+  },
+  {
+   "id": "j152",
+   "topic": "f",
+   "text": "Jira non è il problema. Il problema è che lo usiamo per fare project management quando dovremmo fare product management.",
+   "channel": "Sondaggio",
+   "received_days_ago": 17
+  },
+  {
+   "id": "j153",
+   "topic": "e",
+   "text": "Figma e Jira si parlano poco. Il plugin c'è ma nessuno lo usa perché le anteprime non si aggiornano.",
+   "channel": "Sondaggio",
+   "received_days_ago": 4
+  },
+  {
+   "id": "j154",
+   "topic": "e",
+   "text": "Collegare Jira al nostro CRM per portare dentro le richieste dei clienti è stato un progetto a sé, con un consulente e tre mesi di lavoro.",
+   "channel": "Sondaggio",
+   "received_days_ago": 38
+  },
+  {
+   "id": "j155",
+   "topic": "g",
+   "text": "Abbiamo valutato ClickUp. Troppe funzionalità, sembrava Jira con i colori.",
+   "channel": "Sondaggio",
+   "received_days_ago": 14
+  },
+  {
+   "id": "j156",
+   "topic": "off_topic",
+   "text": "Ciao, qualcuno sa come si cambia la password dell'account?",
+   "channel": "Sondaggio",
+   "received_days_ago": 36
+  },
+  {
+   "id": "j157",
+   "topic": "f",
+   "text": "Engineering manager in una scaleup. Non lo sceglierei oggi partendo da zero, ma non vedo motivi abbastanza forti per cambiarlo.",
+   "channel": "Sondaggio",
+   "received_days_ago": 47
+  },
+  {
+   "id": "j158",
+   "topic": "a",
+   "text": "troppo lentoo, ogni click un'attesa",
+   "channel": "Sondaggio",
+   "received_days_ago": 52
+  },
+  {
+   "id": "j159",
+   "topic": "a",
+   "text": "la nuova UI è migliorata un po rispetto a qualche anno fa pero le schermate di configurazione sono ancora un labirinto",
+   "channel": "Sondaggio",
+   "received_days_ago": 42
+  },
+  {
+   "id": "j160",
+   "topic": "f",
+   "text": "Lo uso da solo per un progetto personale, piano gratuito, zero problemi",
+   "channel": "Sondaggio",
+   "received_days_ago": 51
+  },
+  {
+   "id": "j161",
+   "topic": "b",
+   "text": "Il workflow l'ha disegnato un consulente esterno tre anni fa. Oggi abbiamo stati che nessuno usa, tipo \"In attesa di approvazione QA secondaria\", e nessuno si prende la responsabilità di toglierli.",
+   "channel": "Sondaggio",
+   "received_days_ago": 12
+  },
+  {
+   "id": "j162",
+   "topic": "f",
+   "text": "Ci piace poter avere progetti gestiti dal team per i gruppi piccoli e progetti gestiti centralmente per quelli regolamentati, nella stessa istanza.",
+   "channel": "Sondaggio",
+   "received_days_ago": 49
+  },
+  {
+   "id": "j163",
+   "topic": "j",
+   "text": "Cross-project reporting is where Jira breaks for us. Every team has different fields, so any roll-up needs a data analyst.",
+   "channel": "Sondaggio",
+   "received_days_ago": 2
+  },
+  {
+   "id": "j164",
+   "topic": "d",
+   "text": "Abbiamo un contratto enterprise su tutta la suite, quindi Jira al singolo team costa poco. Toglierlo non ci farebbe risparmiare nulla, anzi.",
+   "channel": "Sondaggio",
+   "received_days_ago": 6
+  },
+  {
+   "id": "j165",
+   "topic": "h",
+   "text": "Il vero motivo per cui restiamo è Confluence. Tutta la documentazione è collegata ai ticket e spostare solo Jira romperebbe tutto.",
+   "channel": "Sondaggio",
+   "received_days_ago": 17
+  },
+  {
+   "id": "j166",
+   "topic": "i",
+   "text": "Non uso le funzioni AI di Jira: non mi fido a mandare dati dei clienti a un modello senza sapere dove finiscono. Il nostro DPO ha detto no.",
+   "channel": "Sondaggio",
+   "received_days_ago": 49
+  },
+  {
+   "id": "j167",
+   "topic": "g",
+   "text": "Il nostro team mobile è passato a Linear, il resto dell'azienda è su Jira. Ora abbiamo due fonti di verità e un sync fatto con uno script che nessuno vuole mantenere.",
+   "channel": "Sondaggio",
+   "received_days_ago": 43
+  },
+  {
+   "id": "j168",
+   "topic": "i",
+   "text": "L'AI in Jira è arrivata tardi e sa di aggiunta. Altri strumenti l'hanno messa al centro del flusso.",
+   "channel": "Sondaggio",
+   "received_days_ago": 41
+  },
+  {
+   "id": "j169",
+   "topic": "f",
+   "text": "Il team di sviluppo lo ama, il team prodotto lo sopporta. Direi che è già un buon risultato.",
+   "channel": "Sondaggio",
+   "received_days_ago": 15
+  },
+  {
+   "id": "j170",
+   "topic": "f",
+   "text": "Nel nostro settore, assicurazioni, il software deve avere dati in Europa, SSO e permessi granulari. Jira ce li ha. Molti strumenti più moderni no, o solo sul piano più caro.",
+   "channel": "Sondaggio",
+   "received_days_ago": 36
+  },
+  {
+   "id": "j171",
+   "topic": "f",
+   "text": "Neutrale: fa il suo lavoro per il delivery, ma non gli chiederei niente di più.",
+   "channel": "Sondaggio",
+   "received_days_ago": 29
+  },
+  {
+   "id": "j172",
+   "topic": "g",
+   "text": "Engineer: per me il miglior issue tracker è quello che non vedo. Issue su GitHub con le label giuste e basta.",
+   "channel": "Sondaggio",
+   "received_days_ago": 55
+  },
+  {
+   "id": "j173",
+   "topic": "c",
+   "text": "I feedback dei clienti arrivano dal supporto e finiscono in un canale Slack. Ogni tanto qualcuno apre un ticket. Il collegamento tra cosa chiedono i clienti e cosa costruiamo è nella testa di due persone, e una delle due sta per andare in maternità.",
+   "channel": "Sondaggio",
+   "received_days_ago": 7
+  },
+  {
+   "id": "j174",
+   "topic": "b",
+   "text": "Automations are handy but our plan caps how many runs we get, and we only found out when they silently stopped working mid-month.",
+   "channel": "Sondaggio",
+   "received_days_ago": 11
+  },
+  {
+   "id": "j175",
+   "topic": "b",
+   "text": "Honestly the workflow engine is great if you have someone who owns it full time. We don't, and it shows.",
+   "channel": "Sondaggio",
+   "received_days_ago": 50
+  },
+  {
+   "id": "j176",
+   "topic": "c",
+   "text": "Discovery e Jira non si parlano. Ho provato con le label 'research' ma diventano rumore dopo due settimane.",
+   "channel": "Sondaggio",
+   "received_days_ago": 22
+  },
+  {
+   "id": "j177",
+   "topic": "h",
+   "text": "Siamo rimasti per inerzia cmq. Nessuno ha il tempo di guidare una migrazione e nessuno vuole essere quello che rompe i processi.",
+   "channel": "Sondaggio",
+   "received_days_ago": 36
+  },
+  {
+   "id": "j178",
+   "topic": "a",
+   "text": "L'editor dei ticket ogni tanto perde la formattazione quando incollo da un documento. Piccola cosa, ma succede da anni.",
+   "channel": "Sondaggio",
+   "received_days_ago": 26
+  },
+  {
+   "id": "j179",
+   "topic": "i",
+   "text": "I'd love AI that turns a messy customer call into a clean ticket. What we got is autocomplete for descriptions.",
+   "channel": "Sondaggio",
+   "received_days_ago": 28
+  },
+  {
+   "id": "j180",
+   "topic": "off_topic",
+   "text": "Can you send me the slides from last week's all-hands?",
+   "channel": "Sondaggio",
+   "received_days_ago": 56
+  },
+  {
+   "id": "j181",
+   "topic": "f",
+   "text": "Per un'azienda grande con molti team che devono coordinarsi, Jira è ancora lo standard. Per un team piccolo capisco che sia eccessivo.",
+   "channel": "Sondaggio",
+   "received_days_ago": 27
+  },
+  {
+   "id": "j182",
+   "topic": "c",
+   "text": "La roadmap di prodotto e il backlog tecnico sono due cose diverse, e Jira le schiaccia nella stessa lista con la stessa priorità.",
+   "channel": "Sondaggio",
+   "received_days_ago": 32
+  },
+  {
+   "id": "j183",
+   "topic": "f",
+   "text": "PM in una pubblica amministrazione. Ogni strumento nuovo richiede una gara e mesi di valutazione della sicurezza. Jira è già approvato, quindi resta.",
+   "channel": "Sondaggio",
+   "received_days_ago": 12
+  },
+  {
+   "id": "j184",
+   "topic": "h",
+   "text": "We migrated to Linear, lost our custom fields and half the history. Worth it, but plan for pain.",
+   "channel": "Sondaggio",
+   "received_days_ago": 17
+  },
+  {
+   "id": "j185",
+   "topic": "b",
+   "text": "Abbiamo dovuto organizzare un corso interno di due ore su come si usa Jira. Per uno strumento di gestione dei task. Fermiamoci un attimo a pensarci.",
+   "channel": "Sondaggio",
+   "received_days_ago": 13
+  },
+  {
+   "id": "j186",
+   "topic": "f",
+   "text": "Gestiamo anche le vulnerabilità di sicurezza in Jira, con permessi ristretti. Poter separare la visibilità è essenziale per noi.",
+   "channel": "Sondaggio",
+   "received_days_ago": 43
+  },
+  {
+   "id": "j187",
+   "topic": "g",
+   "text": "Abbiamo fatto una prova parallela di due settimane con ClickUp e con Linear, due squadre per strumento, stesse storie. Il team ha votato Linear quasi all'unanimità: più veloce, meno campi, nessuno doveva chiedere aiuto per usarlo. Il management ha deciso di restare su Jira per via dei report e dei contratti in essere. Il team l'ha presa male. Da allora in ogni retro qualcuno scrive \"se avessimo Linear\" sulla lavagna e io da EM non so più cosa rispondere: le ragioni del management le capisco ma non so venderle.",
+   "channel": "Sondaggio",
+   "received_days_ago": 6
+  },
+  {
+   "id": "j188",
+   "topic": "h",
+   "text": "Our release pipeline depends on Jira ticket keys in every commit message. Changing tools means touching the whole CI setup.",
+   "channel": "Sondaggio",
+   "received_days_ago": 44
+  },
+  {
+   "id": "j189",
+   "topic": "j",
+   "text": "Le dashboard sono potenti ma costruirle è un lavoro a parte. Da PM vorrei sapere a colpo d'occhio cosa è uscito e che effetto ha avuto.",
+   "channel": "Sondaggio",
+   "received_days_ago": 39
+  },
+  {
+   "id": "j190",
+   "topic": "a",
+   "text": "Siamo una startup di 12 persone, fondatore tecnico qui. Jira ci ha fatto sentire un'azienda da duemila dipendenti fin dal primo giorno. Non in senso buono.",
+   "channel": "Sondaggio",
+   "received_days_ago": 49
+  },
+  {
+   "id": "j191",
+   "topic": "f",
+   "text": "Il marketplace è un punto di forza sottovalutato. Qualunque bisogno strano abbiamo avuto, c'era un'app.",
+   "channel": "Sondaggio",
+   "received_days_ago": 59
+  },
+  {
+   "id": "j192",
+   "topic": "b",
+   "text": "Ogni volta che il processo cambia, e in una startup cambia ogni due mesi, bisogna rifare configurazioni. Jira presuppone un processo stabile che noi semplicemente non abbiamo.",
+   "channel": "Sondaggio",
+   "received_days_ago": 8
+  },
+  {
+   "id": "j193",
+   "topic": "a",
+   "text": "Boards take forever to load on Monday mornings, maybe because everyone opens them at the same time. No idea, but it's the worst way to start the week.",
+   "channel": "Sondaggio",
+   "received_days_ago": 35
+  },
+  {
+   "id": "j194",
+   "topic": "f",
+   "text": "Sono founder di una startup B2B che vende a banche. Usare Jira ci ha aiutato nelle due diligence di sicurezza dei clienti: quando rispondi ai questionari e scrivi Jira, nessuno fa altre domande. Sembra stupido, ma è così.",
+   "channel": "Sondaggio",
+   "received_days_ago": 25
+  },
+  {
+   "id": "j195",
+   "topic": "g",
+   "text": "Linear per l'engineering, Notion per il prodotto. Jira non lo rimpiango, ma ci manca un modo decente di collegare le due cose.",
+   "channel": "Sondaggio",
+   "received_days_ago": 19
+  },
+  {
+   "id": "j196",
+   "topic": "f",
+   "text": "Ero scettica, ma la versione cloud degli ultimi anni è migliorata parecchio. Board più veloci, meno configurazione obbligatoria per partire.",
+   "channel": "Sondaggio",
+   "received_days_ago": 31
+  },
+  {
+   "id": "j197",
+   "topic": "c",
+   "text": "manca uno spazio per le cose 'forse'. o è un ticket o non esiste",
+   "channel": "Sondaggio",
+   "received_days_ago": 41
+  },
+  {
+   "id": "j198",
+   "topic": "h",
+   "text": "Changing tools during a year of hypergrowth is a risk we can't take right now. Maybe next year.",
+   "channel": "Sondaggio",
+   "received_days_ago": 4
+  },
+  {
+   "id": "j199",
+   "topic": "c",
+   "text": "Our designers never touch Jira until handoff. By then all the reasoning behind a decision is buried in a Figma comment thread.",
+   "channel": "Sondaggio",
+   "received_days_ago": 28
+  },
+  {
+   "id": "j200",
+   "topic": "j",
+   "text": "Il report sul cycle time è l'unica cosa che guardo. Tutto il resto è rumore.",
+   "channel": "Sondaggio",
+   "received_days_ago": 33
+  }
+ ]
+}

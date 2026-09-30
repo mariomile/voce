@@ -126,7 +126,7 @@ describe("a user cannot change another workspace", () => {
       .select("question, form_enabled, form_question")
       .eq("id", b.researchId)
       .single()
-    expect(after).toEqual({ question: "Domanda di prova?", form_enabled: true, form_question: null })
+    expect(after).toEqual({ question: "Domanda di prova?", form_enabled: true, form_question: "Domanda di prova?" })
   })
 
   it("cannot change B's themes", async () => {
@@ -368,7 +368,7 @@ describe("Free limit of 100 feedback", () => {
 
   it("closes the public form", async () => {
     const { data: form } = await anon().rpc("get_public_form", { slug: full.formSlug })
-    expect(form).toEqual([{ workspace_name: "Prova full", question: "Cosa vuoi dire al team di Prova full?", accepting: false }])
+    expect(form).toEqual([{ workspace_name: "Prova full", question: "Domanda di prova?", accepting: false }])
     const { data } = await admin.rpc("submit_public_feedback", {
       slug: full.formSlug,
       feedback_text: "Ciao",
@@ -395,7 +395,7 @@ describe("anonymous visitor", () => {
 
   it("reads only what the public form shows", async () => {
     const { data } = await anon().rpc("get_public_form", { slug: b.formSlug })
-    expect(data).toEqual([{ workspace_name: "Prova b", question: "Cosa vuoi dire al team di Prova b?", accepting: true }])
+    expect(data).toEqual([{ workspace_name: "Prova b", question: "Domanda di prova?", accepting: true }])
   })
 
   it("cannot send feedback through the form function: only the server can", async () => {
@@ -439,7 +439,7 @@ describe("public form function", () => {
   it("says a disabled link does not accept feedback, and gives nothing to an unknown one", async () => {
     await admin.from("research").update({ form_enabled: false }).eq("id", b.researchId)
     const { data: form } = await anon().rpc("get_public_form", { slug: b.formSlug })
-    expect(form).toEqual([{ workspace_name: "Prova b", question: "Cosa vuoi dire al team di Prova b?", accepting: false }])
+    expect(form).toEqual([{ workspace_name: "Prova b", question: "Domanda di prova?", accepting: false }])
     expect(await send("Ciao")).toBe("unavailable")
     expect((await anon().rpc("get_public_form", { slug: "non-esiste" })).data).toEqual([])
     expect(await send("Ciao", "", "non-esiste")).toBe("unavailable")

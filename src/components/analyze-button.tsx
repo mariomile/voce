@@ -59,7 +59,8 @@ type Months = { month: string; nextMonth: string }
 // 1 analysis for the themes, 1 more for the verdict when the Research has hypotheses; with only 1 left and
 // hypotheses, the themes alone (S4), as the server will do. notes: the other lines under the button. With
 // the month's analyses used up the button is off (aria-disabled, so the focus stays on it) and limitNote
-// says why. The result is announced in the status region.
+// says why. upToDate: no feedback arrived since the last analysis, said first; the button steps back to
+// secondary, because a new analysis would read the same feedback. The result is announced in the status region.
 export function AnalyzeButton({
   researchId,
   count,
@@ -68,6 +69,7 @@ export function AnalyzeButton({
   hypothesisCount,
   notes = [],
   limitNote,
+  upToDate,
 }: {
   researchId: string
   count: number
@@ -76,6 +78,7 @@ export function AnalyzeButton({
   hypothesisCount: number
   notes?: string[]
   limitNote?: string
+  upToDate?: string
 }) {
   const t = useTranslations("research.synthesis.analyze")
   const tFailures = useTranslations("themes.analyzeButton.failures")
@@ -134,13 +137,18 @@ export function AnalyzeButton({
   }
 
   return (
-    <div className="flex max-w-[36ch] flex-col items-end gap-2 text-right">
-      <Button onClick={run} aria-disabled={pending || Boolean(limitNote) || undefined}>
+    <div className="flex max-w-[36ch] flex-col items-start gap-2 text-left sm:items-end sm:text-right">
+      <Button
+        variant={upToDate ? "secondary" : "default"}
+        onClick={run}
+        aria-disabled={pending || Boolean(limitNote) || undefined}
+      >
         {pending ? t("running") : label}
       </Button>
       {!pending && (
         <p className="text-sm text-ink-muted empty:hidden">
-          {limitNote ?? [partial ? t("partialNote", { total }) : null, cost, ...notes].filter(Boolean).join(" · ")}
+          {limitNote ??
+            [upToDate, partial ? t("partialNote", { total }) : null, cost, ...notes].filter(Boolean).join(" · ")}
         </p>
       )}
       <p role="status" className="text-sm text-ink-muted empty:hidden">

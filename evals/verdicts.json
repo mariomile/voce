@@ -17,6 +17,7 @@
     "verdict": "The verdict after the app's checks is one of 'verdict' (a string or a list of accepted values).",
     "for_allowed": "Every feedback linked 'for' after the checks is in this list. Omitted means no constraint.",
     "against_allowed": "Every feedback linked 'against' after the checks is in this list. Omitted means no constraint.",
+    "min_for_links": "At least this many feedback linked 'for' after the checks: the count next to a verdict counts every supporting feedback, not a sample.",
     "min_for_quotes": "At least this many verified 'for' quotes after the checks.",
     "min_against_quotes": "At least this many verified 'against' quotes after the checks.",
     "max_quotes": "At most this many verified quotes (for and against together) after the checks.",
@@ -32,6 +33,7 @@
           "text": "Le notifiche di prenotazione arrivano in ritardo o non arrivano",
           "verdict": "confirmed",
           "for_allowed": ["f01", "f02", "f03", "f04", "f05", "f06", "f07", "f08", "f09", "f10", "f11", "f12", "f40", "f43"],
+          "min_for_links": 9,
           "min_for_quotes": 2,
           "forbidden": ["compromessa"]
         }

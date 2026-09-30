@@ -59,11 +59,12 @@ export function ResearchQuestion({ researchId, question }: { researchId: string;
 
   if (!editing)
     return (
-      <div className="flex flex-wrap items-baseline gap-x-4">
+      <div className="mb-2 flex flex-wrap items-baseline gap-x-4 gap-y-1">
         <ResearchTitle>{question}</ResearchTitle>
         <Button
           ref={edit}
-          variant="link"
+          variant="text"
+          className="text-md"
           aria-label={t("editLabel")}
           onClick={() => {
             setValue(question)
@@ -84,9 +85,9 @@ export function ResearchQuestion({ researchId, question }: { researchId: string;
       onKeyDown={(event) => {
         if (event.key === "Escape") close()
       }}
-      className="mb-2 flex max-w-[860px] items-start gap-4"
+      className="mb-2 flex max-w-[860px] flex-col items-start gap-4 sm:flex-row"
     >
-      <Field className="flex-1">
+      <Field className="w-full flex-1">
         <FieldLabel htmlFor="research-question-edit">{t("label")}</FieldLabel>
         <Input
           ref={field}
@@ -106,12 +107,12 @@ export function ResearchQuestion({ researchId, question }: { researchId: string;
           <FieldCount>{t("count", { count: length, max: RESEARCH_QUESTION_MAX_LENGTH })}</FieldCount>
         </div>
       </Field>
-      <div className="mt-7 flex max-w-[36ch] flex-col gap-2">
+      <div className="flex max-w-[36ch] flex-col gap-2 sm:mt-7">
         <div className="flex items-center gap-4">
           <Button type="submit" aria-disabled={pending || undefined}>
             {pending ? t("saving") : t("save")}
           </Button>
-          <Button type="button" variant="link" onClick={close}>
+          <Button type="button" variant="text" onClick={close}>
             {t("cancel")}
           </Button>
         </div>

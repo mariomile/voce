@@ -19,7 +19,7 @@ export function ResearchTitle({ children }: { children: React.ReactNode }) {
     title.current?.focus()
   }, [])
   return (
-    <h1 ref={title} tabIndex={-1} className="mb-2 max-w-[40ch] text-4xl leading-tight font-bold tracking-tight outline-none">
+    <h1 ref={title} tabIndex={-1} className="max-w-[40ch] text-4xl leading-tight font-extrabold tracking-tight text-balance outline-none">
       {children}
     </h1>
   )

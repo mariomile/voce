@@ -186,6 +186,10 @@ vi.mock("@/lib/data", () => ({
     feedback: [quote(1), quote(2)],
   }),
   channelCounts: async () => channels,
+  getAskTopics: async () => ({
+    hypotheses: [{ text: "Customers leave over the bank connection", verdict: "confirmed" }],
+    themes: [{ title: "The monthly export breaks", kind: "problem" }],
+  }),
   getRoomStatus: async () => ({ responses: 7, form: "open" }),
 }))
 

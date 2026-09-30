@@ -1,7 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
-import type { RawOutput } from "@/lib/analysis"
-import type { RawVerdictOutput } from "@/lib/verdict"
-import { fakeModel, fakeSynthesisModel } from "@/test/fake-model"
+import { fakeModel, fakeSynthesisModel, themesOutput, verdictOutput } from "@/test/fake-model"
 import { admin, createTestUser, deleteTestUsers, type TestUser } from "@/test/supabase"
 
 // The room screen reads as the signed-in user, against the local database. The model is always fake.
@@ -90,8 +88,8 @@ describe("getRoomStatus", () => {
 describe("roomThemes", () => {
   it("sends the latest themes with kind, title and count only", async () => {
     await addFeedback(["La banca si scollega.", "Devo ricollegare la banca."], "Modulo pubblico")
-    ai.model = fakeModel({
-      themes: [
+    ai.model = fakeModel(
+      themesOutput([
         {
           title: "La banca si scollega",
           summary: "Il collegamento con la banca cade spesso.",
@@ -100,8 +98,8 @@ describe("roomThemes", () => {
           feedback: [1, 2],
           quotes: [{ feedback: 1, text: "La banca si scollega." }],
         },
-      ],
-    } satisfies RawOutput)
+      ])
+    )
     expect(await synthesize(owner.researchId)).toMatchObject({ ok: true, themeCount: 1 })
     const themes = await roomThemes(owner.researchId)
     expect(themes).toEqual([{ id: expect.any(String), kind: "problem", title: "La banca si scollega", feedbackCount: 2 }])
@@ -115,9 +113,9 @@ describe("roomThemes", () => {
 
   it("never shows another workspace's themes, even given its Research", async () => {
     await addFeedback(["La banca si scollega.", "Devo ricollegare la banca."], "Modulo pubblico")
-    ai.model = fakeModel({
-      themes: [{ title: "Banca", summary: "S", kind: "problem", sentiment: "negative", feedback: [1, 2], quotes: [] }],
-    } satisfies RawOutput)
+    ai.model = fakeModel(
+      themesOutput([{ title: "Banca", summary: "S", kind: "problem", sentiment: "negative", feedback: [1, 2], quotes: [] }])
+    )
     expect(await synthesize(owner.researchId)).toMatchObject({ ok: true })
     session.client = other.client
     expect(await roomThemes(owner.researchId)).toEqual([])
@@ -125,28 +123,24 @@ describe("roomThemes", () => {
 })
 
 describe("roomVerdicts", () => {
-  const bank: RawOutput["themes"][number] = {
+  const bank = {
     title: "La banca si scollega",
     summary: "Il collegamento con la banca cade spesso.",
-    kind: "problem",
-    sentiment: "negative",
+    kind: "problem" as const,
+    sentiment: "negative" as const,
     feedback: [1, 2, 3],
     quotes: [{ feedback: 1, text: "La banca si scollega." }],
   }
   // Two feedback for the hypothesis, one against, each with a quote of its side.
-  const verdict: RawVerdictOutput = {
-    hypotheses: [
-      {
-        hypothesis: 1,
-        verdict: "confirmed",
-        reasoning: "Una motivazione del modello.",
-        supporting: [1, 2],
-        contradicting: [3],
-        quotes: [
-          { feedback: 1, stance: "for", text: "La banca si scollega." },
-          { feedback: 3, stance: "against", text: "La banca va benissimo." },
-        ],
-      },
+  const judged = {
+    hypothesis: 1,
+    verdict: "confirmed" as const,
+    reasoning: "Una motivazione del modello.",
+    supporting: [1, 2],
+    contradicting: [3],
+    quotes: [
+      { feedback: 1, stance: "for" as const, text: "La banca si scollega." },
+      { feedback: 3, stance: "against" as const, text: "La banca va benissimo." },
     ],
   }
 
@@ -156,7 +150,7 @@ describe("roomVerdicts", () => {
       .from("research_hypotheses")
       .insert({ workspace_id: owner.workspaceId, research_id: owner.researchId, text: "La banca è il problema più grande" })
     if (error) throw error
-    ai.model = fakeSynthesisModel({ themes: [bank] }, verdict)
+    ai.model = fakeSynthesisModel(themesOutput([bank], 3), verdictOutput([judged], 3))
     expect(await synthesize(owner.researchId)).toMatchObject({ ok: true, themes: "done", verdict: "done" })
   }
 
@@ -186,9 +180,8 @@ describe("roomVerdicts", () => {
         .insert({ workspace_id: owner.workspaceId, research_id: owner.researchId, text: "La banca va bene" })
       if (error) throw error
       // The next run judges hypothesis 2 only: hypothesis 1 keeps the verdict of the first run.
-      const [first] = verdict.hypotheses
-      const second = { ...first, hypothesis: 2, verdict: "to_review" as const, quotes: [], supporting: [], contradicting: [] }
-      ai.model = fakeSynthesisModel({ themes: [bank] }, { hypotheses: [second] })
+      const second = { ...judged, hypothesis: 2, verdict: "to_review" as const, quotes: [], supporting: [], contradicting: [] }
+      ai.model = fakeSynthesisModel(themesOutput([bank], 3), verdictOutput([second], 3))
       expect(await synthesize(owner.researchId)).toMatchObject({ ok: true, verdict: "done" })
       expect((await roomVerdicts(owner.researchId)).map((h) => h.text)).toEqual(["La banca va bene"])
     } finally {

@@ -293,6 +293,71 @@ export async function listHypotheses(research: Pick<Research, "id" | "workspaceI
   });
 }
 
+// What the Chiedi tab suggests asking: the hypotheses of the Research with their verdict, and the themes of its
+// last done themes analysis that are not discarded, biggest first. Titles and texts only, no feedback.
+export type AskTopics = {
+  hypotheses: { text: string; verdict: Verdict["verdict"] | null }[];
+  themes: { title: string; kind: ThemeKind }[];
+};
+
+export async function getAskTopics(research: Pick<Research, "id" | "workspaceId">): Promise<AskTopics> {
+  const supabase = await createClient();
+  const [hypotheses, verdicts, latest] = await Promise.all([
+    supabase
+      .from("research_hypotheses")
+      .select("id, text")
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id)
+      .order("position"),
+    supabase
+      .from("hypothesis_verdicts")
+      .select("hypothesis_id, verdict")
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id),
+    supabase
+      .from("analyses")
+      .select("id")
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id)
+      .eq("kind", "themes")
+      .eq("status", "done")
+      .order("created_at", { ascending: false })
+      .limit(1),
+  ]);
+  const verdictRows = unwrap(verdicts);
+  const analysisId = unwrap(latest)[0]?.id;
+  let themes: AskTopics["themes"] = [];
+  if (analysisId) {
+    const themeRows = unwrap(
+      await supabase
+        .from("themes")
+        .select("id, title, kind, status")
+        .eq("workspace_id", research.workspaceId)
+        .eq("analysis_id", analysisId)
+        .neq("status", "discarded")
+    );
+    const stats = unwrap(
+      await supabase
+        .from("theme_stats")
+        .select("theme_id, feedback_count")
+        .eq("workspace_id", research.workspaceId)
+        .in("theme_id", themeRows.map((t) => t.id))
+    );
+    const countOfTheme = (id: string) => stats.find((s) => s.theme_id === id)?.feedback_count ?? 0;
+    themes = themeRows
+      .filter((t) => countOfTheme(t.id) > 0)
+      .sort((a, b) => countOfTheme(b.id) - countOfTheme(a.id))
+      .map((t) => ({ title: t.title, kind: t.kind }));
+  }
+  return {
+    hypotheses: unwrap(hypotheses).map((h) => ({
+      text: h.text,
+      verdict: verdictRows.find((v) => v.hypothesis_id === h.id)?.verdict ?? null,
+    })),
+    themes,
+  };
+}
+
 // The feedback of a Research that entered Voce after a moment (created_at, not the date of the feedback).
 // How many hypotheses a Research has, without their text or verdicts: the room screen says the verdict comes
 // with the themes.

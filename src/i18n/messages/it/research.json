@@ -116,12 +116,17 @@
       "themesFailedFirst": "I temi non sono arrivati e non contano nel limite del mese. Il verdetto delle ipotesi è pronto qui sotto.",
       "verdictFailed": "Il verdetto non è arrivato e non conta nel limite del mese: le ipotesi mostrano ancora il verdetto precedente. Riprova con «Solo il verdetto».",
       "verdictFailedNextAnalysis": "Il verdetto non è arrivato e non conta nel limite del mese: le ipotesi mostrano ancora il verdetto precedente. Arriva con la prossima analisi.",
-      "themesOnlyNote": "Ti resta 1 analisi di {month}: basta per i temi, non per il verdetto, che ne usa un'altra. Il verdetto delle ipotesi torna disponibile il 1 {nextMonth}, o subito con Pro."
+      "themesOnlyNote": "Ti resta 1 analisi di {month}: basta per i temi, non per il verdetto, che ne usa un'altra. Il verdetto delle ipotesi torna disponibile il 1 {nextMonth}, o subito con Pro.",
+      "upToDate": "Nessun feedback nuovo dopo l'analisi del {date}."
     },
     "changes": {
       "line": "Dall'analisi del {date}: {feedback, plural, one {1 feedback in più} other {# feedback in più}}, {themes, plural, one {1 tema nuovo} other {# temi nuovi}}.",
       "themeDelta": "+{count} dal {date}",
       "newTheme": "Nuovo"
+    },
+    "newSince": {
+      "title": "{count, plural, one {1 feedback nuovo da analizzare} other {# feedback nuovi da analizzare}}",
+      "text": "Arrivati dopo l'analisi del {date}: temi e verdetti qui sotto non li contano ancora."
     }
   },
   "hypotheses": {
@@ -129,7 +134,8 @@
     "emptyText": "Hai un'idea da mettere alla prova? Scrivila come ipotesi: i feedback diranno se la confermano.",
     "write": "Scrivi un'ipotesi",
     "label": "Nuova ipotesi",
-    "hint": "Una frase che si può confermare o smentire.",
+    "hint": "Una sola affermazione per ipotesi, che si può confermare o smentire.",
+    "twoClaims": "Sembrano due affermazioni: il verdetto è più chiaro se le scrivi come due ipotesi.",
     "add": "Aggiungi l'ipotesi",
     "adding": "Aggiungo…",
     "cancel": "Annulla",
@@ -159,19 +165,23 @@
     "verdictOnly": {
       "label": "Solo il verdetto di {count} ipotesi",
       "running": "Verdetto in corso…"
-    }
+    },
+    "optional": "facoltative",
+    "noVerdictCount": "{count} senza verdetto"
   },
   "verdict": {
     "confirmed": "Confermata",
     "refuted": "Smentita",
     "toReview": "Da rivedere",
-    "counts": "{supporting} a favore · {contradicting} contro · su {read} letti",
-    "inFavour": "A favore",
-    "against": "Contro",
+    "counts": "{supporting} feedback a favore · {contradicting} contro · su {read} letti",
+    "inFavour": "Alcuni a favore",
+    "against": "Alcuni contro",
     "noEvidence": "Nessuno dei {read} feedback letti ne parla.",
     "writtenAfter": "Scritta il {date}. Dei {read} feedback letti, {count, plural, one {1 è arrivato dopo} other {# sono arrivati dopo}}.",
     "writtenBefore": "Scritta il {date}. Tutti i {read} feedback letti erano già arrivati quando l'hai scritta: il verdetto li rilegge, non la mette alla prova con feedback nuovi.",
-    "arrivedAfterVerdict": "Dopo questo verdetto {count, plural, one {è arrivato 1 feedback} other {sono arrivati # feedback}}."
+    "arrivedAfterVerdict": "Dopo questo verdetto {count, plural, one {è arrivato 1 feedback} other {sono arrivati # feedback}}.",
+    "moreQuotes": "Mostra {count, plural, one {un'altra citazione} other {altre # citazioni}}",
+    "fewerQuotes": "Mostra meno citazioni"
   },
   "delete": {
     "open": "Elimina la Research",

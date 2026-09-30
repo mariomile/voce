@@ -20,6 +20,17 @@ describe("AnalyzeButton", () => {
     expect(html).not.toContain(`aria-disabled="true"`)
   })
 
+  it("nothing new since the last analysis: said first, and the button steps back to secondary", () => {
+    const upToDate = "Nessun feedback nuovo dopo l'analisi del 3 ottobre."
+    const html = renderToStaticMarkup(
+      <AnalyzeButton researchId={ID} count={37} total={37} quota={quota(2)} hypothesisCount={0} upToDate={upToDate} />
+    )
+    expect(html).toContain("Nessun feedback nuovo dopo l&#x27;analisi del 3 ottobre. · Ti restano 2 analisi di ottobre.")
+    expect(html).toMatch(/<button[^>]*class="[^"]*bg-veil[^"]*"[^>]*>Analizza 37 feedback</)
+    const fresh = renderToStaticMarkup(<AnalyzeButton researchId={ID} count={37} total={37} quota={quota(2)} hypothesisCount={0} />)
+    expect(fresh).toMatch(/<button[^>]*class="[^"]*bg-ink[^"]*"[^>]*>Analizza 37 feedback</)
+  })
+
   it("after the first analysis of the month, without hypotheses: the analyses left", () => {
     const html = renderToStaticMarkup(<AnalyzeButton researchId={ID} count={37} total={37} quota={quota(2)} hypothesisCount={0} />)
     expect(html).toContain("Ti restano 2 analisi di ottobre.")

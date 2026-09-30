@@ -54,6 +54,20 @@ describe("createResearch", () => {
     expect(result).toEqual({ ok: true, id: data!.id })
   })
 
+  it("the form asks the Research question, trimmed, when it fits the form limit", async () => {
+    const fits = "b".repeat(139) + "?"
+    expect(await createResearch(`  ${fits} `)).toMatchObject({ ok: true })
+    const { data } = await admin.from("research").select("form_question").eq("workspace_id", user.workspaceId).eq("question", fits).single()
+    expect(data!.form_question).toBe(fits)
+  })
+
+  it("a question over the form limit keeps the default form question", async () => {
+    const long = "c".repeat(140) + "?"
+    expect(await createResearch(long)).toMatchObject({ ok: true })
+    const { data } = await admin.from("research").select("form_question").eq("workspace_id", user.workspaceId).eq("question", long).single()
+    expect(data!.form_question).toBeNull()
+  })
+
   it("drops NUL characters instead of crashing", async () => {
     expect(await createResearch("Con\u0000 NUL?")).toMatchObject({ ok: true })
     expect(await questions()).toContain("Con NUL?")

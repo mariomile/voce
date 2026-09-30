@@ -6,8 +6,8 @@
     "showMore": "{count, plural, one {Mostra un altro tema} other {Mostra altri # temi}}",
     "withFeedback": "con {list} feedback",
     "emptyNoFeedback": {
-      "heading": "Qui leggerai cosa dicono i tuoi clienti, raggruppato per tema.",
-      "lede": "Per cominciare servono i feedback. Parti da quelli che hai già in giro: ticket, note delle call, risposte ai sondaggi. Più canali metti insieme, più i temi sono completi.",
+      "heading": "Qui arriverà la risposta alla tua domanda.",
+      "lede": "Tre passi: scrivi cosa pensi di trovare, raccogli le voci dei clienti, analizzale. Voce le raggruppa in temi e dà un verdetto a ogni ipotesi, con le frasi dei clienti.",
       "askTitle": "Chiedi ai clienti",
       "askText": "Un modulo pubblico con una sola domanda, che scegli tu. Si risponde dal telefono, senza account.",
       "csvTitle": "Importa un CSV",
@@ -15,7 +15,11 @@
       "chooseFile": "Scegli il file",
       "pasteTitle": "Incolla le note",
       "pasteText": "Le note di un'intervista, o un messaggio copiato da un'email o da Slack.",
-      "pasteAction": "Incolla le note"
+      "pasteAction": "Incolla le note",
+      "collectTitle": "Raccogli i feedback",
+      "collectLede": "Basta un canale per cominciare.",
+      "analyzeTitle": "Analizza",
+      "analyzeText": "Quando arriva il primo feedback, qui compare il pulsante per analizzarli: temi, verdetti e citazioni in pochi minuti."
     },
     "emptyNoAnalysis": {
       "title": "{count} feedback, ancora nessun tema",

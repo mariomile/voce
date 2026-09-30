@@ -6,7 +6,7 @@ import { nextMonthName } from "@/components/ask-copy"
 import { AskForm } from "@/components/ask-form"
 import { PageLede } from "@/components/page"
 import { buttonVariants } from "@/components/ui/button"
-import { getAnalysisPerimeter, getResearch, getResearchStats, getUsage } from "@/lib/data"
+import { getAnalysisPerimeter, getAskTopics, getResearch, getResearchStats, getUsage } from "@/lib/data"
 import { formatMonth } from "@/lib/format"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -17,17 +17,19 @@ export async function generateMetadata(): Promise<Metadata> {
 // The question action runs from this page: the model stops at 60 seconds.
 export const maxDuration = 90
 
-// The Chiedi tab: questions about the feedback of this Research only, with the analysis perimeter.
+// The Chiedi tab: questions about the feedback of this Research only, with the analysis perimeter, and
+// questions to start from built on its hypotheses and themes.
 export default async function AskPage({ params }: PageProps<"/research/[id]/ask">) {
   // Rendered alongside the layout, which shows the not-found page: getResearch is cached for the request.
   const research = await getResearch((await params).id)
   if (!research) notFound()
-  const [t, locale, stats, perimeter, usage] = await Promise.all([
+  const [t, locale, stats, perimeter, usage, topics] = await Promise.all([
     getTranslations("ask"),
     getLocale(),
     getResearchStats(research),
     getAnalysisPerimeter(research),
     getUsage(research.workspaceId),
+    getAskTopics(research),
   ])
   const now = new Date()
 
@@ -56,6 +58,7 @@ export default async function AskPage({ params }: PageProps<"/research/[id]/ask"
         usage={{ used: usage.questionsThisMonth, quota: usage.questionsLimit }}
         month={formatMonth(now, locale)}
         nextMonth={nextMonthName(now, locale)}
+        topics={topics}
       />
     </>
   )

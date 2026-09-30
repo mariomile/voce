@@ -1,6 +1,6 @@
 {
   "page": {
-    "lede": "Write a question about a topic. Voce answers with how many feedback mention it and the customers' exact words.",
+    "lede": "Ask the feedback of this Research a question. Voce counts how many mention it and answers with the customers' exact words.",
     "addFeedback": "Add feedback"
   },
   "nothingToAsk": {
@@ -9,7 +9,7 @@
   },
   "form": {
     "label": "Your question",
-    "hint": "For example: what do customers ask about Excel export?",
+    "hint": "Enter to ask, Shift+Enter for a new line.",
     "count": "{length} of {max}",
     "sending": "Answer coming…",
     "reading": "Reading {count} feedback…",
@@ -59,8 +59,50 @@
     "noEvidenceBody": "Read {count} feedback of this Research. Try different words, for example the feature name the way customers write it.",
     "writtenAll": "What they wrote",
     "writtenPartial": "What they wrote: {quotes} of {total} feedback",
-    "keep": "The answer doesn't stay on this page: copy it if you need it.",
-    "perimeterFull": "Read {count} feedback of this Research. {keep}",
-    "perimeterPartial": "Read the {considered} most recent feedback of this Research, out of {total}: older ones aren't part of the answer. {keep}"
+    "perimeterPartial": "Read the {considered} most recent feedback of this Research, out of {total}: older ones aren't part of the answer.",
+    "share": "{percent} of {count} read",
+    "readAll": "Read the whole feedback",
+    "readLess": "Show the key phrase only",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copiedStatus": "Answer copied: question, answer and quotes with their sources.",
+    "copyFailed": "Can't copy from here: select the text and copy it by hand.",
+    "session": "Answers stay here until you reload the page. To keep one, use Copy."
+  },
+  "suggest": {
+    "title": "Try asking",
+    "fromHypothesis": "From a hypothesis",
+    "fromTheme": "From a theme",
+    "hypothesisConfirmed": "Who disagrees that “{text}”, and why?",
+    "hypothesisRefuted": "Who still says that “{text}”, and why?",
+    "hypothesisOpen": "Who confirms and who disagrees that “{text}”?",
+    "themeProblem": "What do customers ask for to fix “{title}”?",
+    "themeOpportunity": "What exactly do customers ask about “{title}”?",
+    "themePraise": "What do customers like about “{title}”?",
+    "starterAsk": "What do customers ask for most often?",
+    "starterProblem": "What do customers complain about most?",
+    "starterPraise": "What do customers like most?"
+  },
+  "followUp": {
+    "label": "Dig deeper",
+    "solutions": "What do they suggest?",
+    "solutionsQuestion": "On “{question}”: what do customers suggest as a fix?",
+    "opposite": "Who says the opposite?",
+    "oppositeQuestion": "On “{question}”: who says the opposite, and why?",
+    "others": "Who else says it?",
+    "othersQuestion": "How many other customers say that “{quote}”?",
+    "rephrase": "Rewrite the question"
+  },
+  "progress": {
+    "read": "{count, plural, one {Reading the only feedback of this Research} other {Reading the {count} feedback of this Research}}",
+    "readPartial": "Reading the {count} most recent feedback of this Research",
+    "search": "Looking for the ones that answer the question",
+    "check": "Checking that every quote is exactly what the customer wrote"
+  },
+  "clipboard": {
+    "question": "Question: {question}",
+    "count": "{count} {countLabel}, out of {considered} read.",
+    "noEvidence": "No feedback mentions it, out of {count} read.",
+    "quotes": "What they wrote:"
   }
 }

@@ -4,7 +4,7 @@ import { notFound } from "next/navigation"
 import { getLocale, getTranslations } from "next-intl/server"
 import { Quote } from "@/components/quote"
 import { ThemeControls } from "@/components/theme-controls"
-import { Stat } from "@/components/theme-row"
+import { SAME_TONE, Stat } from "@/components/theme-row"
 import { Trend, TrendNote } from "@/components/trend"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
@@ -45,17 +45,21 @@ export default async function ThemePage({ params }: PageProps<"/research/[id]/th
       </p>
 
       <article className="grid grid-cols-1 gap-4 border-b border-line pb-8 sm:grid-cols-[148px_1fr_168px] sm:gap-8">
-        <div>
+        <div className="grid grid-cols-[auto_1fr] items-end gap-x-6 sm:block">
           <Stat value={theme.feedbackCount} label={t("row.feedbackLabel")} />
-          <Trend weeks={theme.trend} />
-          <TrendNote />
+          <div className="max-w-[240px] sm:max-w-none">
+            <Trend weeks={theme.trend} />
+            <TrendNote />
+          </div>
         </div>
         <div>
           <div className="flex items-baseline gap-4">
             <Badge variant={theme.kind}>{tCommon(`kind.${theme.kind}`)}</Badge>
-            <span className="text-sm text-ink-muted">{tCommon(`sentiment.${theme.sentiment}`)}</span>
+            {!SAME_TONE[theme.kind].includes(theme.sentiment) && (
+              <span className="text-sm text-ink-muted">{tCommon(`sentiment.${theme.sentiment}`)}</span>
+            )}
           </div>
-          <h2 className="my-2 text-4xl leading-tight font-bold tracking-tight">{theme.title}</h2>
+          <h2 className="my-2 text-4xl leading-tight font-extrabold tracking-tight">{theme.title}</h2>
           <p className="mb-6 max-w-[64ch] text-lg leading-relaxed text-ink-muted">{theme.summary}</p>
           <div className="flex flex-col gap-4">
             {theme.quotes.map((q) => (

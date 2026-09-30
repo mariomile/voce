@@ -54,7 +54,7 @@ describe("VerdictView", () => {
     const html = renderToStaticMarkup(<VerdictView verdict={{ state: "done", hypotheses: [hypothesis] }} />)
     expect(html).toContain("Quello che ti blocca di più è la parte tecnica")
     expect(html).toContain(`<span aria-hidden="true">✓</span> Confermata`)
-    expect(html).toContain("48 a favore · 12 contro · su 230 letti")
+    expect(html).toContain("48 feedback a favore · 12 contro · su 230 letti")
   })
 
   it("every verdict word, and no counts when no feedback talks about the hypothesis", () => {
@@ -70,7 +70,7 @@ describe("VerdictView", () => {
       />
     )
     expect(html).toContain("Smentita")
-    expect(html).toContain("3 a favore · 1.500 contro · su 230 letti")
+    expect(html).toContain("3 feedback a favore · 1.500 contro · su 230 letti")
     expect(html).toContain("Da rivedere")
     expect(html).toContain("Nessuno dei 230 feedback letti ne parla.")
   })

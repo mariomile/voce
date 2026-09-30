@@ -24,17 +24,20 @@ const feedback: AnalysisFeedback[] = [
 
 type RawTheme = RawOutput["themes"][number]
 const theme = (overrides: Partial<RawTheme> = {}): RawTheme => ({
+  n: 1,
   title: "La banca si scollega",
   summary: "Il collegamento con la banca cade spesso.",
   kind: "problem",
   sentiment: "negative",
-  feedback: [1, 2],
   quotes: [
     { feedback: 1, text: "si scollega ogni lunedì" },
     { feedback: 2, text: "ricollegare la banca ogni settimana" },
   ],
   ...overrides,
 })
+// One row per feedback sent: feedback 1 and 2 in theme 1, 3 and 4 in no theme.
+const rows = (themes: Record<number, number[]> = { 1: [1], 2: [1] }): RawOutput["assignments"] =>
+  [1, 2, 3, 4].map((n) => ({ feedback: n, themes: themes[n] ?? [] }))
 
 describe("selectFeedback", () => {
   const rows = (count: number, length: number, receivedAt = "2026-09-01") =>
@@ -63,8 +66,8 @@ describe("selectFeedback", () => {
 })
 
 describe("checkOutput", () => {
-  it("keeps a valid theme and maps feedback numbers to ids", () => {
-    const { themes, issues } = checkOutput({ themes: [theme()] }, feedback)
+  it("builds each theme from the rows of its feedback and maps feedback numbers to ids", () => {
+    const { themes, issues } = checkOutput({ themes: [theme()], assignments: rows() }, feedback)
     expect(issues).toEqual([])
     expect(themes).toEqual([
       {
@@ -81,20 +84,60 @@ describe("checkOutput", () => {
     ])
   })
 
-  it("drops feedback numbers that were never sent", () => {
-    const { themes, issues } = checkOutput({ themes: [theme({ feedback: [1, 2, 0, 9, 2.5] })] }, feedback)
+  it("orders the themes by number of feedback, largest first", () => {
+    const { themes } = checkOutput(
+      {
+        themes: [theme({ n: 1, title: "Piccolo", quotes: [] }), theme({ n: 2, title: "Grande", quotes: [] })],
+        assignments: rows({ 1: [1, 2], 2: [1, 2], 3: [2], 4: [2] }),
+      },
+      feedback
+    )
+    expect(themes.map((t) => [t.title, t.feedback.length])).toEqual([
+      ["Grande", 4],
+      ["Piccolo", 2],
+    ])
+  })
+
+  it("drops rows of feedback numbers that were never sent, and theme numbers that do not exist", () => {
+    const { themes, issues } = checkOutput(
+      {
+        themes: [theme()],
+        assignments: [...rows({ 1: [1], 2: [1, 7] }), { feedback: 9, themes: [1] }, { feedback: 2.5, themes: [1] }],
+      },
+      feedback
+    )
     expect(themes[0].feedback).toEqual(["id-1", "id-2"])
     expect(issues.map((i) => [i.problem, i.detail])).toEqual([
-      ["unknown_feedback", 0],
+      ["unknown_theme", 7],
       ["unknown_feedback", 9],
       ["unknown_feedback", 2.5],
     ])
   })
 
+  it("lists the feedback the model left without a row, and reads only the first row of a feedback", () => {
+    const { themes, issues } = checkOutput(
+      {
+        themes: [theme()],
+        assignments: [
+          { feedback: 1, themes: [1] },
+          { feedback: 2, themes: [1] },
+          { feedback: 2, themes: [] },
+          { feedback: 3, themes: [] },
+        ],
+      },
+      feedback
+    )
+    expect(themes[0].feedback).toEqual(["id-1", "id-2"])
+    expect(issues.map((i) => [i.problem, i.detail])).toEqual([
+      ["duplicate_row", 2],
+      ["feedback_without_row", 4],
+    ])
+  })
+
   it("drops a theme with fewer than 2 real feedback", () => {
-    const { themes, issues } = checkOutput({ themes: [theme({ feedback: [1, 42] })] }, feedback)
+    const { themes, issues } = checkOutput({ themes: [theme()], assignments: rows({ 1: [1] }) }, feedback)
     expect(themes).toEqual([])
-    expect(issues.at(-1)).toMatchObject({ problem: "too_few_feedback", detail: 1 })
+    expect(issues.at(-1)).toMatchObject({ theme: "La banca si scollega", problem: "too_few_feedback", detail: 1 })
   })
 
   it("drops quotes that are not in the feedback text, even slightly changed", () => {
@@ -109,6 +152,7 @@ describe("checkOutput", () => {
             ],
           }),
         ],
+        assignments: rows(),
       },
       feedback
     )
@@ -121,7 +165,6 @@ describe("checkOutput", () => {
       {
         themes: [
           theme({
-            feedback: [1, 2, 3, 4],
             quotes: [
               { feedback: 1, text: "La banca" },
               { feedback: 1, text: "ogni lunedì" },
@@ -130,8 +173,9 @@ describe("checkOutput", () => {
               { feedback: 4, text: "velocissimo" },
             ],
           }),
-          theme({ title: "Altro", feedback: [1, 2], quotes: [{ feedback: 3, text: "Adoro" }] }),
+          theme({ n: 2, title: "Altro", quotes: [{ feedback: 3, text: "Adoro" }] }),
         ],
+        assignments: rows({ 1: [1, 2], 2: [1, 2], 3: [1], 4: [1] }),
       },
       feedback
     )
@@ -140,25 +184,46 @@ describe("checkOutput", () => {
     expect(issues.map((i) => i.problem)).toEqual(["second_quote_same_feedback", "too_many_quotes", "quote_not_linked"])
   })
 
-  it("puts a feedback in at most 3 themes", () => {
-    const many = ["A", "B", "C", "D"].map((title) => theme({ title, feedback: [1, 2, 3], quotes: [] }))
-    const { themes, issues } = checkOutput({ themes: many }, feedback)
+  it("puts a feedback in at most 3 themes, the first 3 of its row", () => {
+    const many = ["A", "B", "C", "D"].map((title, i) => theme({ n: i + 1, title, quotes: [] }))
+    const { themes, issues } = checkOutput(
+      { themes: many, assignments: rows({ 1: [1, 2, 3, 4], 2: [1, 2, 3, 4], 3: [1, 2, 3, 4] }) },
+      feedback
+    )
     expect(themes.map((t) => t.title)).toEqual(["A", "B", "C"])
-    expect(issues.map((i) => i.problem)).toEqual([
-      "feedback_in_too_many_themes",
-      "feedback_in_too_many_themes",
-      "feedback_in_too_many_themes",
-      "too_few_feedback",
+    expect(issues.map((i) => [i.problem, i.detail])).toEqual([
+      ["feedback_in_too_many_themes", 1],
+      ["feedback_in_too_many_themes", 2],
+      ["feedback_in_too_many_themes", 3],
+      ["too_few_feedback", 0],
     ])
   })
 
-  it("drops empty and repeated titles", () => {
+  it("drops empty and repeated titles, and repeated theme numbers", () => {
     const { themes, issues } = checkOutput(
-      { themes: [theme({ title: "  " }), theme(), theme({ title: " la banca SI scollega " })] },
+      {
+        themes: [
+          theme({ n: 1, title: "  " }),
+          theme({ n: 2 }),
+          theme({ n: 3, title: " la banca SI scollega " }),
+          theme({ n: 2, title: "Stesso numero" }),
+        ],
+        assignments: rows({ 1: [1, 2, 3], 2: [1, 2, 3] }),
+      },
       feedback
     )
-    expect(themes).toHaveLength(1)
-    expect(issues.map((i) => i.problem)).toEqual(["empty_title", "duplicate_title"])
+    expect(themes.map((t) => t.title)).toEqual(["La banca si scollega"])
+    expect(issues.map((i) => i.problem)).toEqual(["empty_title", "duplicate_title", "duplicate_theme_number"])
+  })
+})
+
+describe("analysisInstructions", () => {
+  it("asks for one row per feedback, neutral words for who wrote, and praise only for what is appreciated", () => {
+    expect(INSTRUCTIONS).toMatch(/every feedback/i)
+    expect(INSTRUCTIONS).toMatch(/constraint/i)
+    expect(INSTRUCTIONS).toMatch(/merge/i)
+    expect(INSTRUCTIONS).toContain("never customers or users")
+    expect(INSTRUCTIONS).not.toMatch(/customer feedback|what customers/i)
   })
 })
 
@@ -209,7 +274,10 @@ describe("analysis model", () => {
 
 describe("runAnalysis", () => {
   it("keeps instructions apart from the data and returns checked themes, tokens and cost", async () => {
-    const model = fakeModel({ themes: [theme(), theme({ title: "Solo", feedback: [3] })] })
+    const model = fakeModel({
+      themes: [theme(), theme({ n: 2, title: "Solo", quotes: [] })],
+      assignments: rows({ 1: [1], 2: [1], 3: [2] }),
+    })
     const result = await runAnalysis({
       model,
       modelId: "claude-sonnet-5-5",
@@ -249,7 +317,7 @@ describe("runAnalysis", () => {
       runAnalysis({ model: fakeModel("non è JSON"), modelId: "x", feedback, existingTitles: [] })
     ).rejects.toThrow()
     await expect(
-      runAnalysis({ model: fakeModel({ themes: [{ title: "Senza il resto" }] }), modelId: "x", feedback, existingTitles: [] })
+      runAnalysis({ model: fakeModel({ themes: [{ title: "Senza il resto" }], assignments: [] }), modelId: "x", feedback, existingTitles: [] })
     ).rejects.toThrow()
   })
 })
