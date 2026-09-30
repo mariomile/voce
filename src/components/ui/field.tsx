@@ -24,7 +24,7 @@ function FieldLabel({ className, ...props }: React.ComponentProps<"label">) {
     <label
       data-slot="field-label"
       className={cn(
-        "flex justify-between text-md font-semibold group-data-[quiet=true]/field:text-sm group-data-[quiet=true]/field:font-normal group-data-[quiet=true]/field:text-ink-subtle",
+        "flex justify-between text-md font-semibold group-data-[quiet=true]/field:text-sm group-data-[quiet=true]/field:font-normal group-data-[quiet=true]/field:text-ink-muted",
         className
       )}
       {...props}
