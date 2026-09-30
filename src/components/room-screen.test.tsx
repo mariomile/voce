@@ -2,10 +2,12 @@ import { readFileSync } from "node:fs"
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it, vi } from "vitest"
 
-// The screen calls server actions: here it only renders its first act, the pile.
+// The screen calls server actions: here it renders its first act, the pile, and runs the analysis against mocks.
 vi.mock("@/app/(app)/research/[id]/actions", () => ({ synthesize: vi.fn() }))
 vi.mock("@/app/research/[id]/sala/actions", () => ({ roomThemes: vi.fn(), roomVerdicts: vi.fn() }))
-const { RoomScreen, VerdictView } = await import("./room-screen")
+const { RoomScreen, VerdictView, analyzeRoom } = await import("./room-screen")
+const { synthesize } = await import("@/app/(app)/research/[id]/actions")
+const { roomThemes, roomVerdicts } = await import("@/app/research/[id]/sala/actions")
 
 const props = {
   researchId: "11111111-1111-4111-8111-111111111111",
@@ -37,6 +39,35 @@ describe("RoomScreen", () => {
     const note = "Con i temi arriva anche il verdetto delle ipotesi."
     expect(renderToStaticMarkup(<RoomScreen {...props} hasHypotheses />)).toContain(note)
     expect(renderToStaticMarkup(<RoomScreen {...props} />)).not.toContain(note)
+  })
+})
+
+// A server action that never answers (the network drops, the function runs past its time) rejects: the
+// room stays on the pile with a note instead of the error page.
+describe("analyzeRoom", () => {
+  const done = { ok: true as const, themes: "done" as const, themeCount: 1, verdict: "skipped" as const }
+
+  it("a rejected analysis is a network failure, not a thrown error", async () => {
+    vi.mocked(synthesize).mockRejectedValueOnce(new TypeError("Failed to fetch"))
+    await expect(analyzeRoom(props.researchId)).resolves.toEqual({ failure: "network" })
+  })
+
+  it("the themes or the verdict that fail to load after the analysis are a network failure too", async () => {
+    vi.mocked(synthesize).mockResolvedValueOnce(done as never)
+    vi.mocked(roomThemes).mockRejectedValueOnce(new TypeError("Failed to fetch"))
+    await expect(analyzeRoom(props.researchId)).resolves.toEqual({ failure: "network" })
+
+    vi.mocked(synthesize).mockResolvedValueOnce({ ...done, verdict: "done" } as never)
+    vi.mocked(roomThemes).mockResolvedValueOnce([])
+    vi.mocked(roomVerdicts).mockRejectedValueOnce(new TypeError("Failed to fetch"))
+    await expect(analyzeRoom(props.researchId)).resolves.toEqual({ failure: "network" })
+  })
+
+  it("the analysis that answers still gives its themes", async () => {
+    const theme = { id: "t1", kind: "opportunity" as const, title: "PDF", count: 2 }
+    vi.mocked(synthesize).mockResolvedValueOnce(done as never)
+    vi.mocked(roomThemes).mockResolvedValueOnce([theme] as never)
+    await expect(analyzeRoom(props.researchId)).resolves.toEqual({ themes: [theme], themesFailed: false, verdict: null })
   })
 })
 

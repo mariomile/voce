@@ -7,6 +7,7 @@
     "running": "Analisi in corso…",
     "runningNote": "Può volerci qualche minuto. I temi compaiono qui appena è finita.",
     "noOpenThemes": "L'analisi è finita, ma non ci sono temi aperti da mostrare. Li trovi nella Research.",
+    "network": "La connessione è caduta. Controlla la rete e riprova: se l'analisi era già partita, attendi un minuto e premi di nuovo.",
     "idle": "Si accende con la prima risposta.",
     "analyze": "Analizza le risposte",
     "scanHelp": "Inquadra e rispondi dal telefono. Non serve un account.",

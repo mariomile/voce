@@ -46,8 +46,36 @@ type Analysis = {
   order: number[]
   verdict: VerdictOutcome | null
 }
-type Failure = AnalysisFailure | "no_open_themes"
+// network: a call that never answered (the connection dropped, the server ran past its time).
+type Failure = AnalysisFailure | "no_open_themes" | "network"
 type View = "bubbles" | "list" | "verdict"
+// What a click of "Analizza le risposte" brings: why the pile stays, or what the themes act shows.
+type RoomAnalysis = { failure: Failure } | Pick<Analysis, "themes" | "themesFailed" | "verdict">
+
+// The same analysis as the Sintesi: the themes and, with hypotheses, their verdict. Never throws: a call
+// that rejects is a network failure, so the projected screen keeps the pile instead of the error page.
+export async function analyzeRoom(researchId: string): Promise<RoomAnalysis> {
+  try {
+    const result = await synthesize(researchId)
+    if (!result.ok) return { failure: result.reason }
+    // Never the themes of before: without this click's themes (they failed, or none is open) the verdict
+    // shows alone, and without a verdict either the pile says why.
+    const themesDone = result.themes === "done"
+    const themes = themesDone ? await roomThemes(researchId) : []
+    const verdict: VerdictOutcome | null =
+      result.verdict === "skipped"
+        ? null
+        : result.verdict === "done"
+          ? { state: "done", hypotheses: await roomVerdicts(researchId) }
+          : { state: result.verdict }
+    if (themes.length === 0 && verdict?.state !== "done") {
+      return { failure: themesDone ? "no_open_themes" : result.themes === "no_themes" ? "no_themes" : "failed" }
+    }
+    return { themes, themesFailed: !themesDone, verdict }
+  } catch {
+    return { failure: "network" }
+  }
+}
 // The act on screen: the pile, with the last analysis failure if any, or the themes.
 type Screen = { act: "pile"; failure: Failure | null } | { act: "themes"; analysis: Analysis; view: View }
 
@@ -114,32 +142,16 @@ export function RoomScreen({
     if (pending || limitNote || status.responses === 0) return
     setScreen({ act: "pile", failure: null })
     startTransition(async () => {
-      // The same analysis as the Sintesi: the themes and, with hypotheses, their verdict.
-      const result = await synthesize(researchId)
-      if (!result.ok) return setScreen({ act: "pile", failure: result.reason })
-      // Never the themes of before: without this click's themes (they failed, or none is open) the verdict
-      // shows alone, and without a verdict either the pile says why.
-      const themesDone = result.themes === "done"
-      const themes = themesDone ? await roomThemes(researchId) : []
-      const verdict: VerdictOutcome | null =
-        result.verdict === "skipped"
-          ? null
-          : result.verdict === "done"
-            ? { state: "done", hypotheses: await roomVerdicts(researchId) }
-            : { state: result.verdict }
-      if (themes.length === 0 && verdict?.state !== "done") {
-        return setScreen({ act: "pile", failure: themesDone ? "no_open_themes" : result.themes === "no_themes" ? "no_themes" : "failed" })
-      }
+      const result = await analyzeRoom(researchId)
+      if ("failure" in result) return setScreen({ act: "pile", failure: result.failure })
       const responses = responsesRef.current
       setScreen({
         act: "themes",
-        view: themes.length === 0 ? "verdict" : "bubbles",
+        view: result.themes.length === 0 ? "verdict" : "bubbles",
         analysis: {
-          themes,
-          themesFailed: !themesDone,
+          ...result,
           responses,
           order: dotOrderByX(placesRef.current?.points.slice(0, responses) ?? []),
-          verdict,
         },
       })
     })
@@ -225,13 +237,15 @@ function PileView({
     ? t("pile.runningNote")
     : failure === "no_open_themes"
       ? t("pile.noOpenThemes")
-      : failure
-        ? failureMessage(tFailures, failure)
-        : limitNote
-          ? limitNote
-          : status.responses === 0
-            ? t("pile.idle")
-            : undefined
+      : failure === "network"
+        ? t("pile.network")
+        : failure
+          ? failureMessage(tFailures, failure)
+          : limitNote
+            ? limitNote
+            : status.responses === 0
+              ? t("pile.idle")
+              : undefined
 
   return (
     <>
