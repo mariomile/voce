@@ -19,21 +19,21 @@ const chipVariants = cva(
 )
 
 function ChipCount({ className, ...props }: React.ComponentProps<"span">) {
-  return <span className={cn("ml-1 opacity-60", className)} {...props} />
+  return <span className={cn("ml-1 tabular-nums opacity-80", className)} {...props} />
 }
 
 function FilterBar({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="filter-bar"
-      className={cn("flex items-center gap-2 border-b border-ink pb-5", className)}
+      className={cn("flex flex-wrap items-center gap-2 border-b border-ink pb-5", className)}
       {...props}
     />
   )
 }
 
 function FilterBarSep() {
-  return <span aria-hidden className="mx-1 h-5 w-px bg-line" />
+  return <span aria-hidden className="mx-1 hidden h-5 w-px bg-line sm:block" />
 }
 
 type ChipVariantProps = VariantProps<typeof chipVariants>

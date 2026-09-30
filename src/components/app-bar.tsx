@@ -31,16 +31,16 @@ export function AppBar({ workspace, usage }: { workspace: Workspace; usage: Usag
           { href: "/billing", label: tTabs("billing") },
         ]}
       />
-      <div className="min-w-0 grow basis-44 py-2 text-md text-ink-muted lg:ml-auto lg:grow-0 lg:basis-auto lg:py-0 [&_b]:font-semibold [&_b]:text-ink">
+      <div className="min-w-0 grow basis-44 py-2 text-md text-ink-muted lg:ml-auto lg:grow-0 lg:basis-auto lg:py-0 [&_b]:font-semibold [&_b]:whitespace-nowrap [&_b]:text-ink">
         <Badge className="mr-2">{usage.plan === "pro" ? "Pro" : "Free"}</Badge>
         {usage.feedbackLimit !== null &&
           t.rich("feedbackQuota", { count: usage.feedbackCount, limit: usage.feedbackLimit, b })}
         {t.rich("analysesQuota", { month, count: usage.analysesThisMonth, limit: usage.analysesLimit, b })}
       </div>
       <div className="flex items-center gap-8">
-        <LocaleSwitch className="text-md text-ink-muted" />
+        <LocaleSwitch className="text-md text-ink" />
         <form action={signOut}>
-          <Button type="submit" variant="link" className="text-md text-ink-muted">
+          <Button type="submit" variant="text" className="text-md">
             {t("signOut")}
           </Button>
         </form>

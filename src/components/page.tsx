@@ -35,3 +35,26 @@ export function PageLede({ className, ...props }: React.ComponentProps<"p">) {
 export function PageMore({ className, ...props }: React.ComponentProps<"p">) {
   return <p className={cn("mt-8 text-base text-ink-muted", className)} {...props} />
 }
+
+// The number of a step in the loop of a Research without feedback (1 ipotesi, 2 raccolta, 3 analisi):
+// the order is the information, so it is shown; the title says the rest.
+export function StepNumber({ step }: { step: number }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-ink text-base font-bold text-highlight tabular-nums"
+    >
+      {step}
+    </span>
+  )
+}
+
+// The title of a section of a Research tab (Ipotesi, Temi, the steps of a new Research): one size for all.
+export function SectionHeading({ className, ...props }: React.ComponentProps<"h2">) {
+  return (
+    <h2
+      className={cn("flex items-center gap-3 text-3xl leading-tight font-extrabold tracking-tight", className)}
+      {...props}
+    />
+  )
+}

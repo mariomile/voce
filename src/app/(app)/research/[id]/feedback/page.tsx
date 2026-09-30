@@ -76,9 +76,9 @@ export default async function FeedbackPage({ params, searchParams }: PageProps<"
             <TableHeader>
               <TableRow>
                 <TableHead>{t("table.feedback")}</TableHead>
-                <TableHead>{t("table.channel")}</TableHead>
-                <TableHead>{t("table.customer")}</TableHead>
-                <TableHead className="text-right">{t("table.date")}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t("table.channel")}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t("table.customer")}</TableHead>
+                <TableHead className="hidden text-right sm:table-cell">{t("table.date")}</TableHead>
                 <TableHead>
                   <span className="sr-only">{t("table.actions")}</span>
                 </TableHead>
@@ -87,10 +87,16 @@ export default async function FeedbackPage({ params, searchParams }: PageProps<"
             <TableBody>
               {feedback.map((f) => (
                 <TableRow key={f.id}>
-                  <TableCell className="max-w-[64ch] whitespace-pre-line">{f.text}</TableCell>
-                  <TableCell className="whitespace-nowrap text-ink-muted">{f.channel}</TableCell>
-                  <TableCell className="whitespace-nowrap text-ink-muted">{f.customer}</TableCell>
-                  <TableCell className="text-right whitespace-nowrap tabular-nums">
+                  <TableCell className="max-w-[64ch]">
+                    <span className="whitespace-pre-line">{f.text}</span>
+                    {/* On a phone the side columns would squeeze the text: they become one line under it. */}
+                    <span className="mt-1 block text-sm text-ink-muted sm:hidden">
+                      {[f.channel, f.customer, formatDate(f.receivedAt, locale)].filter(Boolean).join(" · ")}
+                    </span>
+                  </TableCell>
+                  <TableCell className="hidden whitespace-nowrap text-ink-muted sm:table-cell">{f.channel}</TableCell>
+                  <TableCell className="hidden whitespace-nowrap text-ink-muted sm:table-cell">{f.customer}</TableCell>
+                  <TableCell className="hidden text-right whitespace-nowrap tabular-nums sm:table-cell">
                     {formatDate(f.receivedAt, locale)}
                   </TableCell>
                   <TableCell className="text-right whitespace-nowrap">

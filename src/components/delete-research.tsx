@@ -68,7 +68,7 @@ export function DeleteResearch({
         >
           <p className="mb-3 max-w-[64ch] text-base">{t("confirm", { question, count: feedbackCount })}</p>
           <div className="flex items-center gap-6">
-            <Button variant="link" autoFocus onClick={cancel}>
+            <Button variant="text" autoFocus onClick={cancel}>
               {t("cancel")}
             </Button>
             <Button variant="secondary" aria-disabled={pending || undefined} onClick={confirm}>
@@ -77,7 +77,7 @@ export function DeleteResearch({
           </div>
         </div>
       ) : (
-        <Button ref={open} variant="link" onClick={() => setConfirming(true)}>
+        <Button ref={open} variant="text" onClick={() => setConfirming(true)}>
           {t("open")}
         </Button>
       )}

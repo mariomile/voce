@@ -1,20 +1,26 @@
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { CopyLinkButton } from "@/components/copy-link-button"
+import { SectionHeading, StepNumber } from "@/components/page"
 import { QrCode } from "@/components/qr-code"
 import { buttonVariants } from "@/components/ui/button"
 import { Card, CardActions, CardBody, CardMeta, CardText, CardTitle } from "@/components/ui/card"
 import type { Research } from "@/lib/types"
 
-// A Research with no feedback yet: the three ways to collect, its public form first.
+// A Research with no feedback yet, step 2 of its loop: the three ways to collect, its public form first.
 export function CollectionPaths({ research, origin }: { research: Pick<Research, "id" | "formSlug">; origin: string }) {
   const t = useTranslations("themes.page.emptyNoFeedback")
   const formPath = `/f/${research.formSlug}`
   const collect = `/research/${research.id}/collect`
   return (
-    <div className="py-6">
-      <h2 className="mb-4 max-w-[24ch] font-serif text-5xl leading-snug font-normal tracking-snug">{t("heading")}</h2>
-      <p className="mb-10 max-w-[58ch] text-lg leading-relaxed text-ink-muted">{t("lede")}</p>
+    <section aria-labelledby="collect-title" className="mb-14">
+      <div className="mb-6 flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b-2 border-ink pb-4">
+        <SectionHeading id="collect-title">
+          <StepNumber step={2} />
+          {t("collectTitle")}
+        </SectionHeading>
+        <p className="text-lg text-ink-muted">{t("collectLede")}</p>
+      </div>
       <div className="grid grid-cols-1 gap-5 md:grid-cols-[1.35fr_1fr_1fr]">
         <Card variant="highlight" layout="media">
           <CardBody>
@@ -23,6 +29,7 @@ export function CollectionPaths({ research, origin }: { research: Pick<Research,
             <CardMeta>
               <Link href={formPath} className="hover:underline">
                 {new URL(origin).host}
+                <wbr />
                 {formPath}
               </Link>
             </CardMeta>
@@ -30,7 +37,7 @@ export function CollectionPaths({ research, origin }: { research: Pick<Research,
               <CopyLinkButton path={formPath} />
             </CardActions>
           </CardBody>
-          <QrCode url={`${origin}${formPath}`} />
+          <QrCode url={`${origin}${formPath}`} className="justify-self-start" />
         </Card>
         <Card>
           <CardTitle>{t("csvTitle")}</CardTitle>
@@ -51,6 +58,6 @@ export function CollectionPaths({ research, origin }: { research: Pick<Research,
           </CardActions>
         </Card>
       </div>
-    </div>
+    </section>
   )
 }

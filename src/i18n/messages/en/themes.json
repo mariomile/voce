@@ -6,8 +6,8 @@
     "showMore": "{count, plural, one {Show one more theme} other {Show # more themes}}",
     "withFeedback": "with {list} feedback",
     "emptyNoFeedback": {
-      "heading": "Here you'll read what your customers say, grouped by theme.",
-      "lede": "To get started you need feedback. Start with what you already have: tickets, call notes, survey answers. The more channels you bring together, the more complete the themes.",
+      "heading": "The answer to your question will show up here.",
+      "lede": "Three steps: write what you expect to find, collect your customers' voices, analyze them. Voce groups them into themes and gives each hypothesis a verdict, in your customers' words.",
       "askTitle": "Ask your customers",
       "askText": "A public form with one question, your choice. Answered from the phone, no account needed.",
       "csvTitle": "Import a CSV",
@@ -15,7 +15,11 @@
       "chooseFile": "Choose the file",
       "pasteTitle": "Paste notes",
       "pasteText": "The notes of an interview, or a message copied from an email or Slack.",
-      "pasteAction": "Paste notes"
+      "pasteAction": "Paste notes",
+      "collectTitle": "Collect feedback",
+      "collectLede": "One channel is enough to start.",
+      "analyzeTitle": "Analyze",
+      "analyzeText": "Once the first feedback arrives, the button to analyze it shows up here: themes, verdicts and quotes in a few minutes."
     },
     "emptyNoAnalysis": {
       "title": "{count} feedback, no themes yet",
