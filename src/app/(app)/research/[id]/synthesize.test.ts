@@ -1,8 +1,7 @@
 import { MockLanguageModelV4 } from "ai/test"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
-import type { RawOutput } from "@/lib/analysis"
 import { isoDateOf } from "@/lib/format"
-import { fakeModel, fakeSynthesisModel } from "@/test/fake-model"
+import { fakeModel, fakeSynthesisModel, themesOutput, verdictOutput } from "@/test/fake-model"
 import { admin, anon, createTestUser, deleteTestUsers, type TestUser } from "@/test/supabase"
 
 // The synthesis of a Research runs for real against the local database, as a fresh test user.
@@ -99,7 +98,7 @@ const bank = {
     { feedback: 1, text: "si scollega ogni lunedì" },
     { feedback: 2, text: "ricollegare la banca ogni settimana" },
   ],
-} satisfies RawOutput["themes"][number]
+}
 
 const phone = {
   title: "Fatture dal telefono veloci",
@@ -108,9 +107,9 @@ const phone = {
   sentiment: "positive",
   feedback: [3, 4],
   quotes: [{ feedback: 4, text: "velocissimo" }],
-} satisfies RawOutput["themes"][number]
+}
 
-function answer(output: RawOutput | string) {
+function answer(output: unknown) {
   const model = fakeModel(output, { input: 100_000, output: 10_000 })
   ai.model = model
   return model
@@ -165,7 +164,7 @@ async function insertAnalyses(count: number, status: "done" | "failed" | "runnin
 describe("synthesize", () => {
   it("saves themes, links, quotes, sentiment and the run log", async () => {
     const ids = await addFeedback()
-    const model = answer({ themes: [bank, phone] })
+    const model = answer(themesOutput([bank, phone], 5))
 
     expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themeCount: expect.any(Number) })
 
@@ -190,7 +189,7 @@ describe("synthesize", () => {
       output_tokens: 10_000,
       cost_usd: 0.3,
       error: null,
-      output: { themes: [bank, phone] },
+      output: themesOutput([bank, phone], 5),
       issues: [],
     })
     expect(log.duration_ms).toBeGreaterThanOrEqual(0)
@@ -213,7 +212,7 @@ describe("synthesize", () => {
   it("asks for titles and summaries in the language of the interface", async () => {
     await addFeedback()
     ui.locale = "en"
-    const model = answer({ themes: [] })
+    const model = answer(themesOutput([]))
     await synthesize(user.researchId)
     const system = model.doGenerateCalls[0].prompt.filter((m) => m.role === "system")
     expect(system).toEqual([{ role: "system", content: analysisInstructions("en") }])
@@ -223,14 +222,14 @@ describe("synthesize", () => {
 
   it("carries priority and status to the themes with the same title", async () => {
     await addFeedback()
-    answer({ themes: [bank, phone] })
+    answer(themesOutput([bank, phone]))
     await synthesize(user.researchId)
     const [first] = await analyses()
     await user.client.from("themes").update({ priority: "high", status: "roadmap" }).eq("analysis_id", first.id).eq("title", bank.title)
     await user.client.from("themes").update({ status: "discarded" }).eq("analysis_id", first.id).eq("title", phone.title)
 
     // The model saw the existing titles and reused one, with different case and spaces.
-    const model = answer({ themes: [{ ...bank, title: "  la banca SI scollega " }, { ...phone, title: "Un tema nuovo" }] })
+    const model = answer(themesOutput([{ ...bank, title: "  la banca SI scollega " }, { ...phone, title: "Un tema nuovo" }]))
     expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themeCount: expect.any(Number) })
     expect(JSON.stringify(model.doGenerateCalls[0].prompt)).toContain("Fatture dal telefono veloci")
 
@@ -249,12 +248,12 @@ describe("synthesize", () => {
 
   it("drops what does not hold up and logs why", async () => {
     const ids = await addFeedback()
-    answer({
-      themes: [
+    answer(
+      themesOutput([
         { ...bank, feedback: [1, 2, 99], quotes: [{ feedback: 1, text: "si scollega ogni martedì" }, { feedback: 5, text: "commercialista" }, bank.quotes[1]] },
         { ...phone, feedback: [3] },
-      ],
-    })
+      ], 5)
+    )
     expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themeCount: expect.any(Number) })
     const [analysis] = await analyses()
     const themes = await themesOf(analysis.id)
@@ -265,7 +264,7 @@ describe("synthesize", () => {
       [ids[0], null, null],
     ])
     expect((await runLog(analysis.id)).issues).toEqual([
-      { theme: bank.title, problem: "unknown_feedback", detail: 99 },
+      { theme: "", problem: "unknown_feedback", detail: 99 },
       { theme: bank.title, problem: "quote_not_in_feedback", detail: 1 },
       { theme: bank.title, problem: "quote_not_linked", detail: 5 },
       { theme: phone.title, problem: "too_few_feedback", detail: 1 },
@@ -274,7 +273,7 @@ describe("synthesize", () => {
 
   it("keeps the previous themes and the quota when the model fails or times out", async () => {
     await addFeedback()
-    answer({ themes: [bank] })
+    answer(themesOutput([bank]))
     await synthesize(user.researchId)
     const [done] = await analyses()
 
@@ -311,10 +310,10 @@ describe("synthesize", () => {
     await insertAnalyses(2, "done")
     await insertAnalyses(2, "failed")
     await insertAnalyses(3, "done", new Date(Date.now() - 40 * 24 * 60 * 60 * 1000))
-    answer({ themes: [bank] })
+    answer(themesOutput([bank]))
     expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themeCount: expect.any(Number) })
 
-    const model = answer({ themes: [bank] })
+    const model = answer(themesOutput([bank]))
     expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "limit" })
     expect(model.doGenerateCalls).toHaveLength(0)
     expect((await getUsage(user.workspaceId)).analysesThisMonth).toBe(3)
@@ -323,7 +322,7 @@ describe("synthesize", () => {
   it("failed runs cost tokens: at most as many as the quota each month", async () => {
     await addFeedback()
     await insertAnalyses(3, "failed")
-    const model = answer({ themes: [bank] })
+    const model = answer(themesOutput([bank]))
     expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "limit" })
     expect(model.doGenerateCalls).toHaveLength(0)
     expect((await getUsage(user.workspaceId)).analysesThisMonth).toBe(0)
@@ -331,11 +330,11 @@ describe("synthesize", () => {
 
   it("an analysis with no theme left is failed: the previous one stays, the quota too", async () => {
     await addFeedback()
-    answer({ themes: [bank] })
+    answer(themesOutput([bank]))
     await synthesize(user.researchId)
     const [done] = await analyses()
 
-    for (const output of [{ themes: [] }, { themes: [{ ...phone, feedback: [3] }] }]) {
+    for (const output of [themesOutput([], 5), themesOutput([{ ...phone, feedback: [3] }], 5)]) {
       answer(output)
       expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "no_themes" })
     }
@@ -354,7 +353,7 @@ describe("synthesize", () => {
     await addFeedback()
     await admin.from("subscriptions").update({ plan: "pro" }).eq("workspace_id", user.workspaceId)
     await insertAnalyses(99, "done")
-    answer({ themes: [bank] })
+    answer(themesOutput([bank]))
     expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themeCount: expect.any(Number) })
     expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "limit" })
 
@@ -365,7 +364,7 @@ describe("synthesize", () => {
   it("runs one analysis at a time, and frees a stuck one after 10 minutes", async () => {
     await addFeedback()
     await insertAnalyses(1, "running", new Date(Date.now() - 2 * 60 * 1000))
-    const model = answer({ themes: [bank] })
+    const model = answer(themesOutput([bank]))
     expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "busy" })
     expect(model.doGenerateCalls).toHaveLength(0)
 
@@ -381,7 +380,7 @@ describe("synthesize", () => {
     answer("non è JSON")
     expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "failed" })
     expect(analytics.trackMilestone).not.toHaveBeenCalled()
-    answer({ themes: [bank, phone] })
+    answer(themesOutput([bank, phone]))
     expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themeCount: expect.any(Number) })
     expect(analytics.trackMilestone).toHaveBeenCalledExactlyOnceWith(user.workspaceId, {
       event: "first_analysis_completed",
@@ -393,7 +392,7 @@ describe("synthesize", () => {
     await addFeedback()
     // The model holds its answer until the other click is refused: otherwise a fast first
     // analysis could finish before the second click starts, and both would pass.
-    const model = answer({ themes: [bank] })
+    const model = answer(themesOutput([bank]))
     let release = () => {}
     const held = new Promise<void>((resolve) => (release = resolve))
     ai.model = new MockLanguageModelV4({
@@ -414,7 +413,7 @@ describe("synthesize", () => {
   it("a feedback deleted while the analysis runs is left out, and the analysis still finishes", async () => {
     const ids = await addFeedback()
     // The model holds its answer until the feedback is deleted: it still names it in a theme and a quote.
-    const model = answer({ themes: [bank, phone] })
+    const model = answer(themesOutput([bank, phone]))
     let release = () => {}
     const held = new Promise<void>((resolve) => (release = resolve))
     let called = () => {}
@@ -448,14 +447,14 @@ describe("synthesize", () => {
 
   it("a mode other than full, verdict and room is failed and makes no call", async () => {
     await addFeedback()
-    const model = answer({ themes: [bank] })
+    const model = answer(themesOutput([bank]))
     expect(await synthesize(user.researchId, "themes" as never)).toEqual({ ok: false, reason: "failed" })
     expect(model.doGenerateCalls).toHaveLength(0)
     expect(await analyses()).toEqual([])
   })
 
   it("a Research without feedback is no_feedback and makes no call", async () => {
-    const model = answer({ themes: [bank] })
+    const model = answer(themesOutput([bank]))
     expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "no_feedback" })
     expect(model.doGenerateCalls).toHaveLength(0)
     expect(await analyses()).toEqual([])
@@ -472,7 +471,7 @@ describe("synthesize", () => {
     }))
     await admin.from("feedback").insert(rows)
     await addFeedback(["Il più vecchio"], 400)
-    const model = answer({ themes: [bank] })
+    const model = answer(themesOutput([bank]))
     expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themeCount: 1 })
 
     const [analysis] = await analyses()
@@ -494,7 +493,7 @@ describe("synthesize", () => {
       received_at: daysAgo(i),
     }))
     await admin.from("feedback").insert(rows)
-    answer({ themes: [bank] })
+    answer(themesOutput([bank]))
     await synthesize(user.researchId)
     const [analysis] = await analyses()
     expect(analysis.feedback_count).toBe(250)
@@ -509,7 +508,7 @@ describe("synthesize", () => {
     const other = await user.client.rpc("create_research", { ws: user.workspaceId, question: "Altra?" })
     try {
       await admin.from("feedback").insert({ workspace_id: user.workspaceId, research_id: other.data!, text: "Di un'altra Research.", channel: "Supporto" })
-      const model = answer({ themes: [bank] })
+      const model = answer(themesOutput([bank]))
       await synthesize(user.researchId)
       expect(JSON.stringify(model.doGenerateCalls[0].prompt)).not.toContain("Di un'altra Research.")
       const [analysis] = await analyses()
@@ -528,13 +527,13 @@ describe("synthesize", () => {
         { workspace_id: user.workspaceId, research_id: other.data!, text: "Uno altrove.", channel: "Supporto" },
         { workspace_id: user.workspaceId, research_id: other.data!, text: "Due altrove.", channel: "Supporto" },
       ])
-      answer({ themes: [bank] })
+      answer(themesOutput([bank]))
       await synthesize(user.researchId)
       // A later analysis of the other Research, with its own titles.
-      answer({ themes: [{ ...phone, title: "Tema dell'altra Research", feedback: [1, 2], quotes: [] }] })
+      answer(themesOutput([{ ...phone, title: "Tema dell'altra Research", feedback: [1, 2], quotes: [] }]))
       expect(await synthesize(other.data!)).toMatchObject({ ok: true, themeCount: 1 })
 
-      const model = answer({ themes: [bank] })
+      const model = answer(themesOutput([bank]))
       await synthesize(user.researchId)
       const prompt = JSON.stringify(model.doGenerateCalls[0].prompt)
       expect(prompt).toContain(bank.title)
@@ -555,7 +554,7 @@ describe("synthesize", () => {
         feedback_count: 1,
         status: "running",
       })
-      const model = answer({ themes: [bank] })
+      const model = answer(themesOutput([bank]))
       expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "busy" })
       expect(model.doGenerateCalls).toHaveLength(0)
     } finally {
@@ -563,19 +562,19 @@ describe("synthesize", () => {
     }
   })
 
-  it("the themes call has a 240,000 ms timeout and 16,000 output tokens", async () => {
+  it("the themes call has a 240,000 ms timeout and 32,000 output tokens", async () => {
     await addFeedback()
-    answer({ themes: [bank] })
+    answer(themesOutput([bank]))
     await synthesize(user.researchId)
     expect(calls.options).toHaveLength(1)
-    expect(calls.options[0]).toMatchObject({ timeout: 240_000, maxOutputTokens: 16_000 })
+    expect(calls.options[0]).toMatchObject({ timeout: 240_000, maxOutputTokens: 32_000 })
   })
 
   it("another workspace's Research is not_found, a wrong id too, and no call is made", async () => {
     const other = await createTestUser("synthesize-other")
     try {
       await admin.from("feedback").insert({ workspace_id: other.workspaceId, research_id: other.researchId, text: "Altrui", channel: "Supporto" })
-      const model = answer({ themes: [bank] })
+      const model = answer(themesOutput([bank]))
       expect(await synthesize(other.researchId)).toEqual({ ok: false, reason: "not_found" })
       expect(await synthesize("non-un-uuid")).toEqual({ ok: false, reason: "not_found" })
       expect(model.doGenerateCalls).toHaveLength(0)
@@ -589,7 +588,7 @@ describe("synthesize", () => {
   it("without a session returns session and makes no call", async () => {
     await addFeedback()
     session.client = anon()
-    const model = answer({ themes: [bank] })
+    const model = answer(themesOutput([bank]))
     expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "session" })
     expect(model.doGenerateCalls).toHaveLength(0)
   })
@@ -615,8 +614,7 @@ async function addHypotheses(texts: string[], writtenAt?: string) {
 }
 
 // Hypothesis 1 confirmed by feedback 1 and 2, against feedback 3; hypothesis 2 without evidence.
-const priced = {
-  hypotheses: [
+const pricedHypotheses = [
     {
       hypothesis: 1,
       verdict: "confirmed",
@@ -629,9 +627,9 @@ const priced = {
         { feedback: 3, stance: "against", text: "Adoro" },
       ],
     },
-    { hypothesis: 2, verdict: "to_review", reasoning: "Nessuno ne parla.", supporting: [], contradicting: [], quotes: [] },
-  ],
-}
+  { hypothesis: 2, verdict: "to_review", reasoning: "Nessuno ne parla.", supporting: [], contradicting: [], quotes: [] },
+]
+const priced = verdictOutput(pricedHypotheses, 5)
 
 async function verdictsOf(hypothesisIds: string[]) {
   const { data } = await admin
@@ -650,7 +648,7 @@ describe("synthesize with hypotheses", () => {
   it("with hypotheses one click reserves themes and verdict together and calls the model twice", async () => {
     const ids = await addFeedback()
     const hypotheses = await addHypotheses(["La banca si scollega", "Vogliono WhatsApp"])
-    const model = fakeSynthesisModel({ themes: [bank, phone] }, priced)
+    const model = fakeSynthesisModel(themesOutput([bank, phone]), priced)
     ai.model = model
 
     expect(await synthesize(user.researchId)).toEqual({
@@ -686,7 +684,7 @@ describe("synthesize with hypotheses", () => {
   it("a database error reading the saved verdicts back still reports the synthesis and sends research_synthesized", async () => {
     await addFeedback()
     const hypotheses = await addHypotheses(["La banca si scollega", "Vogliono WhatsApp"])
-    ai.model = fakeSynthesisModel({ themes: [bank, phone] }, priced)
+    ai.model = fakeSynthesisModel(themesOutput([bank, phone]), priced)
     analytics.trackEvent.mockClear()
     // Only the read-back after the save fails, as a dropped connection would.
     const real = user.client as { from: (table: string) => unknown }
@@ -726,7 +724,7 @@ describe("synthesize with hypotheses", () => {
 
   it("without hypotheses one themes row and one call", async () => {
     await addFeedback()
-    const model = fakeSynthesisModel({ themes: [bank] }, priced)
+    const model = fakeSynthesisModel(themesOutput([bank]), priced)
     ai.model = model
     expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themes: "done", verdict: "skipped", verdicts: { confirmed: 0, refuted: 0, toReview: 0 } })
     expect(model.doGenerateCalls).toHaveLength(1)
@@ -740,7 +738,7 @@ describe("synthesize with hypotheses", () => {
     await admin.from("feedback").update({ created_at: "2020-01-01T00:00:00Z" }).in("id", ids.slice(0, 3))
     const [newer] = await addHypotheses(["Vogliono WhatsApp"])
     await admin.from("feedback").update({ created_at: new Date(Date.now() + 60_000).toISOString() }).in("id", ids.slice(3))
-    ai.model = fakeSynthesisModel({ themes: [bank] }, priced)
+    ai.model = fakeSynthesisModel(themesOutput([bank]), priced)
     await synthesize(user.researchId)
     const [a, b] = await verdictsOf([older, newer])
     expect([a!.feedback_read, a!.arrived_after]).toEqual([5, 2])
@@ -756,12 +754,11 @@ describe("synthesize with hypotheses", () => {
     await admin.from("feedback").update({ created_at: at(-60 * 60 * 1000) }).in("id", ids.slice(0, 29))
     await admin.from("feedback").update({ created_at: at(60 * 1000) }).in("id", ids.slice(29))
     ai.model = fakeSynthesisModel(
-      { themes: [bank] },
-      {
-        hypotheses: [
-          { hypothesis: 1, verdict: "confirmed", reasoning: "Ne parlano.", supporting: [1], contradicting: [], quotes: [{ feedback: 1, stance: "for", text: "Feedback numero" }] },
-        ],
-      }
+      themesOutput([bank]),
+      verdictOutput(
+        [{ hypothesis: 1, verdict: "confirmed", reasoning: "Ne parlano.", supporting: [1], contradicting: [], quotes: [{ feedback: 1, stance: "for", text: "Feedback numero" }] }],
+        37
+      )
     )
     await synthesize(user.researchId)
     const [listed] = await listHypotheses(research())
@@ -791,11 +788,11 @@ describe("synthesize with hypotheses", () => {
 
   it("themes fail after an earlier analysis: the earlier themes stay and their date comes back", async () => {
     await addFeedback()
-    answer({ themes: [bank] })
+    answer(themesOutput([bank]))
     await synthesize(user.researchId)
     const [earlier] = await analyses()
     await addHypotheses(["La banca si scollega", "Vogliono WhatsApp"])
-    ai.model = fakeSynthesisModel({ themes: [] }, priced)
+    ai.model = fakeSynthesisModel(themesOutput([]), priced)
     const result = await synthesize(user.researchId)
     expect(result).toMatchObject({ ok: true, themes: "no_themes", verdict: "done" })
     const { data } = await admin.from("analyses").select("created_at").eq("id", earlier.id).single()
@@ -807,12 +804,12 @@ describe("synthesize with hypotheses", () => {
     await addFeedback()
     await admin.from("subscriptions").update({ plan: "pro" }).eq("workspace_id", user.workspaceId)
     const hypotheses = await addHypotheses(["La banca si scollega", "Vogliono WhatsApp"])
-    ai.model = fakeSynthesisModel({ themes: [bank] }, priced)
+    ai.model = fakeSynthesisModel(themesOutput([bank]), priced)
     await synthesize(user.researchId)
     const before = await verdictsOf(hypotheses)
 
     const log = vi.spyOn(console, "error").mockImplementation(() => {})
-    ai.model = fakeSynthesisModel({ themes: [bank] }, new Error("Anthropic API down"))
+    ai.model = fakeSynthesisModel(themesOutput([bank]), new Error("Anthropic API down"))
     expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themes: "done", themeCount: 1, verdict: "failed", verdicts: { confirmed: 0, refuted: 0, toReview: 0 } })
     log.mockRestore()
     const { themes, verdict } = await byKind()
@@ -840,7 +837,7 @@ describe("synthesize with hypotheses", () => {
     await addFeedback()
     await addHypotheses(["La banca si scollega"])
     const log = vi.spyOn(console, "error").mockImplementation(() => {})
-    ai.model = fakeSynthesisModel({ themes: [] }, new Error("down"))
+    ai.model = fakeSynthesisModel(themesOutput([]), new Error("down"))
     expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "no_themes" })
     log.mockRestore()
     expect((await getUsage(user.workspaceId)).analysesThisMonth).toBe(0)
@@ -850,8 +847,8 @@ describe("synthesize with hypotheses", () => {
     await addFeedback()
     await addHypotheses(["La banca si scollega"])
     const log = vi.spyOn(console, "error").mockImplementation(() => {})
-    const wrong = { hypotheses: [{ ...priced.hypotheses[0], quotes: [{ feedback: 1, stance: "neutral", text: "si scollega" }] }] }
-    ai.model = fakeSynthesisModel({ themes: [bank] }, wrong)
+    const wrong = verdictOutput([{ ...pricedHypotheses[0], quotes: [{ feedback: 1, stance: "neutral", text: "si scollega" }] }], 5)
+    ai.model = fakeSynthesisModel(themesOutput([bank]), wrong)
     expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themes: "done", verdict: "failed" })
     log.mockRestore()
     const { verdict } = await byKind()
@@ -863,10 +860,11 @@ describe("synthesize with hypotheses", () => {
   it("an invented quote is dropped, and the confirmed left without quotes is saved to_review", async () => {
     await addFeedback()
     const [hypothesis] = await addHypotheses(["La banca si scollega"])
-    const invented = {
-      hypotheses: [{ ...priced.hypotheses[0], contradicting: [], quotes: [{ feedback: 1, stance: "for", text: "La banca è la migliore del mercato" }] }],
-    }
-    ai.model = fakeSynthesisModel({ themes: [bank] }, invented)
+    const invented = verdictOutput(
+      [{ ...pricedHypotheses[0], contradicting: [], quotes: [{ feedback: 1, stance: "for", text: "La banca è la migliore del mercato" }] }],
+      5
+    )
+    ai.model = fakeSynthesisModel(themesOutput([bank]), invented)
     await synthesize(user.researchId)
     const [saved] = await verdictsOf([hypothesis])
     expect(saved).toMatchObject({ verdict: "to_review" })
@@ -878,10 +876,10 @@ describe("synthesize with hypotheses", () => {
     ])
   })
 
-  it("both calls start together with a 240,000 ms timeout and 16,000 output tokens", async () => {
+  it("both calls start together with a 240,000 ms timeout and 32,000 output tokens", async () => {
     await addFeedback()
     await addHypotheses(["La banca si scollega"])
-    const inner = fakeSynthesisModel({ themes: [bank] }, priced)
+    const inner = fakeSynthesisModel(themesOutput([bank]), priced)
     let started = 0
     let bothStarted = () => {}
     const together = new Promise<void>((resolve) => (bothStarted = resolve))
@@ -895,14 +893,14 @@ describe("synthesize with hypotheses", () => {
     })
     expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themes: "done", verdict: "done" })
     expect(calls.options).toHaveLength(2)
-    for (const options of calls.options) expect(options).toMatchObject({ timeout: 240_000, maxOutputTokens: 16_000 })
+    for (const options of calls.options) expect(options).toMatchObject({ timeout: 240_000, maxOutputTokens: 32_000 })
   })
 
   it("every analyses row has its analysis_runs row: the verdict with model, instructions, prompt, feedback and hypothesis ids in order", async () => {
     const ids = await addFeedback()
     const hypotheses = await addHypotheses(["La banca si scollega", "Vogliono WhatsApp"])
     ui.locale = "en"
-    ai.model = fakeSynthesisModel({ themes: [bank] }, priced, { input: 100_000, output: 10_000 })
+    ai.model = fakeSynthesisModel(themesOutput([bank]), priced, { input: 100_000, output: 10_000 })
     await synthesize(user.researchId)
     const { verdict, themes } = await byKind()
     expect((await runLog(themes[0].id)).input).toMatchObject({ instructions: analysisInstructions("en") })
@@ -931,7 +929,7 @@ describe("synthesize with hypotheses", () => {
     await addFeedback([...TEXTS.slice(0, 4), `Feedback con ${MARKER}`])
     await addHypotheses([`Ipotesi con ${MARKER}`])
     const log = vi.spyOn(console, "error").mockImplementation(() => {})
-    ai.model = fakeSynthesisModel({ themes: [bank] }, new Error(`Invalid request near ${MARKER}`))
+    ai.model = fakeSynthesisModel(themesOutput([bank]), new Error(`Invalid request near ${MARKER}`))
     await synthesize(user.researchId)
     const { verdict } = await byKind()
     const logged = log.mock.calls.map((args) => args.map(String).join(" "))
@@ -943,7 +941,7 @@ describe("synthesize with hypotheses", () => {
   it("the hypotheses stay locked while the verdict runs", async () => {
     await addFeedback()
     const [hypothesis] = await addHypotheses(["La banca si scollega"])
-    const inner = fakeSynthesisModel({ themes: [bank] }, priced)
+    const inner = fakeSynthesisModel(themesOutput([bank]), priced)
     let release = () => {}
     const held = new Promise<void>((resolve) => (release = resolve))
     let called = () => {}
@@ -971,7 +969,7 @@ describe("synthesize and the quota of the verdict", () => {
     await addFeedback()
     const hypotheses = await addHypotheses(["La banca si scollega"])
     await insertAnalyses(2, "done")
-    const model = fakeSynthesisModel({ themes: [bank] }, priced)
+    const model = fakeSynthesisModel(themesOutput([bank]), priced)
     ai.model = model
     expect(await synthesize(user.researchId)).toEqual({
       ok: true,
@@ -997,7 +995,7 @@ describe("synthesize and the quota of the verdict", () => {
     await addFeedback()
     await addHypotheses(["La banca si scollega"])
     await insertAnalyses(3, "done")
-    const model = fakeSynthesisModel({ themes: [bank] }, priced)
+    const model = fakeSynthesisModel(themesOutput([bank]), priced)
     ai.model = model
     expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "limit" })
     expect(model.doGenerateCalls).toHaveLength(0)
@@ -1007,7 +1005,7 @@ describe("synthesize and the quota of the verdict", () => {
     await addFeedback()
     await admin.from("subscriptions").update({ plan: "pro" }).eq("workspace_id", user.workspaceId)
     const hypotheses = await addHypotheses(["La banca si scollega"])
-    ai.model = fakeSynthesisModel({ themes: [bank] }, priced)
+    ai.model = fakeSynthesisModel(themesOutput([bank]), priced)
     await synthesize(user.researchId)
     const [firstVerdict] = (await byKind()).verdict
     hypotheses.push(...(await addHypotheses(["Vogliono WhatsApp"])))
@@ -1039,7 +1037,7 @@ describe("synthesize and the quota of the verdict", () => {
     await addFeedback()
     await addHypotheses(["La banca si scollega"])
     await insertAnalyses(3, "done")
-    const model = fakeSynthesisModel({ themes: [bank] }, priced)
+    const model = fakeSynthesisModel(themesOutput([bank]), priced)
     ai.model = model
     expect(await synthesize(user.researchId, "verdict")).toEqual({ ok: false, reason: "limit" })
     expect(model.doGenerateCalls).toHaveLength(0)
@@ -1047,7 +1045,7 @@ describe("synthesize and the quota of the verdict", () => {
 
   it("verdict only without hypotheses reserves nothing and makes no call", async () => {
     await addFeedback()
-    const model = fakeSynthesisModel({ themes: [bank] }, priced)
+    const model = fakeSynthesisModel(themesOutput([bank]), priced)
     ai.model = model
     expect(await synthesize(user.researchId, "verdict")).toEqual({ ok: false, reason: "failed" })
     expect(model.doGenerateCalls).toHaveLength(0)
@@ -1059,7 +1057,7 @@ describe("synthesize from the room", () => {
   it("room mode reserves only themes with hypotheses: one row, one call, no verdict", async () => {
     await addFeedback()
     const hypotheses = await addHypotheses(["La banca si scollega"])
-    const model = fakeSynthesisModel({ themes: [bank] }, priced)
+    const model = fakeSynthesisModel(themesOutput([bank]), priced)
     ai.model = model
     expect(await synthesize(user.researchId, "room")).toMatchObject({ ok: true, themes: "done", verdict: "skipped" })
     expect(model.doGenerateCalls).toHaveLength(1)
@@ -1072,7 +1070,7 @@ describe("synthesize from the room", () => {
     await addFeedback()
     await addHypotheses(["La banca si scollega"])
     await insertAnalyses(3, "done")
-    const model = fakeSynthesisModel({ themes: [bank] }, priced)
+    const model = fakeSynthesisModel(themesOutput([bank]), priced)
     ai.model = model
     expect(await synthesize(user.researchId, "room")).toEqual({ ok: false, reason: "limit" })
     expect(model.doGenerateCalls).toHaveLength(0)
@@ -1085,7 +1083,7 @@ describe("synthesize and the question of the Research", () => {
     try {
       await addFeedback()
       await addHypotheses(["La banca si scollega"])
-      const model = fakeSynthesisModel({ themes: [bank] }, priced)
+      const model = fakeSynthesisModel(themesOutput([bank]), priced)
       ai.model = model
       expect(await synthesize(user.researchId)).toMatchObject({ ok: true, themes: "done", verdict: "done" })
       expect(model.doGenerateCalls).toHaveLength(2)
@@ -1109,7 +1107,7 @@ describe("synthesize and a Research deleted during its analysis", () => {
       .select("id")
     await admin.from("research_hypotheses").insert({ workspace_id: user.workspaceId, research_id: researchId, text: "La banca si scollega" })
     // The PM deletes the Research while the model is answering.
-    const model = fakeSynthesisModel({ themes: [bank] }, priced)
+    const model = fakeSynthesisModel(themesOutput([bank]), priced)
     let deleted: PromiseLike<unknown> | null = null
     ai.model = new MockLanguageModelV4({
       doGenerate: async (options) => {

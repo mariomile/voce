@@ -3,7 +3,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { MockLanguageModelV4 } from "ai/test"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
-import { fakeModel } from "@/test/fake-model"
+import { fakeModel, verdictOutput } from "@/test/fake-model"
 import { latestResult } from "./shared"
 import { loadVerdictEval, runVerdictEvals, saveVerdictResult } from "./verdicts"
 
@@ -44,21 +44,21 @@ function oracle(tweak: (id: string, output: { hypotheses: Record<string, unknown
           const verdict = Array.isArray(h.verdict) ? h.verdict[0] : h.verdict
           const side = verdict === "confirmed" ? "for" : verdict === "refuted" ? "against" : null
           const wanted = Math.max(1, (side === "for" ? h.min_for_quotes : h.min_against_quotes) ?? 1)
-          const picks = side
-            ? allowedFor(h.text, side).map(numberOf).filter((f) => f !== undefined).slice(0, wanted)
-            : []
+          // Every allowed feedback of its side is linked, the first ones quoted.
+          const linked = side ? allowedFor(h.text, side).map(numberOf).filter((f) => f !== undefined) : []
+          const picks = linked.slice(0, wanted)
           return {
             hypothesis: i + 1,
             verdict,
             reasoning: "Le voci dei clienti vanno in questa direzione.",
-            supporting: side === "for" ? picks.map((f) => f.n) : [],
-            contradicting: side === "against" ? picks.map((f) => f.n) : [],
+            supporting: side === "for" ? linked.map((f) => f.n) : [],
+            contradicting: side === "against" ? linked.map((f) => f.n) : [],
             quotes: picks.map((f) => ({ feedback: f.n, stance: side, text: f.text })),
           }
         }),
       }
       tweak(c.id, output)
-      return fakeModel(output).doGenerate(options)
+      return fakeModel(verdictOutput(output.hypotheses as Parameters<typeof verdictOutput>[0], feedback.length)).doGenerate(options)
     },
   })
 }
@@ -134,6 +134,14 @@ describe("runVerdictEvals", () => {
     expect(failuresOf("v03")).toContainEqual(expect.stringContaining("G2"))
     expect(failuresOf("v16")).toContainEqual(expect.stringContaining("G5"))
     expect(failuresOf("v12")).toContainEqual(expect.stringContaining("forbidden link x01"))
+  })
+
+  it("a sample of the supporting feedback fails min_for_links", async () => {
+    const model = oracle((id, output) => {
+      if (id === "v01") output.hypotheses[0].supporting = (output.hypotheses[0].supporting as number[]).slice(0, 3)
+    })
+    const { results } = await runVerdictEvals({ model, modelId: "claude-sonnet-5-5", concurrency: 4 })
+    expect(results.find((r) => r.id === "v01")!.failures).toEqual(["min_for_links: h1 links 3 for, expected at least 9"])
   })
 
   it("a model error fails the case and the run goes on", async () => {

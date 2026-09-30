@@ -1,6 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
-import type { RawOutput } from "@/lib/analysis"
-import { fakeModel, fakeSynthesisModel } from "@/test/fake-model"
+import { fakeModel, fakeSynthesisModel, themesOutput, verdictOutput } from "@/test/fake-model"
 import { admin, createTestUser, deleteTestUsers, type TestUser } from "@/test/supabase"
 
 // first_research_collected, research_synthesized and first_analysis_completed with the real trackMilestone,
@@ -165,8 +164,7 @@ describe("first_research_collected", () => {
 })
 
 // Five feedback in the Research; the model finds two themes with three verified quotes and one made up.
-const themes: RawOutput = {
-  themes: [
+const themes = themesOutput([
     {
       title: `La banca si scollega ${MARKER}`,
       summary: `Sintesi ${MARKER}`,
@@ -189,8 +187,7 @@ const themes: RawOutput = {
         { feedback: 4, text: "inventata" },
       ],
     },
-  ],
-}
+])
 
 async function fiveFeedback(researchId = user.researchId) {
   const rows = [1, 2, 3, 4, 5].map((n) => ({
@@ -232,7 +229,7 @@ describe("research_synthesized", () => {
     await fiveFeedback()
     ai.model = fakeModel("non è JSON")
     expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "failed" })
-    ai.model = fakeModel({ themes: [] })
+    ai.model = fakeModel(themesOutput([]))
     expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "no_themes" })
     await admin.from("analyses").insert({ workspace_id: user.workspaceId, research_id: user.researchId, period_start: "2026-09-01", feedback_count: 1, status: "running" })
     expect(await synthesize(user.researchId)).toEqual({ ok: false, reason: "busy" })
@@ -252,8 +249,8 @@ describe("research_synthesized", () => {
 })
 
 // Two hypotheses, each with a verdict: 2 verified quotes and one made up.
-const verdicts = {
-  hypotheses: [
+const verdicts = verdictOutput(
+  [
     {
       hypothesis: 1,
       verdict: "confirmed",
@@ -274,7 +271,8 @@ const verdicts = {
       quotes: [{ feedback: 5, stance: "against", text: "Feedback 5" }],
     },
   ],
-}
+  5
+)
 
 async function twoHypotheses() {
   const { error } = await admin.from("research_hypotheses").insert([

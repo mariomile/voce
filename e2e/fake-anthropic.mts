@@ -45,14 +45,15 @@ function themesFor(text: string) {
   return {
     themes: [
       {
+        n: 1,
         title: "I clienti chiedono l'esportazione in PDF",
         summary: "Più clienti vogliono esportare i report in PDF per condividerli.",
         kind: "opportunity",
         sentiment: "neutral",
-        feedback: feedback.map((f) => f.n),
         quotes: feedback.slice(0, 2).map((f) => ({ feedback: f.n, text: f.text })),
       },
     ],
+    assignments: feedback.map((f) => ({ feedback: f.n, themes: [1] })),
   }
 }
 
@@ -61,14 +62,15 @@ function hypothesesIn(text: string): { n: number; text: string }[] {
 }
 
 function verdictsFor(text: string) {
-  const [first] = feedbackIn(text)
+  const feedback = feedbackIn(text)
+  const [first] = feedback
+  const hypotheses = hypothesesIn(text)
   return {
-    hypotheses: hypothesesIn(text).map((h) => ({
+    evidence: feedback.map((f) => ({ feedback: f.n, for: f.n === first.n ? hypotheses.map((h) => h.n) : [], against: [] })),
+    hypotheses: hypotheses.map((h) => ({
       hypothesis: h.n,
       verdict: "confirmed",
       reasoning: "I clienti lo chiedono in modo esplicito.",
-      supporting: [first.n],
-      contradicting: [],
       quotes: [{ feedback: first.n, stance: "for", text: first.text }],
     })),
   }

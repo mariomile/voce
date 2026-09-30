@@ -1,19 +1,21 @@
 import { createHash } from "node:crypto"
 import { describe, expect, it } from "vitest"
 import { z } from "zod"
-import { fakeModel } from "@/test/fake-model"
+import { fakeModel, themesOutput } from "@/test/fake-model"
 import { analysisInstructions, runAnalysis } from "./analysis"
 import { questionInstructions, questionOutputSchemaFor, runQuestion } from "./questions"
 
 // The model answers in the language of the interface at request time. Italian is byte for byte the
 // prompt that was evaluated before English existed (hashes of the texts at 4ecc5db), except the question
-// prompt, which asks for shorter answers since then (hashes updated with that change).
+// prompt, which asks for shorter answers since then (hashes updated with that change). Both hashes updated again
+// on 30 September 2026: themes with one row per feedback, neutral words for who wrote (evals in
+// docs/notes/2026-09-30-copertura-analisi.md).
 const sha = (text: string) => createHash("sha256").update(text).digest("hex")
 const feedback = [{ id: "f1", text: "La banca si scollega.", channel: "Supporto", receivedAt: "2026-09-01" }]
 
 describe("the analysis prompt", () => {
   it("in Italian is unchanged", () => {
-    expect(sha(analysisInstructions("it"))).toBe("2861f4d52094eb9b761044cc967a7d8e42799a5eea4a40bd33228d95494e0068")
+    expect(sha(analysisInstructions("it"))).toBe("3d59a3c215c55c65855ba6a15623f9238ac5b563ea6e204d29c60d971357fab9")
   })
 
   it("in English asks for titles and summaries in English, with an English example", () => {
@@ -25,7 +27,7 @@ describe("the analysis prompt", () => {
   })
 
   it("is sent in the requested language", async () => {
-    const model = fakeModel({ themes: [] })
+    const model = fakeModel(themesOutput([]))
     await runAnalysis({ model, modelId: "x", feedback, existingTitles: [], locale: "en" })
     const system = model.doGenerateCalls[0].prompt.filter((m) => m.role === "system")
     expect(system).toEqual([{ role: "system", content: analysisInstructions("en") }])
@@ -34,7 +36,7 @@ describe("the analysis prompt", () => {
 
 describe("the question prompt", () => {
   it("in Italian is unchanged, schema included", () => {
-    expect(sha(questionInstructions("it"))).toBe("ff2babd6009b5072e1ef7195c07a530b95f25deaa702de02559d668d2cf7207a")
+    expect(sha(questionInstructions("it"))).toBe("b875021ae494c92965bc6b62f994fa9363697985ee7f6e9cfb030615316a6897")
     expect(sha(JSON.stringify(z.toJSONSchema(questionOutputSchemaFor("it"))))).toBe(
       "635fa784bc6cafb2e3b82df7d3a5f45e5ebe748c4dc9e96eabe3961072fe95eb"
     )
