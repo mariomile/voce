@@ -28,7 +28,9 @@ const buttonStyles = cva(
     compoundVariants: [
       {
         variant: ["link", "text"],
-        className: "p-0 text-base disabled:bg-transparent aria-disabled:bg-transparent",
+        // On a touch screen the tap area reaches 44 px tall without moving the text: an invisible layer around it.
+        className:
+          "relative p-0 text-base disabled:bg-transparent aria-disabled:bg-transparent pointer-coarse:after:absolute pointer-coarse:after:-inset-x-2 pointer-coarse:after:-inset-y-3",
       },
     ],
     defaultVariants: {

@@ -107,6 +107,7 @@ Ogni componente è in `design/kit.css` e in `design/kit.html` con tutti i suoi s
 - `.btn-highlight` solo per spingere un'azione di valore quando il primario è già usato (per esempio "Passa a Pro"). Mai dentro una superficie gialla.
 - Il testo del pulsante dice cosa succede, con il numero se c'è: "Analizza 37 feedback", non "Continua".
 - `.link` (sottolineatura gialla) per azioni che portano altrove ("Leggi tutti i 58 feedback"), non per azioni che cambiano dati.
+- Su uno schermo touch `.link` e `.link-text` hanno un'area di tocco alta 44 px (uno strato invisibile attorno al testo, il testo non si sposta). Lo stesso per IT · EN e "← Tutte le Research".
 - `.link-text` (sottolineatura `--color-ink-subtle`, inchiostro al passaggio del mouse) per le azioni sul posto: Modifica, Elimina, Annulla, Esci, "Spegni il link". Così il giallo resta un segnale: una pagina con 50 "Elimina" non diventa gialla.
 - Un pulsante primario che rifarebbe lo stesso lavoro scende a secondario e dice perché: "Analizza" quando dall'ultima analisi non è arrivato nessun feedback.
 
@@ -123,7 +124,7 @@ Ogni componente è in `design/kit.css` e in `design/kit.html` con tutti i suoi s
 
 - `.input` e `.textarea` (fondo velo) nell'app.
 - `.input-line` e `.textarea-line` (a riga, textarea in serif) solo nel modulo pubblico, dove si scrive come su un foglio. Riga di 2 px: col focus diventa inchiostro, ed è l'unico segno del focus (niente anello, che sopra la riga fa una doppia linea). Segnaposto in `--color-ink-muted`, in corsivo nella textarea: in `ink-subtle` (3,0:1) su un telefono non si legge.
-- `.textarea-ask` per la domanda di Chiedi: fondo carta, bordo interno di 1,5 px in `--color-ink-muted`, testo sans 20, `rows="2"`, niente ridimensionamento. Il velo su carta (1,11:1) da un proiettore non si vede; il bordo `ink-muted` regge 5,9:1, sopra i 3:1 dei confini di un controllo.
+- `.textarea-ask` per la domanda di Chiedi: fondo carta, bordo interno di 1,5 px in `--color-ink-muted`, testo sans 20, `rows="2"`, niente ridimensionamento. Col focus il bordo diventa inchiostro e l'anello si appoggia al bordo (senza distacco): una cornice sola, non due linee. Il velo su carta (1,11:1) da un proiettore non si vede; il bordo `ink-muted` regge 5,9:1, sopra i 3:1 dei confini di un controllo.
 - Errore: `aria-invalid="true"` sul campo, `.field-error` sotto, collegato con `aria-describedby`. Il messaggio dice come rimediare.
 - `.field-quiet` rende l'etichetta leggera: quando il valore conta più del nome (priorità e stato di un tema).
 - L'altezza di una textarea si dà con `rows`, non con CSS.

@@ -64,3 +64,35 @@ for (const width of [390, 1440])
     })
     expect(order.dom).toEqual(order.visual)
   })
+
+// Text actions are about 21 px tall: on a touch screen an invisible layer makes each one 44 px tall to the finger.
+test("on a phone the text actions take a tap 10 px above or below their text", async ({ page }) => {
+  const user = await signedInUser(page, "phone-taps")
+  await page.goto(`/research/${user.researchId}/collect`)
+  const bar = page.getByRole("banner")
+  for (const action of [
+    bar.getByRole("button", { name: "Esci" }),
+    bar.getByRole("button", { name: "English" }),
+    page.getByRole("link", { name: "Tutte le Research" }),
+    page.getByRole("button", { name: "Elimina la Research" }),
+  ]) {
+    const hits = await action.evaluate((el) => {
+      el.scrollIntoView({ block: "center" })
+      const box = el.getBoundingClientRect()
+      const x = box.left + box.width / 2
+      return [box.top - 10, box.bottom + 10].map((y) => el.contains(document.elementFromPoint(x, y)))
+    })
+    expect(hits, await action.textContent() ?? "").toEqual([true, true])
+  }
+})
+
+// A feedback with a long unbroken string (a pasted link) and the Elimina at the table's edge: on a phone the
+// feedback table does not scroll sideways.
+test("on a phone the feedback table does not scroll sideways", async ({ page }) => {
+  const user = await signedInUser(page, "phone-table")
+  await insertFeedback(user, [`Il link esempio.it/?id=${"FATTURA".repeat(20)} non si apre.`])
+  await page.goto(`/research/${user.researchId}/feedback`)
+  const table = page.locator('[data-slot="table-container"]')
+  await expect(table.getByRole("button", { name: "Elimina" })).toBeVisible()
+  expect(await table.evaluate((el) => el.scrollWidth - el.clientWidth)).toBe(0)
+})
