@@ -52,6 +52,7 @@ test("with the keyboard open, Invia stays in sight under the text and Return mak
   await page.keyboard.press("Enter")
   await page.keyboard.type("e devo passare al computer.")
   await expect(text).toHaveValue("Il PDF delle fatture non si apre\ne devo passare al computer.")
+  await expect(page.getByRole("heading", { name: "Ricevuto. Grazie." })).toHaveCount(0)
   expect(await feedbackOf(researchId)).toEqual([])
   await expect(send).toBeInViewport({ ratio: 1 })
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(KEYBOARD_OPEN.width)

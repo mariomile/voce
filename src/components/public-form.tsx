@@ -211,7 +211,7 @@ export function PublicForm({
           <Button
             type="button"
             variant="text"
-            className="-my-2 min-h-11 self-center"
+            className="-my-2 min-h-11 self-center text-center whitespace-normal"
             onClick={() => {
               // Rendered now, inside the tap, so the phone opens the keyboard on the email field.
               flushSync(() => setEmailOpen(true))
