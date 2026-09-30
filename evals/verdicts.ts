@@ -19,6 +19,7 @@ type Expected = {
   verdict: string | string[]
   for_allowed?: string[]
   against_allowed?: string[]
+  min_for_links?: number
   min_for_quotes?: number
   min_against_quotes?: number
   max_quotes?: number
@@ -111,6 +112,8 @@ export function judgeCase(
       if (allowed)
         for (const f of linked(stance))
           if (!allowed.includes(f)) failures.push(`${stance}_allowed: ${label} links ${f} ${stance}`)
+    if (expected.min_for_links !== undefined && linked("for").length < expected.min_for_links)
+      failures.push(`min_for_links: ${label} links ${linked("for").length} for, expected at least ${expected.min_for_links}`)
     if (expected.min_for_quotes !== undefined && forQuotes.length < expected.min_for_quotes)
       failures.push(`min_for_quotes: ${label} has ${forQuotes.length}`)
     if (expected.min_against_quotes !== undefined && againstQuotes.length < expected.min_against_quotes)

@@ -90,6 +90,11 @@ describe("runQuestion", () => {
 })
 
 describe("the prompt", () => {
+  it("calls who wrote the feedback people, never customers", () => {
+    expect(QUESTION_INSTRUCTIONS).toContain("never customers or users")
+    expect(QUESTION_INSTRUCTIONS).not.toMatch(/their customers|written by customers|customers (make|say)/i)
+  })
+
   it("the question and the feedback travel only as data", async () => {
     const model = fakeModel(answer())
     await runQuestion({ model, modelId: analysisModel(), question: "Cosa dicono della banca?", feedback })
@@ -120,7 +125,7 @@ describe("the prompt", () => {
 
   it("asks for a short answer that reads on a projector, the most frequent point first", () => {
     expect(QUESTION_INSTRUCTIONS).toContain(
-      "At most 2 short sentences, about 40 words in total, the point customers make most often first."
+      "At most 2 short sentences, about 40 words in total, the point people make most often first."
     )
     expect(QUESTION_INSTRUCTIONS).not.toContain("At most 3 sentences")
   })

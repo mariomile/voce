@@ -1,6 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
-import type { RawOutput } from "@/lib/analysis"
-import { fakeModel } from "@/test/fake-model"
+import { fakeModel, themesOutput } from "@/test/fake-model"
 import { admin, createTestUser, deleteTestUsers, type TestUser } from "@/test/supabase"
 
 // The room screen reads as the signed-in user, against the local database. The model is always fake.
@@ -88,8 +87,8 @@ describe("getRoomStatus", () => {
 describe("roomThemes", () => {
   it("sends the latest themes with kind, title and count only", async () => {
     await addFeedback(["La banca si scollega.", "Devo ricollegare la banca."], "Modulo pubblico")
-    ai.model = fakeModel({
-      themes: [
+    ai.model = fakeModel(
+      themesOutput([
         {
           title: "La banca si scollega",
           summary: "Il collegamento con la banca cade spesso.",
@@ -98,8 +97,8 @@ describe("roomThemes", () => {
           feedback: [1, 2],
           quotes: [{ feedback: 1, text: "La banca si scollega." }],
         },
-      ],
-    } satisfies RawOutput)
+      ])
+    )
     expect(await synthesize(owner.researchId)).toMatchObject({ ok: true, themeCount: 1 })
     const themes = await roomThemes(owner.researchId)
     expect(themes).toEqual([{ id: expect.any(String), kind: "problem", title: "La banca si scollega", feedbackCount: 2 }])
@@ -113,9 +112,9 @@ describe("roomThemes", () => {
 
   it("never shows another workspace's themes, even given its Research", async () => {
     await addFeedback(["La banca si scollega.", "Devo ricollegare la banca."], "Modulo pubblico")
-    ai.model = fakeModel({
-      themes: [{ title: "Banca", summary: "S", kind: "problem", sentiment: "negative", feedback: [1, 2], quotes: [] }],
-    } satisfies RawOutput)
+    ai.model = fakeModel(
+      themesOutput([{ title: "Banca", summary: "S", kind: "problem", sentiment: "negative", feedback: [1, 2], quotes: [] }])
+    )
     expect(await synthesize(owner.researchId)).toMatchObject({ ok: true })
     session.client = other.client
     expect(await roomThemes(owner.researchId)).toEqual([])
