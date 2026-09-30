@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest"
 import { createTranslator } from "use-intl/core"
 import { messages } from "@/i18n/messages/index"
 import { translator } from "@/test/next-intl"
-import { followUps, shorten, suggestQuestions, type AskTopics } from "./ask-suggestions"
+import type { AskTopics } from "@/lib/data"
+import { followUps, shorten, suggestQuestions } from "./ask-suggestions"
 
 const t = translator("ask")
 const en = createTranslator({ locale: "en", timeZone: "Europe/Rome", messages: messages.en, namespace: "ask" })

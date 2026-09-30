@@ -1,16 +1,10 @@
 import type { AskT } from "@/components/ask-copy"
 import type { AskOutcome } from "@/components/ask-format"
-import type { ThemeKind } from "@/lib/types"
+import type { AskTopics } from "@/lib/data"
 
 // Questions Voce suggests without calling the model: fixed templates filled with the Research's own
 // hypotheses and themes, and follow-ups built from an answer. They fill the field, they never send:
 // every question counts toward the month.
-
-export type AskTopics = {
-  hypotheses: { text: string; verdict: "confirmed" | "refuted" | "to_review" | null }[]
-  // The themes of the last analysis, biggest first.
-  themes: { title: string; kind: ThemeKind }[]
-}
 
 export type Suggestion = { question: string; source: "hypothesis" | "theme" | "starter" }
 
