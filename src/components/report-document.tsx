@@ -43,7 +43,7 @@ export function ReportDocument({ report, t }: { report: LatestReport; t: ReportT
         {content.findings.map((finding, i) => (
           <div
             key={i}
-            className="grid grid-cols-1 gap-4 border-b border-line py-8 last:border-b-0 sm:grid-cols-[148px_1fr] sm:gap-8 print:break-inside-avoid"
+            className="grid grid-cols-1 gap-4 border-b border-line py-8 last:border-b-0 sm:grid-cols-[148px_1fr] sm:gap-8"
           >
             <div className="flex items-end gap-4 sm:block">
               <Stat value={finding.count} label={t("feedbackLabel")} />
@@ -66,7 +66,7 @@ export function ReportDocument({ report, t }: { report: LatestReport; t: ReportT
           {content.hypotheses.map((h, i) => (
             <li
               key={i}
-              className="grid grid-cols-1 gap-4 border-b border-line py-8 last:border-b-0 sm:grid-cols-[148px_1fr] sm:gap-8 print:break-inside-avoid"
+              className="grid grid-cols-1 gap-4 border-b border-line py-8 last:border-b-0 sm:grid-cols-[148px_1fr] sm:gap-8"
             >
               <div>
                 <VerdictWord hypothesis={h} t={t} />
@@ -111,7 +111,7 @@ export function ReportDocument({ report, t }: { report: LatestReport; t: ReportT
           {content.decisions.map((d, i) => (
             <li
               key={i}
-              className="grid grid-cols-[32px_1fr] gap-4 border-b border-line py-6 last:border-b-0 sm:gap-6 print:break-inside-avoid"
+              className="grid grid-cols-[32px_1fr] gap-4 border-b border-line py-6 last:border-b-0 sm:gap-6"
             >
               <StepNumber step={i + 1} />
               <div>

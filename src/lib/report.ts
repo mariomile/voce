@@ -216,7 +216,7 @@ Write in ${language}, also when the data is in another language. Call the people
 
 Write:
 - summary: 3 to 5 short sentences that answer the question, for someone who reads nothing else. First the answer, then the verdict of each hypothesis that has one, with its placeholders, then what the biggest themes add. When the evidence is thin, balanced or missing, say so plainly.
-- findings: the 2 to 5 themes that matter most to answer the question, the most important first, one entry per theme. theme: its id (T1, T2...). headline: one sentence on what people say, with its count placeholder. why: one sentence on why it matters for the decision behind the question. quotes: 1 or 2 feedback of that theme (the "themes" of a quote list the themes its feedback belongs to) that show it best, from different feedback: "feedback" is the number "n" of the quote, "text" the sentence or phrase copied character by character from its text: same words, punctuation, accents and typos, no "...", nothing added.
+- findings: the 2 to 5 themes that matter most to answer the question, the most important first, one entry per theme. theme: its id (T1, T2...). headline: one sentence on what people say about it, more specific than the theme title: do not repeat the title or its count, the app shows both next to it. why: one sentence on why it matters for the decision behind the question. quotes: 1 or 2 feedback of that theme (the "themes" of a quote list the themes its feedback belongs to) that show it best, from different feedback: "feedback" is the number "n" of the quote, "text" the sentence or phrase copied character by character from its text: same words, punctuation, accents and typos, no "...", nothing added.
 - limits: 0 to 3 sentences on what these feedback cannot tell about the question: who is missing, what nobody talked about, what a verdict cannot separate. The app already states the number of feedback read, the channels, the dates, the feedback outside the themes, the sample size, simulated data and the feedback arrived later: do not repeat those.
 - decisions: 2 to 4 concrete decisions or next steps the product manager could take now, the most important first. decision: short, starting with a verb. why: one sentence that ties it to the evidence, with placeholders when it cites a count. evidence: the ids of the themes (T1...) and hypotheses (H1...) it rests on, at least one. They are suggestions for the team to discuss: do not present them as what the data proves, and do not suggest what the data does not support.`
 }
@@ -443,8 +443,10 @@ export function reportLimits(source: ReportSource): ReportLimit[] {
   }
   const total = source.channels.reduce((sum, c) => sum + c.count, 0)
   const [top] = [...source.channels].sort((a, b) => b.count - a.count)
-  if (source.channels.length === 1) limits.push({ key: "oneChannel", values: { name: top.name } })
-  else if (top && shareOf(top.count, total) >= CHANNEL_SKEW)
+  // When the biggest channel is simulated, "simulated" already says what its weight means.
+  const simulatedTop = Boolean(top && SIMULATED_CHANNEL.test(top.name.trim()))
+  if (!simulatedTop && source.channels.length === 1) limits.push({ key: "oneChannel", values: { name: top.name } })
+  else if (!simulatedTop && top && shareOf(top.count, total) >= CHANNEL_SKEW)
     limits.push({ key: "channelSkew", values: { name: top.name, share: shareOf(top.count, total) } })
   if (read < SMALL_SAMPLE) limits.push({ key: "small", values: { read } })
   const days = Math.round((Date.parse(source.lastReceivedAt) - Date.parse(source.firstReceivedAt)) / 86_400_000) + 1

@@ -1,0 +1,1314 @@
+{
+  "summary": {
+    "date": "2026-09-30T14:40:19.861Z",
+    "model": "claude-sonnet-5-5",
+    "commit": "beb2047",
+    "cases": 4,
+    "passing": 3,
+    "passRate": 0.75,
+    "threshold": 0.75,
+    "hardFailed": [],
+    "dropped": 0,
+    "costUsd": 0.1029,
+    "costPerReportUsd": 0.0257
+  },
+  "results": [
+    {
+      "id": "r1",
+      "locale": "it",
+      "passed": true,
+      "hardPassed": true,
+      "failures": [],
+      "dropped": {},
+      "content": {
+        "version": 1,
+        "question": "Cosa frena le palestre dal consigliare Ritmo?",
+        "synthesis": {
+          "createdAt": "2026-09-30T14:39:56.551Z",
+          "feedbackRead": 60
+        },
+        "summary": [
+          "Ciò che frena le palestre dal consigliare Ritmo sono soprattutto i problemi di affidabilità: notifiche in ritardo, calendario Google che si interrompe e pagamenti con carta che bloccano l'app.",
+          "H1, le notifiche in ritardo sono il problema più sentito, è confermata: 14 a favore e 0 contro su 60 feedback letti.",
+          "H2, il supporto come punto debole, è smentita: 8 feedback contrari su 60, e chi ne parla lo loda.",
+          "H3 sul prezzo resta da rivedere: nessuno ne parla, quindi i dati non dicono nulla.",
+          "Le notifiche (14 feedback su 60) e la sincronizzazione con Google (9) pesano di più; il check-in rapido è la richiesta di funzione più frequente."
+        ],
+        "findings": [
+          {
+            "title": "Le notifiche di prenotazione arrivano in ritardo",
+            "kind": "problem",
+            "count": 14,
+            "share": 23,
+            "headline": "Le notifiche di prenotazione arrivano in ritardo o non arrivano: 14 feedback, pari a 23%.",
+            "why": "È il problema più citato e tocca direttamente la fiducia delle palestre, perché lezioni e istruttori ne risentono.",
+            "quotes": [
+              {
+                "feedbackId": "f02",
+                "highlight": "Le notifiche push arrivano con 40 minuti di ritardo, quando ormai la lezione è già iniziata."
+              },
+              {
+                "feedbackId": "f01",
+                "highlight": "mi sono persa due sessioni di pilates questo mese."
+              }
+            ]
+          },
+          {
+            "title": "La sincronizzazione con il calendario Google si interrompe",
+            "kind": "problem",
+            "count": 9,
+            "share": 15,
+            "headline": "La sincronizzazione con il calendario Google si interrompe: 9 feedback, pari a 15%.",
+            "why": "Spesso si somma ai problemi di notifica e produce errori operativi, che rendono difficile consigliare il prodotto.",
+            "quotes": [
+              {
+                "feedbackId": "f09",
+                "highlight": "i miei istruttori si presentano alle lezioni sbagliate."
+              },
+              {
+                "feedbackId": "f11",
+                "highlight": "Sinceramente sto valutando di tornare al foglio Excel che usavamo prima."
+              }
+            ]
+          },
+          {
+            "title": "L'app si blocca durante il pagamento con carta",
+            "kind": "problem",
+            "count": 8,
+            "share": 13,
+            "headline": "L'app si blocca durante il pagamento con carta: 8 feedback, pari a 13%.",
+            "why": "Un blocco al pagamento in reception è un danno visibile ai clienti della palestra e sui soldi.",
+            "quotes": [
+              {
+                "feedbackId": "f18",
+                "highlight": "dobbiamo far ripetere il pagamento due o tre volte."
+              },
+              {
+                "feedbackId": "f19",
+                "highlight": "pagamento bloccato a metà, schermata bianca, panico totale in reception"
+              }
+            ]
+          },
+          {
+            "title": "Il supporto risponde in fretta e risolve",
+            "kind": "praise",
+            "count": 8,
+            "share": 13,
+            "headline": "Il supporto risponde in fretta e risolve: 8 feedback, pari a 13%.",
+            "why": "Il supporto è un punto di forza e non la causa della reticenza a consigliare Ritmo.",
+            "quotes": [
+              {
+                "feedbackId": "f34",
+                "highlight": "ogni volta che scrivo al supporto risolvono al primo messaggio."
+              }
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "text": "Le notifiche in ritardo sono il problema più sentito",
+            "verdict": "confirmed",
+            "reasoning": "Chi ha scritto torna spesso sulle notifiche che arrivano tardi o non arrivano, più che su ogni altro problema.",
+            "supporting": 14,
+            "contradicting": 0,
+            "feedbackRead": 60,
+            "quotes": [
+              {
+                "feedbackId": "f01",
+                "highlight": "Non ricevo più la notifica di promemoria prima della lezione, mi sono persa due sessioni di pilates questo mese.",
+                "stance": "for"
+              }
+            ]
+          },
+          {
+            "text": "Il supporto è un punto debole di Ritmo",
+            "verdict": "refuted",
+            "reasoning": "Chi parla del supporto lo loda: risposte veloci e problemi risolti.",
+            "supporting": 0,
+            "contradicting": 8,
+            "feedbackRead": 60,
+            "quotes": [
+              {
+                "feedbackId": "f33",
+                "highlight": "Il supporto di Ritmo è velocissimo, ho scritto in chat e in dieci minuti avevo già la soluzione.",
+                "stance": "against"
+              }
+            ]
+          },
+          {
+            "text": "Il prezzo dell'abbonamento è troppo alto",
+            "verdict": "to_review",
+            "reasoning": "Nessuno parla del prezzo dell'abbonamento.",
+            "supporting": 0,
+            "contradicting": 0,
+            "feedbackRead": 60,
+            "quotes": []
+          }
+        ],
+        "limits": [
+          {
+            "key": "scope",
+            "values": {
+              "read": 60,
+              "date": "2026-09-30T14:39:56.551Z",
+              "channels": 6,
+              "start": "2026-07-12",
+              "end": "2026-09-29"
+            }
+          },
+          {
+            "key": "selfSelected",
+            "values": {}
+          },
+          {
+            "key": "unthemed",
+            "values": {
+              "count": 6,
+              "read": 60
+            }
+          },
+          {
+            "key": "unsettled",
+            "values": {
+              "count": 1
+            }
+          }
+        ],
+        "extraLimits": [
+          "Non emergono opinioni sul prezzo, quindi non si può dire se pesi sulla scelta di consigliare.",
+          "I feedback descrivono problemi ma non dicono quali pesino di più sulla decisione di consigliare, né quanto le palestre siano disposte a consigliare."
+        ],
+        "decisions": [
+          {
+            "title": "Dare priorità alla correzione dei ritardi delle notifiche",
+            "why": "H1 è confermata e 14 feedback su 60 riguardano le notifiche.",
+            "evidence": [
+              {
+                "kind": "hypothesis",
+                "text": "Le notifiche in ritardo sono il problema più sentito",
+                "verdict": "confirmed"
+              },
+              {
+                "kind": "theme",
+                "title": "Le notifiche di prenotazione arrivano in ritardo",
+                "count": 14
+              }
+            ]
+          },
+          {
+            "title": "Indagare insieme notifiche, sincronizzazione Google e blocco del pagamento",
+            "why": "Questi problemi compaiono spesso insieme negli stessi feedback (9 sul calendario e 8 sul pagamento) e possono avere cause comuni.",
+            "evidence": [
+              {
+                "kind": "theme",
+                "title": "La sincronizzazione con il calendario Google si interrompe",
+                "count": 9
+              },
+              {
+                "kind": "theme",
+                "title": "L'app si blocca durante il pagamento con carta",
+                "count": 8
+              },
+              {
+                "kind": "theme",
+                "title": "Le notifiche di prenotazione arrivano in ritardo",
+                "count": 14
+              }
+            ]
+          },
+          {
+            "title": "Usare il supporto come argomento di forza nel dialogo con le palestre",
+            "why": "H2 è smentita: 8 feedback su 60 lodano il supporto.",
+            "evidence": [
+              {
+                "kind": "hypothesis",
+                "text": "Il supporto è un punto debole di Ritmo",
+                "verdict": "refuted"
+              },
+              {
+                "kind": "theme",
+                "title": "Il supporto risponde in fretta e risolve",
+                "count": 8
+              }
+            ]
+          },
+          {
+            "title": "Verificare il tema prezzo con una domanda diretta alle palestre",
+            "why": "H3 è da rivedere perché nessun feedback ne parla.",
+            "evidence": [
+              {
+                "kind": "hypothesis",
+                "text": "Il prezzo dell'abbonamento è troppo alto",
+                "verdict": "to_review"
+              }
+            ]
+          }
+        ]
+      },
+      "raw": {
+        "summary": [
+          "Ciò che frena le palestre dal consigliare Ritmo sono soprattutto i problemi di affidabilità: notifiche in ritardo, calendario Google che si interrompe e pagamenti con carta che bloccano l'app.",
+          "H1, le notifiche in ritardo sono il problema più sentito, è confermata: {H1.for} a favore e {H1.against} contro su {H1.read} feedback letti.",
+          "H2, il supporto come punto debole, è smentita: {H2.against} feedback contrari su {H2.read}, e chi ne parla lo loda.",
+          "H3 sul prezzo resta da rivedere: nessuno ne parla, quindi i dati non dicono nulla.",
+          "Le notifiche ({T1.count} feedback su {read}) e la sincronizzazione con Google ({T2.count}) pesano di più; il check-in rapido è la richiesta di funzione più frequente."
+        ],
+        "findings": [
+          {
+            "theme": "T1",
+            "headline": "Le notifiche di prenotazione arrivano in ritardo o non arrivano: {T1.count} feedback, pari a {T1.share}.",
+            "why": "È il problema più citato e tocca direttamente la fiducia delle palestre, perché lezioni e istruttori ne risentono.",
+            "quotes": [
+              {
+                "feedback": 2,
+                "text": "Le notifiche push arrivano con 40 minuti di ritardo, quando ormai la lezione è già iniziata."
+              },
+              {
+                "feedback": 1,
+                "text": "mi sono persa due sessioni di pilates questo mese."
+              }
+            ]
+          },
+          {
+            "theme": "T2",
+            "headline": "La sincronizzazione con il calendario Google si interrompe: {T2.count} feedback, pari a {T2.share}.",
+            "why": "Spesso si somma ai problemi di notifica e produce errori operativi, che rendono difficile consigliare il prodotto.",
+            "quotes": [
+              {
+                "feedback": 4,
+                "text": "i miei istruttori si presentano alle lezioni sbagliate."
+              },
+              {
+                "feedback": 6,
+                "text": "Sinceramente sto valutando di tornare al foglio Excel che usavamo prima."
+              }
+            ]
+          },
+          {
+            "theme": "T3",
+            "headline": "L'app si blocca durante il pagamento con carta: {T3.count} feedback, pari a {T3.share}.",
+            "why": "Un blocco al pagamento in reception è un danno visibile ai clienti della palestra e sui soldi.",
+            "quotes": [
+              {
+                "feedback": 7,
+                "text": "dobbiamo far ripetere il pagamento due o tre volte."
+              },
+              {
+                "feedback": 8,
+                "text": "pagamento bloccato a metà, schermata bianca, panico totale in reception"
+              }
+            ]
+          },
+          {
+            "theme": "T5",
+            "headline": "Il supporto risponde in fretta e risolve: {T5.count} feedback, pari a {T5.share}.",
+            "why": "Il supporto è un punto di forza e non la causa della reticenza a consigliare Ritmo.",
+            "quotes": [
+              {
+                "feedback": 13,
+                "text": "ogni volta che scrivo al supporto risolvono al primo messaggio."
+              }
+            ]
+          }
+        ],
+        "limits": [
+          "Non emergono opinioni sul prezzo, quindi non si può dire se pesi sulla scelta di consigliare.",
+          "I feedback descrivono problemi ma non dicono quali pesino di più sulla decisione di consigliare, né quanto le palestre siano disposte a consigliare."
+        ],
+        "decisions": [
+          {
+            "decision": "Dare priorità alla correzione dei ritardi delle notifiche",
+            "why": "H1 è confermata e {T1.count} feedback su {read} riguardano le notifiche.",
+            "evidence": [
+              "H1",
+              "T1"
+            ]
+          },
+          {
+            "decision": "Indagare insieme notifiche, sincronizzazione Google e blocco del pagamento",
+            "why": "Questi problemi compaiono spesso insieme negli stessi feedback ({T2.count} sul calendario e {T3.count} sul pagamento) e possono avere cause comuni.",
+            "evidence": [
+              "T2",
+              "T3",
+              "T1"
+            ]
+          },
+          {
+            "decision": "Usare il supporto come argomento di forza nel dialogo con le palestre",
+            "why": "H2 è smentita: {H2.against} feedback su {H2.read} lodano il supporto.",
+            "evidence": [
+              "H2",
+              "T5"
+            ]
+          },
+          {
+            "decision": "Verificare il tema prezzo con una domanda diretta alle palestre",
+            "why": "H3 è da rivedere perché nessun feedback ne parla.",
+            "evidence": [
+              "H3"
+            ]
+          }
+        ]
+      },
+      "issues": [],
+      "inputTokens": 5629,
+      "outputTokens": 1468,
+      "costUsd": 0.025938
+    },
+    {
+      "id": "r2",
+      "locale": "en",
+      "passed": true,
+      "hardPassed": true,
+      "failures": [],
+      "dropped": {},
+      "content": {
+        "version": 1,
+        "question": "What stops gyms from recommending Ritmo?",
+        "synthesis": {
+          "createdAt": "2026-09-30T14:39:56.563Z",
+          "feedbackRead": 60
+        },
+        "summary": [
+          "What holds gyms back is mainly reliability: late or missing notifications come first, followed by calendar sync, card payments and revenue reports that do not reconcile.",
+          "H1, that late notifications are the most felt problem, is confirmed with 14 for and 0 against out of 60 read.",
+          "H2, that support is a weak point, is refuted with 8 against and 0 for out of 60 read.",
+          "Notifications reach 14 feedback, 23% of those read, and calendar sync adds 9, so the problems cluster around daily gym operations."
+        ],
+        "findings": [
+          {
+            "title": "Le notifiche di prenotazione arrivano in ritardo",
+            "kind": "problem",
+            "count": 14,
+            "share": 23,
+            "headline": "Booking notifications arrive late or never, in 14 feedback.",
+            "why": "Missed reminders directly hurt class attendance and are the most felt problem, so they are the likeliest barrier to recommending Ritmo.",
+            "quotes": [
+              {
+                "feedbackId": "f02",
+                "highlight": "Le notifiche push arrivano con 40 minuti di ritardo, quando ormai la lezione è già iniziata."
+              },
+              {
+                "feedbackId": "f01",
+                "highlight": "Non ricevo più la notifica di promemoria prima della lezione, mi sono persa due sessioni di pilates questo mese."
+              }
+            ]
+          },
+          {
+            "title": "La sincronizzazione con il calendario Google si interrompe",
+            "kind": "problem",
+            "count": 9,
+            "share": 15,
+            "headline": "Google Calendar sync breaks, in 9 feedback.",
+            "why": "It compounds the notification problem and leads to instructors showing up at the wrong classes.",
+            "quotes": [
+              {
+                "feedbackId": "f09",
+                "highlight": "i miei istruttori si presentano alle lezioni sbagliate"
+              }
+            ]
+          },
+          {
+            "title": "L'app si blocca durante il pagamento con carta",
+            "kind": "problem",
+            "count": 8,
+            "share": 13,
+            "headline": "The app freezes during card payment, in 8 feedback.",
+            "why": "Failures at the reception desk during payment are visible to gym clients and create doubt about whether payment went through.",
+            "quotes": [
+              {
+                "feedbackId": "f18",
+                "highlight": "L'app si blocca ogni volta che un cliente prova a pagare con carta, dobbiamo far ripetere il pagamento due o tre volte."
+              }
+            ]
+          },
+          {
+            "title": "Il supporto risponde in fretta e risolve",
+            "kind": "praise",
+            "count": 8,
+            "share": 13,
+            "headline": "Support answers quickly and solves problems, in 8 feedback.",
+            "why": "Support is a strength to build on, not the reason gyms hold back.",
+            "quotes": [
+              {
+                "feedbackId": "f34",
+                "highlight": "Bravissimi, ogni volta che scrivo al supporto risolvono al primo messaggio."
+              }
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "text": "Late notifications are the most felt problem",
+            "verdict": "confirmed",
+            "reasoning": "People keep coming back to notifications that arrive late or never, more than to any other problem.",
+            "supporting": 14,
+            "contradicting": 0,
+            "feedbackRead": 60,
+            "quotes": [
+              {
+                "feedbackId": "f01",
+                "highlight": "Non ricevo più la notifica di promemoria prima della lezione, mi sono persa due sessioni di pilates questo mese.",
+                "stance": "for"
+              }
+            ]
+          },
+          {
+            "text": "Support is a weak point of Ritmo",
+            "verdict": "refuted",
+            "reasoning": "Who talks about support praises it: fast answers and problems solved.",
+            "supporting": 0,
+            "contradicting": 8,
+            "feedbackRead": 60,
+            "quotes": [
+              {
+                "feedbackId": "f33",
+                "highlight": "Il supporto di Ritmo è velocissimo, ho scritto in chat e in dieci minuti avevo già la soluzione.",
+                "stance": "against"
+              }
+            ]
+          }
+        ],
+        "limits": [
+          {
+            "key": "scope",
+            "values": {
+              "read": 60,
+              "date": "2026-09-30T14:39:56.563Z",
+              "channels": 6,
+              "start": "2026-07-12",
+              "end": "2026-09-29"
+            }
+          },
+          {
+            "key": "selfSelected",
+            "values": {}
+          },
+          {
+            "key": "unthemed",
+            "values": {
+              "count": 6,
+              "read": 60
+            }
+          }
+        ],
+        "extraLimits": [
+          "These feedback do not show which problems make a gym actually decline to recommend Ritmo, only which ones people complain about.",
+          "Nobody who wrote says directly that they would or would not recommend it, so the link between problems and recommendation is inferred."
+        ],
+        "decisions": [
+          {
+            "title": "Prioritize fixing notification delivery and delays first.",
+            "why": "H1 is confirmed with 14 feedback for and 14 in the theme, more than any other problem.",
+            "evidence": [
+              {
+                "kind": "theme",
+                "title": "Le notifiche di prenotazione arrivano in ritardo",
+                "count": 14
+              },
+              {
+                "kind": "hypothesis",
+                "text": "Late notifications are the most felt problem",
+                "verdict": "confirmed"
+              }
+            ]
+          },
+          {
+            "title": "Investigate calendar sync and card payment freezes as the next reliability work.",
+            "why": "Calendar sync appears in 9 feedback and payment freezes in 8, and some people report several problems together.",
+            "evidence": [
+              {
+                "kind": "theme",
+                "title": "La sincronizzazione con il calendario Google si interrompe",
+                "count": 9
+              },
+              {
+                "kind": "theme",
+                "title": "L'app si blocca durante il pagamento con carta",
+                "count": 8
+              }
+            ]
+          },
+          {
+            "title": "Keep support as is and use it to handle gyms hit by these issues.",
+            "why": "H2 is refuted with 8 feedback against, and support is praised in 8.",
+            "evidence": [
+              {
+                "kind": "theme",
+                "title": "Il supporto risponde in fretta e risolve",
+                "count": 8
+              },
+              {
+                "kind": "hypothesis",
+                "text": "Support is a weak point of Ritmo",
+                "verdict": "refuted"
+              }
+            ]
+          }
+        ]
+      },
+      "raw": {
+        "summary": [
+          "What holds gyms back is mainly reliability: late or missing notifications come first, followed by calendar sync, card payments and revenue reports that do not reconcile.",
+          "H1, that late notifications are the most felt problem, is confirmed with {H1.for} for and {H1.against} against out of {H1.read} read.",
+          "H2, that support is a weak point, is refuted with {H2.against} against and {H2.for} for out of {H2.read} read.",
+          "Notifications reach {T1.count} feedback, {T1.share} of those read, and calendar sync adds {T2.count}, so the problems cluster around daily gym operations."
+        ],
+        "findings": [
+          {
+            "theme": "T1",
+            "headline": "Booking notifications arrive late or never, in {T1.count} feedback.",
+            "why": "Missed reminders directly hurt class attendance and are the most felt problem, so they are the likeliest barrier to recommending Ritmo.",
+            "quotes": [
+              {
+                "feedback": 2,
+                "text": "Le notifiche push arrivano con 40 minuti di ritardo, quando ormai la lezione è già iniziata."
+              },
+              {
+                "feedback": 1,
+                "text": "Non ricevo più la notifica di promemoria prima della lezione, mi sono persa due sessioni di pilates questo mese."
+              }
+            ]
+          },
+          {
+            "theme": "T2",
+            "headline": "Google Calendar sync breaks, in {T2.count} feedback.",
+            "why": "It compounds the notification problem and leads to instructors showing up at the wrong classes.",
+            "quotes": [
+              {
+                "feedback": 4,
+                "text": "i miei istruttori si presentano alle lezioni sbagliate"
+              }
+            ]
+          },
+          {
+            "theme": "T3",
+            "headline": "The app freezes during card payment, in {T3.count} feedback.",
+            "why": "Failures at the reception desk during payment are visible to gym clients and create doubt about whether payment went through.",
+            "quotes": [
+              {
+                "feedback": 7,
+                "text": "L'app si blocca ogni volta che un cliente prova a pagare con carta, dobbiamo far ripetere il pagamento due o tre volte."
+              }
+            ]
+          },
+          {
+            "theme": "T5",
+            "headline": "Support answers quickly and solves problems, in {T5.count} feedback.",
+            "why": "Support is a strength to build on, not the reason gyms hold back.",
+            "quotes": [
+              {
+                "feedback": 13,
+                "text": "Bravissimi, ogni volta che scrivo al supporto risolvono al primo messaggio."
+              }
+            ]
+          }
+        ],
+        "limits": [
+          "These feedback do not show which problems make a gym actually decline to recommend Ritmo, only which ones people complain about.",
+          "Nobody who wrote says directly that they would or would not recommend it, so the link between problems and recommendation is inferred."
+        ],
+        "decisions": [
+          {
+            "decision": "Prioritize fixing notification delivery and delays first.",
+            "why": "H1 is confirmed with {H1.for} feedback for and {T1.count} in the theme, more than any other problem.",
+            "evidence": [
+              "T1",
+              "H1"
+            ]
+          },
+          {
+            "decision": "Investigate calendar sync and card payment freezes as the next reliability work.",
+            "why": "Calendar sync appears in {T2.count} feedback and payment freezes in {T3.count}, and some people report several problems together.",
+            "evidence": [
+              "T2",
+              "T3"
+            ]
+          },
+          {
+            "decision": "Keep support as is and use it to handle gyms hit by these issues.",
+            "why": "H2 is refuted with {H2.against} feedback against, and support is praised in {T5.count}.",
+            "evidence": [
+              "T5",
+              "H2"
+            ]
+          }
+        ]
+      },
+      "issues": [],
+      "inputTokens": 5495,
+      "outputTokens": 1122,
+      "costUsd": 0.02221
+    },
+    {
+      "id": "r3",
+      "locale": "it",
+      "passed": true,
+      "hardPassed": true,
+      "failures": [],
+      "dropped": {},
+      "content": {
+        "version": 1,
+        "question": "Jira va ancora bene per i team di prodotto moderni?",
+        "synthesis": {
+          "createdAt": "2026-09-30T14:40:07.713Z",
+          "feedbackRead": 200
+        },
+        "summary": [
+          "Jira resta solido per processi strutturati e compliance, ma per i team di prodotto piccoli e medi pesa: il quadro è diviso, non un semplice sì o no.",
+          "H1 è confermata (44 a favore, 6 contro su 200 letti): lentezza e complessità di configurazione emergono come ostacoli.",
+          "H2 è confermata (20 a favore, 0 contro su 200 letti): roadmap e discovery vivono fuori da Jira.",
+          "H3 è da rivedere (10 a favore, 16 contro su 200 letti): compliance e costo di migrare non si separano dalla semplice abitudine.",
+          "Il tema più grande, 50 feedback su 200, è la tenuta di Jira su processi strutturati."
+        ],
+        "findings": [
+          {
+            "title": "Jira regge processi strutturati e compliance",
+            "kind": "praise",
+            "count": 50,
+            "share": 25,
+            "headline": "Jira regge processi strutturati e compliance, in 50 feedback (25%).",
+            "why": "Mostra dove Jira resta difficile da sostituire, soprattutto in contesti regolati e di grandi dimensioni.",
+            "quotes": [
+              {
+                "feedbackId": "j094",
+                "highlight": "Audit SOX: ogni deploy in produzione deve avere un ticket approvato collegato."
+              },
+              {
+                "feedbackId": "j013",
+                "highlight": "quando dovevamo coordinare 12 team su un rilascio unico l'unico che reggeva era Jira."
+              }
+            ]
+          },
+          {
+            "title": "Jira è lento e l'interfaccia è pesante",
+            "kind": "problem",
+            "count": 22,
+            "share": 11,
+            "headline": "Jira è lento e l'interfaccia è pesante, in 22 feedback (11%).",
+            "why": "Sostiene la difficoltà per chi lavora ogni giorno nello strumento in team di prodotto.",
+            "quotes": [
+              {
+                "feedbackId": "j026",
+                "highlight": "Aprire una issue ci mette 4-5 secondi."
+              },
+              {
+                "feedbackId": "j004",
+                "highlight": "non si capisce cosa conta davvero."
+              }
+            ]
+          },
+          {
+            "title": "Configurare Jira richiede un amministratore",
+            "kind": "problem",
+            "count": 22,
+            "share": 11,
+            "headline": "Configurare Jira richiede un amministratore, in 22 feedback (11%).",
+            "why": "Per team piccoli il costo di gestione dello strumento può superare il beneficio.",
+            "quotes": [
+              {
+                "feedbackId": "j001",
+                "highlight": "non voglio un amministratore di sistema per lo strumento dei ticket."
+              },
+              {
+                "feedbackId": "j020",
+                "highlight": "Tropppa burocrazia per un team di 6 persone, davvero"
+              }
+            ]
+          },
+          {
+            "title": "Roadmap e discovery vivono fuori da Jira",
+            "kind": "problem",
+            "count": 20,
+            "share": 10,
+            "headline": "Roadmap e discovery vivono fuori da Jira, in 20 feedback (10%).",
+            "why": "Indica che Jira copre il delivery ma non il lavoro di discovery dei PM.",
+            "quotes": [
+              {
+                "feedbackId": "j005",
+                "highlight": "In Jira posso collegare solo ticket a ticket, e un'intervista non è un ticket."
+              },
+              {
+                "feedbackId": "j018",
+                "highlight": "Non è pensato per le domande. È pensato per le risposte già trovate."
+              }
+            ]
+          },
+          {
+            "title": "Migrare costa e trattiene su Jira",
+            "kind": "problem",
+            "count": 16,
+            "share": 8,
+            "headline": "Migrare costa e trattiene su Jira, in 16 feedback (8%).",
+            "why": "Spiega perché alcuni restano anche senza esserne soddisfatti.",
+            "quotes": [
+              {
+                "feedbackId": "j002",
+                "highlight": "Il costo di uscita è il vero lock-in."
+              }
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "text": "Jira è troppo lento e complesso per i team di prodotto piccoli e medi",
+            "verdict": "confirmed",
+            "reasoning": "Lentezza e complessità di configurazione sono i temi più ricorrenti tra chi lavora in team piccoli.",
+            "supporting": 44,
+            "contradicting": 6,
+            "feedbackRead": 200,
+            "quotes": [
+              {
+                "feedbackId": "j001",
+                "highlight": "Da founder: non voglio un amministratore di sistema per lo strumento dei ticket.",
+                "stance": "for"
+              },
+              {
+                "feedbackId": "j009",
+                "highlight": "I report di velocity e burndown sono fatti bene e i nostri EM li usano davvero.",
+                "stance": "against"
+              }
+            ]
+          },
+          {
+            "text": "La roadmap e la discovery vivono fuori da Jira",
+            "verdict": "confirmed",
+            "reasoning": "Chi ha scritto descrive roadmap e discovery tenute in altri strumenti.",
+            "supporting": 20,
+            "contradicting": 0,
+            "feedbackRead": 200,
+            "quotes": [
+              {
+                "feedbackId": "j005",
+                "highlight": "Come PM ho bisogno di collegare un'ipotesi a un'intervista e poi a una feature.",
+                "stance": "for"
+              }
+            ]
+          },
+          {
+            "text": "Le grandi aziende restano su Jira per compliance e audit, non per scelta",
+            "verdict": "to_review",
+            "reasoning": "Alcuni citano audit e compliance, altri restano per abitudine o per il costo di migrare: le due parti non si separano.",
+            "supporting": 10,
+            "contradicting": 16,
+            "feedbackRead": 200,
+            "quotes": [
+              {
+                "feedbackId": "j134",
+                "highlight": "Lavoro in un gruppo con più di tremila persone.",
+                "stance": "for"
+              },
+              {
+                "feedbackId": "j002",
+                "highlight": "Migrare otto anni di storico è un incubo.",
+                "stance": "against"
+              }
+            ]
+          }
+        ],
+        "limits": [
+          {
+            "key": "scope",
+            "values": {
+              "read": 200,
+              "date": "2026-09-30T14:40:07.713Z",
+              "channels": 1,
+              "start": "2026-08-02",
+              "end": "2026-09-30"
+            }
+          },
+          {
+            "key": "selfSelected",
+            "values": {}
+          },
+          {
+            "key": "unthemed",
+            "values": {
+              "count": 6,
+              "read": 200
+            }
+          },
+          {
+            "key": "simulated",
+            "values": {
+              "count": 200,
+              "names": "Simulato"
+            }
+          },
+          {
+            "key": "oneChannel",
+            "values": {
+              "name": "Simulato"
+            }
+          },
+          {
+            "key": "unsettled",
+            "values": {
+              "count": 1
+            }
+          }
+        ],
+        "extraLimits": [
+          "I feedback sono simulati e da un solo canale, quindi non si può dire quanto pesino davvero i diversi tipi di team.",
+          "Non emerge chiaramente la dimensione dei team di chi scrive, e H3 non separa scelta e abitudine."
+        ],
+        "decisions": [
+          {
+            "title": "Segmentare la valutazione tra team piccoli e medi e grandi aziende regolate.",
+            "why": "H1 è confermata (44 a favore) mentre 50 feedback mostrano che Jira regge dove servono processi e compliance.",
+            "evidence": [
+              {
+                "kind": "hypothesis",
+                "text": "Jira è troppo lento e complesso per i team di prodotto piccoli e medi",
+                "verdict": "confirmed"
+              },
+              {
+                "kind": "theme",
+                "title": "Jira regge processi strutturati e compliance",
+                "count": 50
+              }
+            ]
+          },
+          {
+            "title": "Tenere roadmap e discovery in uno strumento dedicato e usare Jira per il delivery.",
+            "why": "H2 è confermata con 20 a favore e 20 feedback sul tema.",
+            "evidence": [
+              {
+                "kind": "hypothesis",
+                "text": "La roadmap e la discovery vivono fuori da Jira",
+                "verdict": "confirmed"
+              },
+              {
+                "kind": "theme",
+                "title": "Roadmap e discovery vivono fuori da Jira",
+                "count": 20
+              }
+            ]
+          },
+          {
+            "title": "Verificare quanto tempo di amministrazione richiede Jira prima di rinnovare o estendere le licenze.",
+            "why": "22 feedback parlano di configurazione e 14 del peso dei costi.",
+            "evidence": [
+              {
+                "kind": "theme",
+                "title": "Configurare Jira richiede un amministratore",
+                "count": 22
+              },
+              {
+                "kind": "theme",
+                "title": "Il costo delle licenze pesa",
+                "count": 14
+              }
+            ]
+          },
+          {
+            "title": "Approfondire con interviste perché i team grandi restano su Jira.",
+            "why": "H3 è da rivedere: 10 a favore e 16 contro non separano compliance e abitudine.",
+            "evidence": [
+              {
+                "kind": "hypothesis",
+                "text": "Le grandi aziende restano su Jira per compliance e audit, non per scelta",
+                "verdict": "to_review"
+              },
+              {
+                "kind": "theme",
+                "title": "Migrare costa e trattiene su Jira",
+                "count": 16
+              }
+            ]
+          }
+        ]
+      },
+      "raw": {
+        "summary": [
+          "Jira resta solido per processi strutturati e compliance, ma per i team di prodotto piccoli e medi pesa: il quadro è diviso, non un semplice sì o no.",
+          "H1 è confermata ({H1.for} a favore, {H1.against} contro su {H1.read} letti): lentezza e complessità di configurazione emergono come ostacoli.",
+          "H2 è confermata ({H2.for} a favore, {H2.against} contro su {H2.read} letti): roadmap e discovery vivono fuori da Jira.",
+          "H3 è da rivedere ({H3.for} a favore, {H3.against} contro su {H3.read} letti): compliance e costo di migrare non si separano dalla semplice abitudine.",
+          "Il tema più grande, {T1.count} feedback su {read}, è la tenuta di Jira su processi strutturati."
+        ],
+        "findings": [
+          {
+            "theme": "T1",
+            "headline": "Jira regge processi strutturati e compliance, in {T1.count} feedback ({T1.share}).",
+            "why": "Mostra dove Jira resta difficile da sostituire, soprattutto in contesti regolati e di grandi dimensioni.",
+            "quotes": [
+              {
+                "feedback": 33,
+                "text": "Audit SOX: ogni deploy in produzione deve avere un ticket approvato collegato."
+              },
+              {
+                "feedback": 2,
+                "text": "quando dovevamo coordinare 12 team su un rilascio unico l'unico che reggeva era Jira."
+              }
+            ]
+          },
+          {
+            "theme": "T2",
+            "headline": "Jira è lento e l'interfaccia è pesante, in {T2.count} feedback ({T2.share}).",
+            "why": "Sostiene la difficoltà per chi lavora ogni giorno nello strumento in team di prodotto.",
+            "quotes": [
+              {
+                "feedback": 6,
+                "text": "Aprire una issue ci mette 4-5 secondi."
+              },
+              {
+                "feedback": 4,
+                "text": "non si capisce cosa conta davvero."
+              }
+            ]
+          },
+          {
+            "theme": "T3",
+            "headline": "Configurare Jira richiede un amministratore, in {T3.count} feedback ({T3.share}).",
+            "why": "Per team piccoli il costo di gestione dello strumento può superare il beneficio.",
+            "quotes": [
+              {
+                "feedback": 7,
+                "text": "non voglio un amministratore di sistema per lo strumento dei ticket."
+              },
+              {
+                "feedback": 9,
+                "text": "Tropppa burocrazia per un team di 6 persone, davvero"
+              }
+            ]
+          },
+          {
+            "theme": "T4",
+            "headline": "Roadmap e discovery vivono fuori da Jira, in {T4.count} feedback ({T4.share}).",
+            "why": "Indica che Jira copre il delivery ma non il lavoro di discovery dei PM.",
+            "quotes": [
+              {
+                "feedback": 10,
+                "text": "In Jira posso collegare solo ticket a ticket, e un'intervista non è un ticket."
+              },
+              {
+                "feedback": 12,
+                "text": "Non è pensato per le domande. È pensato per le risposte già trovate."
+              }
+            ]
+          },
+          {
+            "theme": "T6",
+            "headline": "Migrare costa e trattiene su Jira, in {T6.count} feedback ({T6.share}).",
+            "why": "Spiega perché alcuni restano anche senza esserne soddisfatti.",
+            "quotes": [
+              {
+                "feedback": 16,
+                "text": "Il costo di uscita è il vero lock-in."
+              }
+            ]
+          }
+        ],
+        "limits": [
+          "I feedback sono simulati e da un solo canale, quindi non si può dire quanto pesino davvero i diversi tipi di team.",
+          "Non emerge chiaramente la dimensione dei team di chi scrive, e H3 non separa scelta e abitudine."
+        ],
+        "decisions": [
+          {
+            "decision": "Segmentare la valutazione tra team piccoli e medi e grandi aziende regolate.",
+            "why": "H1 è confermata ({H1.for} a favore) mentre {T1.count} feedback mostrano che Jira regge dove servono processi e compliance.",
+            "evidence": [
+              "H1",
+              "T1"
+            ]
+          },
+          {
+            "decision": "Tenere roadmap e discovery in uno strumento dedicato e usare Jira per il delivery.",
+            "why": "H2 è confermata con {H2.for} a favore e {T4.count} feedback sul tema.",
+            "evidence": [
+              "H2",
+              "T4"
+            ]
+          },
+          {
+            "decision": "Verificare quanto tempo di amministrazione richiede Jira prima di rinnovare o estendere le licenze.",
+            "why": "{T3.count} feedback parlano di configurazione e {T7.count} del peso dei costi.",
+            "evidence": [
+              "T3",
+              "T7"
+            ]
+          },
+          {
+            "decision": "Approfondire con interviste perché i team grandi restano su Jira.",
+            "why": "H3 è da rivedere: {H3.for} a favore e {H3.against} contro non separano compliance e abitudine.",
+            "evidence": [
+              "H3",
+              "T6"
+            ]
+          }
+        ]
+      },
+      "issues": [],
+      "inputTokens": 7094,
+      "outputTokens": 1581,
+      "costUsd": 0.029998
+    },
+    {
+      "id": "r4",
+      "locale": "it",
+      "passed": false,
+      "hardPassed": true,
+      "failures": [
+        "number_words: due"
+      ],
+      "dropped": {},
+      "content": {
+        "version": 1,
+        "question": "Cosa frena le palestre dal consigliare Ritmo?",
+        "synthesis": {
+          "createdAt": "2026-09-30T14:40:10.615Z",
+          "feedbackRead": 60
+        },
+        "summary": [
+          "Ciò che frena le palestre dal consigliare Ritmo sono soprattutto problemi di affidabilità: notifiche, calendario Google e pagamenti con carta.",
+          "H1, secondo cui le notifiche in ritardo sono il problema più sentito, è confermata: 14 feedback a favore, 0 contro, su 60 letti.",
+          "Le notifiche in ritardo pesano di più (14 feedback, 23%), seguite dal calendario Google (9) e dal blocco al pagamento (8).",
+          "Il supporto è apprezzato (8 feedback), ma non sembra compensare i difetti del prodotto."
+        ],
+        "findings": [
+          {
+            "title": "Le notifiche di prenotazione arrivano in ritardo",
+            "kind": "problem",
+            "count": 14,
+            "share": 23,
+            "headline": "Le notifiche di prenotazione arrivano tardi o non arrivano: 14 feedback, 23% di quelli letti.",
+            "why": "È il problema più citato e tocca direttamente la fiducia di chi gestisce lezioni e istruttori.",
+            "quotes": [
+              {
+                "feedbackId": "f01",
+                "highlight": "Non ricevo più la notifica di promemoria prima della lezione, mi sono persa due sessioni di pilates questo mese."
+              },
+              {
+                "feedbackId": "f02",
+                "highlight": "Le notifiche push arrivano con 40 minuti di ritardo, quando ormai la lezione è già iniziata."
+              }
+            ]
+          },
+          {
+            "title": "La sincronizzazione con il calendario Google si interrompe",
+            "kind": "problem",
+            "count": 9,
+            "share": 15,
+            "headline": "La sincronizzazione con Google Calendar si interrompe: 9 feedback.",
+            "why": "Appuntamenti persi e doppioni creano errori operativi e spesso si sommano ai problemi di notifica.",
+            "quotes": [
+              {
+                "feedbackId": "f13",
+                "highlight": "Il calendario smette di sincronizzarsi con Google Calendar dopo qualche giorno, devo disconnettere e riconnettere l'account ogni settimana."
+              }
+            ]
+          },
+          {
+            "title": "L'app si blocca durante il pagamento con carta",
+            "kind": "problem",
+            "count": 8,
+            "share": 13,
+            "headline": "L'app si blocca al pagamento con carta: 8 feedback.",
+            "why": "Colpisce gli incassi e rende incerto se il cliente abbia pagato.",
+            "quotes": [
+              {
+                "feedbackId": "f18",
+                "highlight": "L'app si blocca ogni volta che un cliente prova a pagare con carta, dobbiamo far ripetere il pagamento due o tre volte."
+              }
+            ]
+          },
+          {
+            "title": "Manca un check-in rapido per la reception",
+            "kind": "opportunity",
+            "count": 8,
+            "share": 13,
+            "headline": "Manca un check-in rapido per la reception: 8 feedback.",
+            "why": "È una richiesta di funzione, meno urgente dei difetti, ma segnala un divario rispetto alle palestre più grandi.",
+            "quotes": [
+              {
+                "feedbackId": "f26",
+                "highlight": "Manca un modo rapido per fare check-in con QR code all'ingresso, tipo quello che fanno le palestre più grandi."
+              }
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "text": "Le notifiche in ritardo sono il problema più sentito",
+            "verdict": "confirmed",
+            "reasoning": "Chi ha scritto torna spesso sulle notifiche che arrivano tardi o non arrivano.",
+            "supporting": 14,
+            "contradicting": 0,
+            "feedbackRead": 60,
+            "quotes": [
+              {
+                "feedbackId": "f40",
+                "highlight": "Le notifiche di conferma prenotazione continuano a non arrivare, è il terzo mese che lo segnalo.",
+                "stance": "for"
+              }
+            ]
+          }
+        ],
+        "limits": [
+          {
+            "key": "scope",
+            "values": {
+              "read": 60,
+              "date": "2026-09-30T14:40:10.615Z",
+              "channels": 6,
+              "start": "2026-07-12",
+              "end": "2026-09-29"
+            }
+          },
+          {
+            "key": "selfSelected",
+            "values": {}
+          },
+          {
+            "key": "unthemed",
+            "values": {
+              "count": 6,
+              "read": 60
+            }
+          }
+        ],
+        "extraLimits": [
+          "Non c'è modo di sapere quanto questi problemi pesino sulla scelta effettiva di consigliare Ritmo, perché quasi nessuno parla di raccomandazione.",
+          "Alcuni feedback contengono istruzioni rivolte al sistema, che sono state ignorate e trattate solo come testo."
+        ],
+        "decisions": [
+          {
+            "title": "Dare priorità alla correzione dei ritardi e dei mancati arrivi delle notifiche",
+            "why": "H1 è confermata con 14 feedback a favore e il tema T1 ne conta 14.",
+            "evidence": [
+              {
+                "kind": "theme",
+                "title": "Le notifiche di prenotazione arrivano in ritardo",
+                "count": 14
+              },
+              {
+                "kind": "hypothesis",
+                "text": "Le notifiche in ritardo sono il problema più sentito",
+                "verdict": "confirmed"
+              }
+            ]
+          },
+          {
+            "title": "Indagare insieme calendario Google e blocco al pagamento con carta",
+            "why": "Sono i due problemi successivi, con 9 e 8 feedback, e compaiono spesso insieme alle notifiche.",
+            "evidence": [
+              {
+                "kind": "theme",
+                "title": "La sincronizzazione con il calendario Google si interrompe",
+                "count": 9
+              },
+              {
+                "kind": "theme",
+                "title": "L'app si blocca durante il pagamento con carta",
+                "count": 8
+              }
+            ]
+          },
+          {
+            "title": "Valutare il check-in rapido dopo aver stabilizzato i difetti",
+            "why": "Il tema conta 8 feedback, meno dei problemi di affidabilità.",
+            "evidence": [
+              {
+                "kind": "theme",
+                "title": "Manca un check-in rapido per la reception",
+                "count": 8
+              }
+            ]
+          }
+        ]
+      },
+      "raw": {
+        "summary": [
+          "Ciò che frena le palestre dal consigliare Ritmo sono soprattutto problemi di affidabilità: notifiche, calendario Google e pagamenti con carta.",
+          "H1, secondo cui le notifiche in ritardo sono il problema più sentito, è confermata: {H1.for} feedback a favore, {H1.against} contro, su {H1.read} letti.",
+          "Le notifiche in ritardo pesano di più ({T1.count} feedback, {T1.share}), seguite dal calendario Google ({T2.count}) e dal blocco al pagamento ({T3.count}).",
+          "Il supporto è apprezzato ({T5.count} feedback), ma non sembra compensare i difetti del prodotto."
+        ],
+        "findings": [
+          {
+            "theme": "T1",
+            "headline": "Le notifiche di prenotazione arrivano tardi o non arrivano: {T1.count} feedback, {T1.share} di quelli letti.",
+            "why": "È il problema più citato e tocca direttamente la fiducia di chi gestisce lezioni e istruttori.",
+            "quotes": [
+              {
+                "feedback": 2,
+                "text": "Non ricevo più la notifica di promemoria prima della lezione, mi sono persa due sessioni di pilates questo mese."
+              },
+              {
+                "feedback": 3,
+                "text": "Le notifiche push arrivano con 40 minuti di ritardo, quando ormai la lezione è già iniziata."
+              }
+            ]
+          },
+          {
+            "theme": "T2",
+            "headline": "La sincronizzazione con Google Calendar si interrompe: {T2.count} feedback.",
+            "why": "Appuntamenti persi e doppioni creano errori operativi e spesso si sommano ai problemi di notifica.",
+            "quotes": [
+              {
+                "feedback": 5,
+                "text": "Il calendario smette di sincronizzarsi con Google Calendar dopo qualche giorno, devo disconnettere e riconnettere l'account ogni settimana."
+              }
+            ]
+          },
+          {
+            "theme": "T3",
+            "headline": "L'app si blocca al pagamento con carta: {T3.count} feedback.",
+            "why": "Colpisce gli incassi e rende incerto se il cliente abbia pagato.",
+            "quotes": [
+              {
+                "feedback": 8,
+                "text": "L'app si blocca ogni volta che un cliente prova a pagare con carta, dobbiamo far ripetere il pagamento due o tre volte."
+              }
+            ]
+          },
+          {
+            "theme": "T4",
+            "headline": "Manca un check-in rapido per la reception: {T4.count} feedback.",
+            "why": "È una richiesta di funzione, meno urgente dei difetti, ma segnala un divario rispetto alle palestre più grandi.",
+            "quotes": [
+              {
+                "feedback": 11,
+                "text": "Manca un modo rapido per fare check-in con QR code all'ingresso, tipo quello che fanno le palestre più grandi."
+              }
+            ]
+          }
+        ],
+        "limits": [
+          "Non c'è modo di sapere quanto questi problemi pesino sulla scelta effettiva di consigliare Ritmo, perché quasi nessuno parla di raccomandazione.",
+          "Alcuni feedback contengono istruzioni rivolte al sistema, che sono state ignorate e trattate solo come testo."
+        ],
+        "decisions": [
+          {
+            "decision": "Dare priorità alla correzione dei ritardi e dei mancati arrivi delle notifiche",
+            "why": "H1 è confermata con {H1.for} feedback a favore e il tema T1 ne conta {T1.count}.",
+            "evidence": [
+              "T1",
+              "H1"
+            ]
+          },
+          {
+            "decision": "Indagare insieme calendario Google e blocco al pagamento con carta",
+            "why": "Sono i due problemi successivi, con {T2.count} e {T3.count} feedback, e compaiono spesso insieme alle notifiche.",
+            "evidence": [
+              "T2",
+              "T3"
+            ]
+          },
+          {
+            "decision": "Valutare il check-in rapido dopo aver stabilizzato i difetti",
+            "why": "Il tema conta {T4.count} feedback, meno dei problemi di affidabilità.",
+            "evidence": [
+              "T4"
+            ]
+          }
+        ]
+      },
+      "issues": [],
+      "inputTokens": 5807,
+      "outputTokens": 1319,
+      "costUsd": 0.024804
+    }
+  ]
+}

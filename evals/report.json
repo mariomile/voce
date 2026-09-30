@@ -116,7 +116,7 @@
           "against_topics": ["h"]
         }
       ],
-      "expect_limits": ["scope", "selfSelected", "unthemed", "simulated", "oneChannel"],
+      "expect_limits": ["scope", "selfSelected", "unthemed", "simulated"],
       "forbidden": [],
       "no_customer_words": true
     },

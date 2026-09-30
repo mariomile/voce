@@ -450,6 +450,8 @@ describe("reportLimits: what the report cannot say, always from the data", () =>
       values: { count: 200, names: "Simulato" },
     })
     expect(keys(source())).not.toContain("simulated")
+    // All from a simulated channel: no second line on the one channel.
+    expect(keys(source({ channels: [{ name: "Simulato", count: 42 }] }))).not.toContain("oneChannel")
   })
 
   it("flags one channel, or one channel with at least 70%", () => {

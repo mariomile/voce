@@ -183,8 +183,12 @@
     max-width: none;
     padding: 0;
   }
-  [data-report] {
-    font-size: 11pt;
+  /* The rem sizes of the app, three quarters as big: a finding fits on a page with the others. */
+  html:has([data-report]) {
+    font-size: 12px;
+  }
+  [data-report] :is(blockquote, li) {
+    break-inside: avoid;
   }
   /* Browsers drop backgrounds when printing: the highlighter, the verdict signs and the numbered circles need them. */
   [data-report] * {
