@@ -147,6 +147,34 @@ test("the verdict that did not come says so, and a verdict without this click's 
   await expect(page.getByText("TEMI_FUORI_SCHEMA")).toHaveCount(0)
 })
 
+test("the network drops during the analysis: the room keeps the pile with a note, and the button works again", async ({ page }) => {
+  const user = await signedInUser(page, "sala-rete")
+  await publicResponses(user, ["Mi serve il PDF dei report.", "Vorrei esportare il report in PDF."])
+  await page.goto(`/research/${user.researchId}/sala`)
+
+  // The server action is a POST to the page itself: it never reaches the server, as when the Wi-Fi drops.
+  const sala = `**/research/${user.researchId}/sala`
+  await page.route(sala, (route) =>
+    route.request().method() === "POST" ? route.abort("internetdisconnected") : route.continue()
+  )
+  const analyze = page.getByRole("button", { name: "Analizza le risposte" })
+  await analyze.click()
+  await expect(
+    page.getByText(
+      "La connessione è caduta. Controlla la rete e riprova: se l'analisi era già partita, attendi un minuto e premi di nuovo."
+    )
+  ).toBeVisible()
+  // Still the room, not Next's error page.
+  await expect(page.getByText(/This page couldn.t load/)).toHaveCount(0)
+  await expect(page.getByRole("img", { name: "QR code del modulo pubblico" })).toBeVisible()
+  await expect(analyze).not.toHaveAttribute("aria-disabled")
+
+  // The network is back: the same button runs the analysis.
+  await page.unroute(sala)
+  await analyze.click()
+  await expect(page.getByText("I clienti chiedono l'esportazione in PDF")).toBeVisible()
+})
+
 test("a Research deleted while the room is open: status 404 and R1 instead of the QR", async ({ page }) => {
   const user = await signedInUser(page, "sala-eliminata")
   await page.goto(`/research/${user.researchId}/sala`)

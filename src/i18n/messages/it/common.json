@@ -43,5 +43,11 @@
     "text": "Il link potrebbe essere sbagliato, o la pagina è stata tolta.",
     "action": "Torna alla home",
     "actionSignedIn": "Tutte le Research"
+  },
+  "error": {
+    "title": "Qualcosa non ha funzionato.",
+    "text": "Forse è caduta la connessione, o è un problema passeggero. Riprova: se non si risolve, torna alle Research.",
+    "retry": "Riprova",
+    "back": "Tutte le Research"
   }
 }

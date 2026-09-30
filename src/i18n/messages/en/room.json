@@ -7,6 +7,7 @@
     "running": "Analysis running…",
     "runningNote": "It can take a few minutes. The themes appear here as soon as it's done.",
     "noOpenThemes": "The analysis is done, but there are no open themes to show. You'll find them in the Research.",
+    "network": "The connection dropped. Check the network and try again: if the analysis had already started, wait a minute and press again.",
     "idle": "It lights up with the first response.",
     "analyze": "Analyze the responses",
     "scanHelp": "Scan and answer from your phone. No account needed.",

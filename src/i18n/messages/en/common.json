@@ -43,5 +43,11 @@
     "text": "The link may be wrong, or the page has been removed.",
     "action": "Back to the home page",
     "actionSignedIn": "All Research"
+  },
+  "error": {
+    "title": "Something went wrong.",
+    "text": "The connection may have dropped, or it's a passing problem. Try again: if it doesn't clear up, go back to your Research.",
+    "retry": "Try again",
+    "back": "All Research"
   }
 }
