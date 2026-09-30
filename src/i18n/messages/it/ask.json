@@ -1,6 +1,6 @@
 {
   "page": {
-    "lede": "Scrivi una domanda su un argomento. Voce risponde con quanti feedback ne parlano e con le frasi esatte dei clienti.",
+    "lede": "Fai una domanda ai feedback di questa Research. Voce conta quanti ne parlano e risponde con le parole esatte dei clienti.",
     "addFeedback": "Aggiungi feedback"
   },
   "nothingToAsk": {
@@ -9,7 +9,7 @@
   },
   "form": {
     "label": "La tua domanda",
-    "hint": "Per esempio: cosa chiedono i clienti sull'export in Excel?",
+    "hint": "Invio per chiedere, Maiusc+Invio per andare a capo.",
     "count": "{length} di {max}",
     "sending": "Risposta in arrivo…",
     "reading": "Sto leggendo {count} feedback…",
@@ -59,8 +59,50 @@
     "noEvidenceBody": "Letti {count} feedback di questa Research. Prova con altre parole, per esempio il nome della funzione come lo scrivono i clienti.",
     "writtenAll": "Cosa hanno scritto",
     "writtenPartial": "Cosa hanno scritto: {quotes} dei {total} feedback",
-    "keep": "La risposta non resta su questa pagina: se ti serve, copiala.",
-    "perimeterFull": "Letti {count} feedback di questa Research. {keep}",
-    "perimeterPartial": "Letti i {considered} feedback più recenti di questa Research, su {total}: i più vecchi non entrano nella risposta. {keep}"
+    "perimeterPartial": "Letti i {considered} feedback più recenti di questa Research, su {total}: i più vecchi non entrano nella risposta.",
+    "of": "su {count} letti",
+    "readAll": "Leggi tutto il feedback",
+    "readLess": "Mostra solo la frase",
+    "copy": "Copia",
+    "copied": "Copiata",
+    "copiedStatus": "Risposta copiata: domanda, risposta e citazioni con le fonti.",
+    "copyFailed": "Non riesco a copiare da qui: seleziona il testo e copialo a mano.",
+    "session": "Le risposte restano qui finché non ricarichi la pagina. Per tenerne una, usa Copia."
+  },
+  "suggest": {
+    "title": "Prova a chiedere",
+    "fromHypothesis": "Dall'ipotesi",
+    "fromTheme": "Dal tema",
+    "hypothesisConfirmed": "Chi smentisce «{text}», e perché?",
+    "hypothesisRefuted": "Chi conferma ancora «{text}», e perché?",
+    "hypothesisOpen": "Chi conferma e chi smentisce «{text}»?",
+    "themeProblem": "Cosa chiedono i clienti per risolvere «{title}»?",
+    "themeOpportunity": "Cosa chiedono esattamente su «{title}»?",
+    "themePraise": "Cosa apprezzano i clienti in «{title}»?",
+    "starterAsk": "Cosa chiedono più spesso i clienti?",
+    "starterProblem": "Di cosa si lamentano di più i clienti?",
+    "starterPraise": "Cosa apprezzano di più i clienti?"
+  },
+  "followUp": {
+    "label": "Approfondisci",
+    "solutions": "Cosa propongono?",
+    "solutionsQuestion": "Su «{question}»: cosa propongono i clienti come soluzione?",
+    "opposite": "Chi dice il contrario?",
+    "oppositeQuestion": "Su «{question}»: chi dice il contrario, e perché?",
+    "others": "Chi altro lo dice?",
+    "othersQuestion": "Quanti altri clienti dicono che «{quote}»?",
+    "rephrase": "Riscrivi la domanda"
+  },
+  "progress": {
+    "read": "{count, plural, one {Leggo l'unico feedback di questa Research} other {Leggo i {count} feedback di questa Research}}",
+    "readPartial": "Leggo i {count} feedback più recenti di questa Research",
+    "search": "Cerco quelli che rispondono alla domanda",
+    "check": "Controllo che ogni citazione sia scritta così dal cliente"
+  },
+  "clipboard": {
+    "question": "Domanda: {question}",
+    "count": "{count} {countLabel}, su {considered} letti.",
+    "noEvidence": "Nessun feedback ne parla, su {count} letti.",
+    "quotes": "Cosa hanno scritto:"
   }
 }

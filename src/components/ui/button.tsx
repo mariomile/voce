@@ -2,7 +2,7 @@ import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "cn"
 
-// Kit: .btn, .btn-secondary, .btn-highlight, .btn-lg, .link, .link-text
+// Kit: .btn, .btn-secondary, .btn-highlight, .btn-lg, .btn-sm, .link, .link-text
 const buttonStyles = cva(
   "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border-0 font-semibold leading-snug whitespace-nowrap no-underline disabled:cursor-not-allowed disabled:bg-veil disabled:text-ink-subtle aria-disabled:cursor-not-allowed aria-disabled:bg-veil aria-disabled:text-ink-subtle",
   {
@@ -21,6 +21,8 @@ const buttonStyles = cva(
       size: {
         default: "px-5 py-3 text-base",
         lg: "px-6 py-4 text-lg",
+        // Small actions next to content: Copia and the follow-ups of an answer in Chiedi.
+        sm: "px-4 py-2 text-md",
       },
     },
     compoundVariants: [

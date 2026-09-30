@@ -7,6 +7,7 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: async () => session.clie
 
 const {
   FEEDBACK_PAGE_SIZE,
+  getAskTopics,
   getCurrentWorkspace,
   getDashboard,
   getPublicForm,
@@ -252,6 +253,87 @@ describe("listHypotheses", () => {
           },
         },
       ])
+    } finally {
+      await deleteTestUsers([user])
+    }
+  })
+})
+
+describe("getAskTopics", () => {
+  it("hypotheses with their verdict, then the themes of the last done analysis, biggest first, not discarded nor empty", async () => {
+    const user = await createTestUser("ask-topics")
+    try {
+      const ws = { workspace_id: user.workspaceId, research_id: user.researchId }
+      const hypotheses = await admin
+        .from("research_hypotheses")
+        .insert([{ ...ws, text: "Il prezzo per utente pesa" }, { ...ws, text: "Manca l'export" }])
+        .select("id, text")
+      const priced = hypotheses.data!.find((h) => h.text === "Il prezzo per utente pesa")!
+      const analysis = async (created_at: string, kind: "themes" | "verdict" = "themes", status = "done") =>
+        (
+          await admin
+            .from("analyses")
+            .insert({ ...ws, kind, status, created_at, period_start: "2026-09-01", feedback_count: 3 } as never)
+            .select("id")
+            .single()
+        ).data!.id
+      const older = await analysis("2026-09-01T10:00:00Z")
+      const latest = await analysis("2026-09-20T10:00:00Z")
+      await analysis("2026-09-25T10:00:00Z", "themes", "failed")
+      const verdict = await analysis("2026-09-21T10:00:00Z", "verdict")
+      await admin.from("hypothesis_verdicts").insert({
+        ...ws,
+        hypothesis_id: priced.id,
+        analysis_id: verdict,
+        verdict: "confirmed",
+        reasoning: "Lo dicono in tanti.",
+        feedback_read: 3,
+        arrived_after: 0,
+      })
+      const feedback = (
+        await admin
+          .from("feedback")
+          .insert(["Uno.", "Due.", "Tre."].map((text) => ({ ...ws, text, channel: "Supporto", received_at: "2026-09-10" })))
+          .select("id")
+      ).data!.map((f) => f.id)
+      const theme = async (analysis_id: string, title: string, kind: "problem" | "praise", links: number, status = "to_review") => {
+        const id = (
+          await admin
+            .from("themes")
+            .insert({ ...ws, analysis_id, title, kind, status, summary: "…", sentiment: "negative" } as never)
+            .select("id")
+            .single()
+        ).data!.id
+        if (links > 0)
+          await admin.from("theme_feedback").insert(feedback.slice(0, links).map((feedback_id) => ({ workspace_id: user.workspaceId, theme_id: id, feedback_id })))
+      }
+      await theme(older, "Tema vecchio", "problem", 3)
+      await theme(latest, "Piccolo", "praise", 1)
+      await theme(latest, "Grande", "problem", 3)
+      await theme(latest, "Scartato", "problem", 2, "discarded")
+      await theme(latest, "Vuoto", "problem", 0)
+
+      session.client = user.client
+      expect(await getAskTopics({ id: user.researchId, workspaceId: user.workspaceId })).toEqual({
+        hypotheses: [
+          { text: "Il prezzo per utente pesa", verdict: "confirmed" },
+          { text: "Manca l'export", verdict: null },
+        ],
+        themes: [
+          { title: "Grande", kind: "problem" },
+          { title: "Piccolo", kind: "praise" },
+        ],
+      })
+    } finally {
+      await deleteTestUsers([user])
+    }
+  })
+
+  it("a Research with no analysis and no hypotheses has nothing to suggest", async () => {
+    const user = await createTestUser("ask-topics-empty")
+    try {
+      session.client = user.client
+      expect(await getAskTopics({ id: user.researchId, workspaceId: user.workspaceId })).toEqual({ hypotheses: [], themes: [] })
     } finally {
       await deleteTestUsers([user])
     }

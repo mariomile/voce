@@ -146,3 +146,25 @@
     box-decoration-break: clone;
   }
 }
+
+/* Chiedi, while Voce works: the highlighter passes over the step in progress, back and forth.
+   With reduced motion the step is simply highlighted. */
+@keyframes ask-highlighter {
+  from {
+    background-size: 0% 76%;
+  }
+  to {
+    background-size: 100% 76%;
+  }
+}
+
+@utility highlighter-sweep {
+  background: linear-gradient(var(--color-highlight), var(--color-highlight)) no-repeat left center / 100% 76%;
+  padding: 0 2px;
+  margin: 0 -2px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  @media (prefers-reduced-motion: no-preference) {
+    animation: ask-highlighter 1.4s cubic-bezier(0.16, 1, 0.3, 1) infinite alternate;
+  }
+}

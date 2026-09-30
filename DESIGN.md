@@ -101,7 +101,7 @@ Ogni componente è in `design/kit.css` e in `design/kit.html` con tutti i suoi s
 
 ### Pulsanti
 
-`.btn` primario (inchiostro) · `.btn-secondary` (velo; su una card diventa bianco da solo) · `.btn-highlight` (giallo) · `:disabled` · taglie `.btn-lg` e `.btn-block` · `.link` e `.link-text` per le azioni testuali (nell'app: varianti `link` e `text` del Button).
+`.btn` primario (inchiostro) · `.btn-secondary` (velo; su una card diventa bianco da solo) · `.btn-highlight` (giallo) · `:disabled` · taglie `.btn-lg`, `.btn-sm` (azioni piccole accanto al contenuto, per esempio Copia) e `.btn-block` · `.link` e `.link-text` per le azioni testuali (nell'app: varianti `link` e `text` del Button).
 
 - Un solo pulsante primario per zona dello schermo.
 - `.btn-highlight` solo per spingere un'azione di valore quando il primario è già usato (per esempio "Passa a Pro"). Mai dentro una superficie gialla.
@@ -183,6 +183,12 @@ Composti dai componenti sopra, servono alle schermate della B.
 - **Fascia dell'analisi**: in cima alla Sintesi, lo stato a sinistra e "Analizza" a destra su `--color-highlight-soft` quando c'è qualcosa da leggere (prima analisi, feedback arrivati dopo l'ultima); senza fondo quando è tutto analizzato.
 - **Verdetto**: la risposta della Research, quindi il testo più pesante dell'app: parola in peso 900 a 20 px, sopra un cerchio inchiostro con l'icona in giallo (Lucide `Check`, `X`); "Da rivedere" in `--color-ink-muted` su velo. Sotto la frase dell'ipotesi, il ragionamento e la prima citazione a favore e contro affiancate (una colonna sotto i 1024 px); le altre dietro "Mostra altre N citazioni" (`aria-expanded`).
 - **Tema**: `.theme` a tre colonne (numero e andamento, contenuto, controlli); su telefono numero e andamento stanno su una riga. `.theme-compact` dal quarto tema in poi: niente sintesi, una citazione. Il tono ("Tono negativo") compare solo quando il tipo non lo dice già; la nota dell'andamento solo sul primo tema della lista. `.stat-value`/`.stat-label` per il numero, `.trend` per l'andamento a 13 settimane (le ultime 2 in inchiostro) con `.trend-note`, `.theme-controls` per priorità e stato.
+- **Chiedi** (`src/components/ask-*.tsx`): il campo della domanda, sotto le domande della visita, la più recente in cima.
+  - Stato vuoto: "Prova a chiedere", righe cliccabili con domande costruite da ipotesi (prima) e temi (i più grandi), a modelli fissi, con la fonte a destra ("Dall'ipotesi", "Dal tema"). Riempiono il campo, non inviano: ogni domanda conta. Non sono chip: i chip filtrano.
+  - Attesa: la domanda sale in cima con tre passi (leggo, cerco, controllo le citazioni); il passo in corso ha l'evidenziatore che scorre (`highlighter-sweep`), i passi fatti un cerchio inchiostro con la spunta gialla. Con `prefers-reduced-motion` l'evidenziatore è fermo.
+  - Risposta: la domanda come titolo con "Copia" a destra; numero grande con "su N letti"; la prima frase della risposta a 24 px, il resto sotto in `ink-muted`; citazioni compatte in due colonne (dal lg), la frase chiave con i puntini se è un pezzo di un feedback lungo, "Leggi tutto il feedback" per il testo intero; "Approfondisci" con pulsanti secondari piccoli (`size="sm"`) che riempiono il campo.
+  - Le risposte precedenti si chiudono in una riga (numero, domanda, prima frase) che si riapre. Vivono solo nella memoria del browser: restano cambiando scheda, spariscono ricaricando, e la pagina lo dice sotto l'ultima.
+  - Una sola regione `status` per la scheda: attesa, risposta pronta, copia ed errori.
 - **Modulo pubblico**: `.form-page`; `.form-ask` con `.form-brand` (`.avatar` con l'iniziale del workspace), `.form-ask-title` e `.form-ask-text` su `.surface-highlight`; `.form-body` con i campi a riga e il pulsante in fondo; `.form-foot`. `.form-message` per inviato e non disponibile, `.form-message-title.is-long` quando il messaggio è lungo.
   - La domanda (`.form-ask-title`) la sceglie il PM, con default "Cosa vuoi dire al team di …?". Va a capo su qualsiasi lunghezza; mentre si scrive, `.form-ask.is-compact` la riduce e nasconde il sottotitolo.
   - La domanda è testo scritto dal PM e mostrato a sconosciuti: sempre come testo, mai come HTML. Massimo 140 caratteri.
