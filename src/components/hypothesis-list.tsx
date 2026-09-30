@@ -231,6 +231,7 @@ function NewHypothesis({
   const [failure, setFailure] = useState<Failure | null>(null)
   const [pending, startTransition] = useTransition()
   const fieldError = failure === "invalid" ? t("errors.empty") : failure === "too_long" ? t("errors.tooLong") : null
+  const twoClaims = looksLikeTwoClaims(text)
 
   function submit(event: React.FormEvent) {
     event.preventDefault()
@@ -260,7 +261,9 @@ function NewHypothesis({
           value={text}
           readOnly={pending}
           aria-invalid={fieldError ? true : undefined}
-          aria-describedby={fieldError ? "new-hypothesis-error" : "new-hypothesis-hint"}
+          aria-describedby={
+            fieldError ? "new-hypothesis-error" : twoClaims ? "new-hypothesis-hint new-hypothesis-two-claims" : "new-hypothesis-hint"
+          }
           onChange={(event) => {
             setText(event.target.value)
             onChange()
@@ -272,6 +275,7 @@ function NewHypothesis({
         ) : (
           <FieldHint id="new-hypothesis-hint">{t("hint")}</FieldHint>
         )}
+        {!fieldError && twoClaims && <FieldHint id="new-hypothesis-two-claims">{t("twoClaims")}</FieldHint>}
       </Field>
       <div className="mt-7 flex max-w-[36ch] flex-col gap-2">
         <div className="flex items-center gap-4">
@@ -533,6 +537,12 @@ function ConfirmDelete({
 }
 
 // What went wrong with a save or a delete. busy: an analysis of the Research is running (H7).
+// A hypothesis that joins a claim and its negation ("per compliance, non per scelta") is two claims: the verdict
+// cannot confirm one without the other. Only a note under the field, never a block.
+export function looksLikeTwoClaims(text: string) {
+  return /(\s|,)(e non|non per|and not|not because)\s/i.test(text)
+}
+
 export function FailureNote({ failure, t, message }: { failure: Failure | null; t: T; message: string }) {
   return (
     <p role="status" className="text-sm empty:hidden">

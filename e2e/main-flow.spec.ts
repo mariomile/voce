@@ -68,8 +68,8 @@ test("sign up, create a Research, paste 5 notes, write a hypothesis, analyze and
 
   const hypothesis = page.getByRole("listitem").filter({ has: page.getByRole("heading", { level: 3, name: "I clienti vogliono il report in PDF" }) })
   await expect(hypothesis).toContainText("Confermata")
-  await expect(hypothesis).toContainText("1 a favore · 0 contro · su 5 letti")
-  await expect(hypothesis).toContainText("A favore")
+  await expect(hypothesis).toContainText("1 feedback a favore · 0 contro · su 5 letti")
+  await expect(hypothesis).toContainText("Alcuni a favore")
   // The fake model quotes the most recent note in full: a verified quote, highlighted.
   await expect(hypothesis.locator("blockquote mark")).toHaveText(notes[4])
   await expect(hypothesis).toContainText("Tutti i 5 feedback letti erano già arrivati quando l'hai scritta")

@@ -12,7 +12,7 @@ vi.mock("@/app/(app)/research/[id]/actions", () => ({
 // S6 lives in the Sintesi's shared state: here it is set by the test.
 const outcome = vi.hoisted(() => ({ failed: false }))
 vi.mock("./synthesis-outcome", () => ({ useVerdictFailure: () => ({ failed: outcome.failed, setFailed: () => {} }) }))
-const { HypothesisList, FailureNote } = await import("./hypothesis-list")
+const { HypothesisList, FailureNote, looksLikeTwoClaims } = await import("./hypothesis-list")
 const { translator } = await import("@/test/next-intl")
 
 const RESEARCH = "11111111-1111-4111-8111-111111111111"
@@ -47,6 +47,16 @@ function withVerdict(verdict: Partial<Verdict>): Hypothesis {
 
 const render = (hypotheses: Hypothesis[]) => renderToStaticMarkup(<HypothesisList researchId={RESEARCH} hypotheses={hypotheses} />)
 
+describe("looksLikeTwoClaims", () => {
+  it("spots a hypothesis that joins a claim and its negation", () => {
+    expect(looksLikeTwoClaims("Le grandi aziende restano su Jira per compliance e audit, non per scelta")).toBe(true)
+    expect(looksLikeTwoClaims("Restano per compliance e non per scelta")).toBe(true)
+    expect(looksLikeTwoClaims("Teams stay for compliance and not because they like it")).toBe(true)
+    expect(looksLikeTwoClaims("Jira è troppo lento e complesso per i team piccoli")).toBe(false)
+    expect(looksLikeTwoClaims("Il prezzo non frena i team piccoli")).toBe(false)
+  })
+})
+
 describe("HypothesisList", () => {
   it("empty: one line and Scrivi un'ipotesi, no field yet", () => {
     const html = renderToStaticMarkup(<HypothesisList researchId={RESEARCH} hypotheses={[]} />)
@@ -63,7 +73,7 @@ describe("HypothesisList", () => {
     expect(html).toContain('aria-label="Modifica l&#x27;ipotesi: Ipotesi &lt;b&gt;2&lt;/b&gt;"')
     expect(html).toContain('aria-label="Elimina l&#x27;ipotesi: Ipotesi &lt;b&gt;2&lt;/b&gt;"')
     expect(html).toContain(">Nuova ipotesi<")
-    expect(html).toContain("Una frase che si può confermare o smentire.")
+    expect(html).toContain("Una sola affermazione per ipotesi, che si può confermare o smentire.")
     expect(html).toContain(">Aggiungi l&#x27;ipotesi<")
     expect(html).not.toContain("Scrivi un&#x27;ipotesi")
   })
@@ -84,10 +94,11 @@ describe("HypothesisList", () => {
 
   it("shows the word, counts from verdict_feedback and the read count, the reasoning, up to 3 for and 2 against with channel and date and no customer name", () => {
     const html = render([withVerdict({})])
-    expect(html).toContain("18 a favore · 3 contro · su 37 letti")
+    // Totals of every linked feedback; the quotes under them are examples.
+    expect(html).toContain("18 feedback a favore · 3 contro · su 37 letti")
     expect(html).toContain("Chi ha 2-3 persone trova il costo per utente sproporzionato.")
-    expect(html).toContain(">A favore<")
-    expect(html).toContain(">Contro<")
+    expect(html).toContain(">Alcuni a favore<")
+    expect(html).toContain(">Alcuni contro<")
     expect(html.match(/<blockquote/g)).toHaveLength(5)
     expect(html).toContain("<mark>pagare a testa</mark>")
     expect(html).toContain("Intervista, 1 ottobre")
@@ -97,8 +108,8 @@ describe("HypothesisList", () => {
 
   it("without quotes on one side there is no heading for it", () => {
     const html = render([withVerdict({ contradicting: 0, quotesAgainst: [] })])
-    expect(html).toContain(">A favore<")
-    expect(html).not.toContain(">Contro<")
+    expect(html).toContain(">Alcuni a favore<")
+    expect(html).not.toContain(">Alcuni contro<")
   })
 
   it("V1: Dei 37 feedback letti, 8 sono arrivati dopo.", () => {
