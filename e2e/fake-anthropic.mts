@@ -90,7 +90,7 @@ function reportFor(text: string) {
   return {
     summary: [
       "Il tema più grande raccoglie {T1.count} feedback su {read}.",
-      ...judged.map((h) => `L'ipotesi ${h.id} ha {${h.id}.for} feedback a favore e {${h.id}.against} contro.`),
+      ...judged.map((h) => `Un'ipotesi ha {${h.id}.for} feedback a favore e {${h.id}.against} contro.`),
       "Gli altri temi completano il quadro.",
     ],
     findings: data.themes.slice(0, 3).map((t) => {

@@ -226,6 +226,11 @@ describe("fillText: numbers only from the server", () => {
     expect(fillText("un { da solo", values, allowed)).toEqual({ ok: false, problem: "stray_brace" })
   })
 
+  it("refuses a sentence that names a theme or a hypothesis by its id: the reader does not know T1 or H2", () => {
+    expect(fillText("H1 è confermata, come dice il tema T2.", values, allowed)).toEqual({ ok: false, problem: "id_in_text" })
+    expect(fillText("L'ipotesi sul prezzo è confermata.", values, allowed).ok).toBe(true)
+  })
+
   it("refuses words in quotation marks that are not copied from the data", () => {
     expect(fillText("Qualcuno scrive «pesa sui team piccoli».", values, allowed).ok).toBe(true)
     expect(fillText("Chiedono “Esportare in PDF”.", values, allowed).ok).toBe(true)
