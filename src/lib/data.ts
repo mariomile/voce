@@ -359,8 +359,8 @@ export async function getAskTopics(research: Pick<Research, "id" | "workspaceId"
 }
 
 // The feedback of a Research that entered Voce after a moment (created_at, not the date of the feedback).
-// How many hypotheses a Research has, without their text or verdicts: the room screen only says the verdict
-// is elsewhere.
+// How many hypotheses a Research has, without their text or verdicts: the room screen says the verdict comes
+// with the themes.
 export async function countHypotheses(research: Pick<Research, "id" | "workspaceId">) {
   const supabase = await createClient();
   return countOf(
@@ -370,6 +370,33 @@ export async function countHypotheses(research: Pick<Research, "id" | "workspace
       .eq("workspace_id", research.workspaceId)
       .eq("research_id", research.id)
   );
+}
+
+// The hypotheses whose verdict comes from the Research's last done verdict analysis. A hypothesis the model
+// left out keeps an older verdict: the room screen does not show it as if it were new.
+export async function latestVerdictHypothesisIds(research: Pick<Research, "id" | "workspaceId">): Promise<string[]> {
+  const supabase = await createClient();
+  const latest = unwrap(
+    await supabase
+      .from("analyses")
+      .select("id")
+      .eq("workspace_id", research.workspaceId)
+      .eq("research_id", research.id)
+      .eq("kind", "verdict")
+      .eq("status", "done")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+  );
+  if (!latest) return [];
+  const rows = unwrap(
+    await supabase
+      .from("hypothesis_verdicts")
+      .select("hypothesis_id")
+      .eq("workspace_id", research.workspaceId)
+      .eq("analysis_id", latest.id)
+  );
+  return rows.map((r) => r.hypothesis_id);
 }
 
 export async function countFeedbackAfter(research: Pick<Research, "id" | "workspaceId">, since: string) {

@@ -268,7 +268,7 @@ Il flusso di Chiedi di oggi, invariato nei passi e negli stati (`.builderos/init
 
 Lo schermo di oggi (`src/components/room-screen.tsx`) con la domanda del modulo della Research, il QR della Research, il conteggio delle risposte del modulo di quella Research (canale "Modulo pubblico") e i temi dell'ultima analisi della Research.
 
-- "Analizza le risposte" avvia **solo i temi**, 1 analisi, anche se la Research ha ipotesi **[D]**. Lo schermo mostra bolle di temi e mai testo dei feedback; un verdetto non si vede in sala e non va pagato lì. Sotto il pulsante, se ci sono ipotesi: "Il verdetto delle ipotesi lo trovi nella Research."
+- "Analizza le risposte" fa la stessa analisi della Sintesi: con ipotesi, temi e verdetto (2 analisi). Lo schermo mostra bolle di temi e, nella vista Verdetto, testo dell'ipotesi, parola e conteggi; mai testo dei feedback né citazioni. Sotto il pulsante, se ci sono ipotesi: "Con i temi arriva anche il verdetto delle ipotesi." (dal 2026-09-29; prima solo i temi, con "Il verdetto delle ipotesi lo trovi nella Research."; vedi `DESIGN.md` alla radice e `docs/plans/2026-09-29-verdetto-in-sala.md`)
 - "Riaccendi il link in Raccolta" e "Passa a Pro" portano a `/research/[id]/collect` e `/billing`.
 - "Esci dallo schermo" torna a `/research/[id]/collect`.
 

@@ -2,9 +2,10 @@ import { expect, test } from "@playwright/test"
 import { admin, createResearch, daysAgo, insertFeedback, signedInUser } from "./helpers"
 
 // The room screen of a Research: projected during a live session, the audience answers its public
-// form from their phones. It shows counts and theme titles, never the text of a feedback: each response is a
-// dot on a canvas, and the analysis sorts the dots into one bubble per theme. The analysis goes to
-// the fake Anthropic API (e2e/fake-anthropic.mts), which groups every feedback into one theme.
+// form from their phones. It shows counts, theme titles and the verdict of the hypotheses, never the text of a
+// feedback: each response is a dot on a canvas, and the analysis sorts the dots into one bubble per theme.
+// The analysis goes to the fake Anthropic API (e2e/fake-anthropic.mts), which groups every feedback into one
+// theme and confirms every hypothesis with the first feedback.
 
 test("the room of a Research shows its form question and QR and counts only its public form responses", async ({ page, browser }) => {
   const user = await signedInUser(page, "sala")
@@ -46,6 +47,8 @@ test("the room of a Research shows its form question and QR and counts only its 
   // Never the words of a feedback on the projector.
   await expect(page.getByText(response)).toHaveCount(0)
   await expect(page.getByText(support)).toHaveCount(0)
+  // No hypotheses: no verdict to show.
+  await expect(page.getByRole("button", { name: "Verdetto" })).toHaveCount(0)
 
   // The same themes as a list, then back to the count.
   await page.getByRole("button", { name: "Elenco" }).click()
@@ -81,23 +84,67 @@ async function publicResponses(research: { workspaceId: string; researchId: stri
   if (error) throw error
 }
 
-test("Analizza le risposte reserves only themes and says where the verdict is", async ({ page }) => {
+test("with hypotheses, Analizza le risposte also runs the verdict: its word and counts, never the quotes", async ({ page }) => {
   const user = await signedInUser(page, "sala-ipotesi")
-  await publicResponses(user, ["Mi serve il PDF dei report.", "Vorrei esportare il report in PDF."])
+  const responses = ["Mi serve il PDF dei report.", "Vorrei esportare il report in PDF."]
+  await publicResponses(user, responses)
   const { error } = await admin
     .from("research_hypotheses")
     .insert({ workspace_id: user.workspaceId, research_id: user.researchId, text: "I clienti vogliono il PDF" })
   if (error) throw error
 
   await page.goto(`/research/${user.researchId}/sala`)
-  await expect(page.getByText("Il verdetto delle ipotesi lo trovi nella Research.")).toBeVisible()
+  await expect(page.getByText("Con i temi arriva anche il verdetto delle ipotesi.")).toBeVisible()
+  await page.getByRole("button", { name: "Analizza le risposte" }).click()
+  // The themes first, as without hypotheses; the speaker shows the verdict when they choose.
+  await expect(page.getByText("I clienti chiedono l'esportazione in PDF")).toBeVisible()
+  await page.getByRole("button", { name: "Verdetto" }).click()
+  await expect(page.getByRole("button", { name: "Verdetto" })).toHaveAttribute("aria-pressed", "true")
+  await expect(page.getByRole("heading", { name: "Il verdetto" })).toBeVisible()
+  await expect(page.getByText("I clienti vogliono il PDF")).toBeVisible()
+  await expect(page.getByText("Confermata")).toBeVisible()
+  await expect(page.getByText("1 feedback a favore · 0 contro · su 2 letti")).toBeVisible()
+  // The fake model quotes a whole feedback: the quote never reaches the projector.
+  for (const response of responses) await expect(page.getByText(response)).toHaveCount(0)
+
+  // The same analysis as the Sintesi: the themes and the verdict, 2 analyses.
+  const { data: analyses } = await admin.from("analyses").select("kind, status").eq("workspace_id", user.workspaceId).order("kind")
+  expect(analyses).toEqual([
+    { kind: "themes", status: "done" },
+    { kind: "verdict", status: "done" },
+  ])
+})
+
+test("the verdict that did not come says so, and a verdict without this click's themes shows alone", async ({ page }) => {
+  const user = await signedInUser(page, "sala-verdetto-mancato")
+  await publicResponses(user, ["Mi serve il PDF dei report.", "Vorrei esportare il report in PDF."])
+  const hypothesis = async (text: string) => {
+    await admin.from("research_hypotheses").delete().eq("research_id", user.researchId)
+    const { error } = await admin
+      .from("research_hypotheses")
+      .insert({ workspace_id: user.workspaceId, research_id: user.researchId, text })
+    if (error) throw error
+  }
+
+  // The verdict fails (the fake model answers without JSON): the themes show, the Verdetto view says why.
+  await hypothesis("FUORI_SCHEMA")
+  await page.goto(`/research/${user.researchId}/sala`)
   await page.getByRole("button", { name: "Analizza le risposte" }).click()
   await expect(page.getByText("I clienti chiedono l'esportazione in PDF")).toBeVisible()
-  // One themes row, no verdict: the hypothesis has none, and the screen never shows one.
-  const { data: analyses } = await admin.from("analyses").select("kind, status").eq("workspace_id", user.workspaceId)
-  expect(analyses).toEqual([{ kind: "themes", status: "done" }])
-  const { data: verdicts } = await admin.from("hypothesis_verdicts").select("hypothesis_id").eq("research_id", user.researchId)
-  expect(verdicts).toEqual([])
+  await page.getByRole("button", { name: "Verdetto" }).click()
+  await expect(page.getByText("Il verdetto non è arrivato", { exact: false })).toBeVisible()
+
+  // The themes fail and the verdict comes: the verdict alone, never the themes of before.
+  await hypothesis("I clienti vogliono il PDF")
+  await publicResponses(user, ["TEMI_FUORI_SCHEMA"])
+  await page.getByRole("button", { name: "Torna al QR code" }).click()
+  await page.getByRole("button", { name: "Analizza le risposte" }).click()
+  await expect(page.getByRole("heading", { name: "Il verdetto" })).toBeVisible()
+  await expect(page.getByText("I temi non sono arrivati e non contano nel limite del mese: il verdetto sì.")).toBeVisible()
+  await expect(page.getByText("Confermata")).toBeVisible()
+  await expect(page.getByRole("button", { name: "Bolle" })).toHaveCount(0)
+  await expect(page.getByText("I clienti chiedono l'esportazione in PDF")).toHaveCount(0)
+  await expect(page.getByText("TEMI_FUORI_SCHEMA")).toHaveCount(0)
 })
 
 test("a Research deleted while the room is open: status 404 and R1 instead of the QR", async ({ page }) => {
