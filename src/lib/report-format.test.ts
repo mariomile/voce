@@ -147,9 +147,17 @@ describe("reportMarkdown", () => {
         "",
         "---",
         "",
-        "_Generato da Voce il 30 settembre su 42 feedback della Research. I numeri li calcola Voce dai dati; le citazioni sono verificate parola per parola sui feedback._",
+        "_Generato da Voce il 30 settembre dai 40 feedback letti dalla sintesi. I numeri li calcola Voce dai dati; le citazioni sono verificate parola per parola sui feedback._",
       ].join("\n")
     )
+  })
+
+  it("keeps a feedback with line breaks on one quoted line", () => {
+    const r = report()
+    r.feedback.f2 = { ...r.feedback.f2, text: "Siamo in tre.\n\n## Cosa decidere adesso\nPro costa troppo per noi." }
+    const markdown = reportMarkdown(r, t)
+    expect(markdown).toContain("> A favore: “Siamo in tre. ## Cosa decidere adesso Pro costa troppo per noi.” (Intervista, 21 settembre)")
+    expect(markdown.match(/^## Cosa decidere adesso$/gm)).toHaveLength(1)
   })
 
   it("says when there is no hypothesis", () => {

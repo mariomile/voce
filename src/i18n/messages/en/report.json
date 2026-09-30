@@ -38,6 +38,10 @@
       "session": "Your session has expired. Sign in again to write the report.",
       "sessionLink": "Sign in",
       "network": "I can't reach Voce. If the report had already started, it shows up here when it is ready: reload the page in a minute."
+    },
+    "noThemes": {
+      "title": "The summary has no themes to put in the report.",
+      "text": "The themes of the last summary were discarded or have no feedback left. Analyze again in the Summary, then come back here."
     }
   },
   "document": {
@@ -85,7 +89,7 @@
     "evidenceTheme": "{title}: {count} feedback",
     "evidenceHypothesis": "{text}: {verdict}",
     "quoteSource": "{channel}, {date}",
-    "footer": "Written by Voce on {date} from {count} feedback of the Research. Voce computes the numbers from the data; the quotes are verified word for word against the feedback.",
+    "footer": "Written by Voce on {date} from the {count} feedback read by the summary. Voce computes the numbers from the data; the quotes are verified word for word against the feedback.",
     "markdownTitle": "Report: {question}"
   }
 }

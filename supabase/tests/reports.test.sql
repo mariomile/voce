@@ -3,7 +3,7 @@
 -- only by the members of their workspace and gone with their Research.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(28);
+select plan(29);
 
 insert into auth.users (id, email, raw_user_meta_data) values
   ('00000000-0000-0000-0000-0000000000a9', 'reports-a@test.voce', '{"workspace_name": "A"}'),
@@ -106,6 +106,11 @@ select throws_ok(
   $$select public.finish_report((select id from started), 'a2000000-0000-0000-0000-000000000001', 'it',
     '{"findings": [{"quotes": [{"feedbackId": "a1000000-0000-0000-0000-000000000003", "highlight": "altra Research"}]}]}', 2, '{}')$$,
   '22023', 'quote_not_in_feedback', 'a quote of a feedback of another Research fails the save'
+);
+select throws_ok(
+  $$select public.finish_report((select id from started), 'a2000000-0000-0000-0000-000000000001', 'it',
+    '{"findings": [{"quotes": [{"highlight": "pesa sui team piccoli"}]}]}', 2, '{}')$$,
+  '22023', 'quote_not_in_feedback', 'a quote without its feedback fails the save'
 );
 select is(
   (select count(*)::integer from public.research_reports),

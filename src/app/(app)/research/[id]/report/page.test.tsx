@@ -102,6 +102,14 @@ describe("the Report tab of a Research", () => {
     expect(html).not.toContain("Genera il report")
   })
 
+  it("with a synthesis whose themes are all gone: says so, and leads to the Sintesi", async () => {
+    data.source = { ...SOURCE, themes: [] }
+    const html = await render()
+    expect(html).toContain("La sintesi non ha temi da mettere nel report.")
+    expect(html).toContain("Vai alla Sintesi")
+    expect(html).not.toContain("Genera il report")
+  })
+
   it("with a synthesis and no report: what the report is, from which synthesis, and its cost", async () => {
     data.source = SOURCE
     const html = await render()

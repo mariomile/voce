@@ -681,7 +681,7 @@ export async function getReportSource(research: Pick<Research, "id" | "workspace
   const synthesis = unwrap(
     await supabase
       .from("analyses")
-      .select("id, created_at, feedback_count")
+      .select("id, created_at, feedback_count, period_start")
       .eq("workspace_id", research.workspaceId)
       .eq("research_id", research.id)
       .eq("kind", "themes")
@@ -754,7 +754,8 @@ export async function getReportSource(research: Pick<Research, "id" | "workspace
     feedbackTotal: stats.feedbackCount,
     arrivedAfter,
     channels,
-    firstReceivedAt: stats.firstReceivedAt ?? isoDateOf(new Date(synthesis.created_at)),
+    // The oldest feedback the synthesis read, not the oldest of the Research: a partial synthesis reads the most recent.
+    firstReceivedAt: synthesis.period_start,
     lastReceivedAt: stats.lastReceivedAt ?? isoDateOf(new Date(synthesis.created_at)),
     themedCount: new Set(links.filter((l) => shown.has(l.theme_id)).map((l) => l.feedback_id)).size,
     themes,
@@ -827,7 +828,7 @@ export async function getLatestReport(research: Pick<Research, "id" | "workspace
   const row = unwrap(
     await supabase
       .from("research_reports")
-      .select("id, created_at, locale, feedback_count, content")
+      .select("id, created_at, locale, feedback_count, content, analyses!research_reports_workspace_id_analysis_id_fkey (created_at)")
       .eq("workspace_id", research.workspaceId)
       .eq("research_id", research.id)
       .order("created_at", { ascending: false })
@@ -836,12 +837,14 @@ export async function getLatestReport(research: Pick<Research, "id" | "workspace
   );
   if (!row) return null;
   const content = row.content as unknown as ReportContent;
+  // From the reservation of the report, just after its data were read: a feedback arrived during the call is new.
+  const since = row.analyses.created_at;
   const quoted = [
     ...content.findings.flatMap((f) => f.quotes.map((q) => q.feedbackId)),
     ...content.hypotheses.flatMap((h) => h.quotes.map((q) => q.feedbackId)),
   ];
   const [newFeedback, newer, feedback] = await Promise.all([
-    countFeedbackAfter(research, row.created_at),
+    countFeedbackAfter(research, since),
     supabase
       .from("analyses")
       .select("created_at")
@@ -849,7 +852,7 @@ export async function getLatestReport(research: Pick<Research, "id" | "workspace
       .eq("research_id", research.id)
       .in("kind", ["themes", "verdict"])
       .eq("status", "done")
-      .gt("created_at", row.created_at)
+      .gt("created_at", since)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),

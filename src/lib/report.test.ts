@@ -215,8 +215,27 @@ describe("fillText: numbers only from the server", () => {
     expect(fillText("Dal 2026 in poi.", values, allowed)).toEqual({ ok: false, problem: "number_outside_placeholder" })
   })
 
-  it("lets through digits that are part of a name", () => {
-    expect(fillText("Chiedono la 2FA e un piano B2B.", values, allowed)).toEqual({ ok: true, text: "Chiedono la 2FA e un piano B2B." })
+  it("lets through a word with digits only when the data has it word for word", () => {
+    const data = [...allowed, "Serve la 2FA e un piano B2B."]
+    expect(fillText("Chiedono la 2FA e un piano B2B.", values, data)).toEqual({ ok: true, text: "Chiedono la 2FA e un piano B2B." })
+    for (const text of ["Il problema è 3x più frequente.", "Risposta in 24h.", "Sono 10k persone.", "Chiedono la 2FA."])
+      expect(fillText(text, values, allowed)).toEqual({ ok: false, problem: "number_outside_placeholder" })
+  })
+
+  it("refuses placeholders glued together or to a digit: the server did not compute the number they make", () => {
+    for (const text of ["{T1.count}{T2.count} persone", "{T1.count},{T2.count} in media", "{T1.count} {T2.count} feedback", "{read}0 feedback"])
+      expect(fillText(text, values, allowed)).toEqual({ ok: false, problem: "number_outside_placeholder" })
+  })
+
+  it("refuses a count or a share written in words", () => {
+    for (const text of ["Nove persone su dieci lo chiedono.", "Il novanta per cento lo chiede.", "La metà di chi ha scritto.", "Half of the people.", "Ninety percent ask for it.", "Un terzo lo chiede."])
+      expect(fillText(text, values, allowed)).toEqual({ ok: false, problem: "number_in_words" })
+    expect(fillText("Le due ragioni non si separano.", values, allowed).ok).toBe(true)
+  })
+
+  it("fills only the placeholders the server wrote, not names every object has", () => {
+    expect(fillText("{constructor} feedback", values, allowed)).toEqual({ ok: false, problem: "unknown_placeholder" })
+    expect(fillText("{__proto__} feedback", values, allowed)).toEqual({ ok: false, problem: "unknown_placeholder" })
   })
 
   it("refuses a placeholder that does not exist", () => {
@@ -235,6 +254,8 @@ describe("fillText: numbers only from the server", () => {
     expect(fillText("Qualcuno scrive «pesa sui team piccoli».", values, allowed).ok).toBe(true)
     expect(fillText("Chiedono “Esportare in PDF”.", values, allowed).ok).toBe(true)
     expect(fillText('Dicono "costa un occhio".', values, allowed)).toEqual({ ok: false, problem: "quote_not_in_data" })
+    expect(fillText("Dicono „costa un occhio“.", values, allowed)).toEqual({ ok: false, problem: "quote_not_in_data" })
+    expect(fillText("Dicono ‹costa un occhio›.", values, allowed)).toEqual({ ok: false, problem: "quote_not_in_data" })
   })
 
   it("refuses an empty sentence", () => {
@@ -401,6 +422,18 @@ describe("checkReport", () => {
     expect(() => checkReport(raw({ decisions: [{ decision: "X", why: "Y", evidence: [] }] }), source())).toThrow(
       "report_incomplete"
     )
+  })
+
+  it("checks the reasoning of a verdict like its own texts, and leaves it out when it has a number or an unverified quote", () => {
+    const s = source()
+    s.hypotheses[0] = { ...s.hypotheses[0], verdict: { ...s.hypotheses[0].verdict!, reasoning: "La maggior parte, 12 su 40, lo dice." } }
+    s.hypotheses[1] = { ...s.hypotheses[1], verdict: { value: "to_review", reasoning: 'Qualcuno scrive "mai più".', supporting: 0, contradicting: 0, feedbackRead: 40 } }
+    const { content, issues } = checkReport(raw(), s)
+    expect(content.hypotheses.map((h) => h.reasoning)).toEqual([null, null])
+    expect(issues).toEqual([
+      { part: "hypotheses", problem: "number_outside_placeholder", detail: 1 },
+      { part: "hypotheses", problem: "quote_not_in_data", detail: 2 },
+    ])
   })
 
   it("shows as to review a verdict with no link on either side, as the Sintesi does", () => {

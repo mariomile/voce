@@ -131,7 +131,24 @@ export type ReportContent = {
   decisions: { title: string; why: string; evidence: ReportEvidence[] }[]
 }
 
-export type ReportIssue = { part: "summary" | "findings" | "limits" | "decisions"; problem: string; detail?: number }
+// A report left without an answer, a finding or a decision after the checks. runReport adds what the call
+// produced, so the log keeps the output, the issues and the cost of a report that does not count.
+export class ReportRejected extends Error {
+  raw?: RawReport
+  inputTokens?: number
+  outputTokens?: number
+  costUsd?: number | null
+  constructor(readonly issues: ReportIssue[]) {
+    super("report_incomplete")
+    this.name = "ReportRejected"
+  }
+}
+
+export type ReportIssue = {
+  part: "summary" | "findings" | "limits" | "decisions" | "hypotheses"
+  problem: string
+  detail?: number
+}
 
 // ===== Numbers =====
 
@@ -165,11 +182,27 @@ export function reportValues(source: ReportSource): Record<string, string> {
 
 // Spans between quotation marks ("...", “...”, «...»).
 function quotedSpans(text: string) {
-  return [...text.matchAll(/"([^"]+)"|“([^”]+)”|«([^»]+)»/g)].map((m) => (m[1] ?? m[2] ?? m[3]).trim())
+  return [...text.matchAll(/"([^"]+)"|“([^”]+)”|«([^»]+)»|„([^“”]+)[“”]|‹([^›]+)›/g)].map((m) =>
+    (m[1] ?? m[2] ?? m[3] ?? m[4] ?? m[5]).trim()
+  )
 }
 
-// A number the model wrote: digits not glued to letters ("27", "3,5", "2026"; not "2FA" or "B2B").
+// A number the model wrote: digits not glued to letters ("27", "3,5", "2026").
 const FREE_NUMBER = /(?<![\p{L}\p{N}])\p{N}+(?:[.,]\p{N}+)*(?![\p{L}\p{N}])/u
+// A word with digits and letters ("2FA", "B2B", "3x", "24h"): only as the data writes it.
+const DIGIT_WORD = /[\p{L}\p{N}]*\p{N}[\p{L}\p{N}]*/gu
+// Two placeholders side by side ("{T1.count}{T2.count}", "{T1.count},{T2.count}") make a number nobody computed.
+const GLUED_PLACEHOLDERS = /\}[\s.,]*\{|\p{N}\{|\}[.,]?\p{N}/u
+// A count or a share in words: "nove su dieci", "novanta per cento", "la metà di", "a third". "Le due ragioni",
+// pointing back to things the sentence names, is not a count of the data.
+const COUNT_WORD =
+  "(?:un[oa]?|due|tre|quattro|cinque|sei|sette|otto|nove|dieci|venti|trenta|quaranta|cinquanta|sessanta|settanta|ottanta|novanta|cento|one|two|three|four|five|six|seven|eight|nine|ten|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred)"
+const NUMBER_IN_WORDS = new RegExp(
+  `(?<!\\p{L})(?:${COUNT_WORD}\\s+(?:\\p{L}+\\s+){0,2}(?:su|out\\s+of)\\s+${COUNT_WORD}|${COUNT_WORD}\\s+(?:per\\s?cento|percento|percent)|metà\\s+(?:di|dei|degli|delle|del)|half\\s+of|un\\s+(?:terzo|quarto)|a\\s+(?:third|quarter))(?!\\p{L})`,
+  "iu"
+)
+const containsWord = (texts: string[], word: string) =>
+  texts.some((t) => new RegExp(`(?<![\\p{L}\\p{N}])${word}(?![\\p{L}\\p{N}])`, "u").test(t))
 const PLACEHOLDER = /\{([^{}]*)\}/g
 // The id of a theme or a hypothesis (T1, H2) written as text: the reader of the report never sees them.
 const DATA_ID = /(?<![\p{L}\p{N}])[TH]\p{N}+(?![\p{L}\p{N}])/u
@@ -185,13 +218,17 @@ export function fillText(
   if (!clean) return { ok: false, problem: "empty" }
   let unknown = false
   const withoutPlaceholders = clean.replace(PLACEHOLDER, (_, key: string) => {
-    if (!(key.trim() in values) || key !== key.trim()) unknown = true
+    if (!Object.hasOwn(values, key)) unknown = true
     return " "
   })
   if (unknown) return { ok: false, problem: "unknown_placeholder" }
   if (/[{}]/.test(withoutPlaceholders)) return { ok: false, problem: "stray_brace" }
   if (DATA_ID.test(withoutPlaceholders)) return { ok: false, problem: "id_in_text" }
-  if (FREE_NUMBER.test(withoutPlaceholders)) return { ok: false, problem: "number_outside_placeholder" }
+  if (FREE_NUMBER.test(withoutPlaceholders) || GLUED_PLACEHOLDERS.test(clean))
+    return { ok: false, problem: "number_outside_placeholder" }
+  if ((withoutPlaceholders.match(DIGIT_WORD) ?? []).some((word) => !containsWord(allowedQuotes, word)))
+    return { ok: false, problem: "number_outside_placeholder" }
+  if (NUMBER_IN_WORDS.test(withoutPlaceholders)) return { ok: false, problem: "number_in_words" }
   if (quotedSpans(clean).some((span) => !allowedQuotes.some((allowed) => allowed.includes(span))))
     return { ok: false, problem: "quote_not_in_data" }
   const filled = clean.replace(PLACEHOLDER, (_, key: string) => values[key]).replace(/%\s?%/g, "%")
@@ -329,6 +366,12 @@ export function checkReport(raw: RawReport, source: ReportSource) {
     return result.ok ? result.text : null
   }
 
+  const checkedReasoning = (reasoning: string, index: number) => {
+    const result = fillText(reasoning, {}, allowedQuotes)
+    if (!result.ok) issues.push({ part: "hypotheses", problem: result.problem, detail: index + 1 })
+    return result.ok ? result.text : null
+  }
+
   const summary = raw.summary.flatMap((s, i) => fill(s, "summary", i) ?? []).slice(0, MAX_SUMMARY)
 
   const themeById = new Map(source.themes.map((t, i) => [themeId(i), t]))
@@ -393,10 +436,11 @@ export function checkReport(raw: RawReport, source: ReportSource) {
     synthesis: { createdAt: source.synthesis.createdAt, feedbackRead: source.synthesis.feedbackRead },
     summary,
     findings: findings.slice(0, MAX_FINDINGS),
-    hypotheses: source.hypotheses.map((h) => ({
+    hypotheses: source.hypotheses.map((h, i) => ({
       text: h.text,
       verdict: shownVerdict(h),
-      reasoning: h.verdict?.reasoning ?? null,
+      // Written by the verdict call, which already forbids counts: checked here like the report's own texts.
+      reasoning: h.verdict ? checkedReasoning(h.verdict.reasoning, i) : null,
       supporting: h.verdict?.supporting ?? 0,
       contradicting: h.verdict?.contradicting ?? 0,
       feedbackRead: h.verdict?.feedbackRead ?? 0,
@@ -407,7 +451,7 @@ export function checkReport(raw: RawReport, source: ReportSource) {
     decisions: decisions.slice(0, MAX_DECISIONS),
   }
   if (content.summary.length < MIN_SUMMARY || content.findings.length === 0 || content.decisions.length === 0) {
-    throw new Error("report_incomplete")
+    throw new ReportRejected(issues)
   }
   return { content, issues }
 }
@@ -484,12 +528,11 @@ export async function runReport({
   const { inputTokens, outputTokens } = result.usage
   checkFinished(result.finishReason, outputTokens)
   const raw = result.output
-  return {
-    raw,
-    ...checkReport(raw, source),
-    inputTokens,
-    outputTokens,
-    durationMs,
-    costUsd: estimateCost(modelId, inputTokens, outputTokens),
+  const costUsd = estimateCost(modelId, inputTokens, outputTokens)
+  try {
+    return { raw, ...checkReport(raw, source), inputTokens, outputTokens, durationMs, costUsd }
+  } catch (error) {
+    if (error instanceof ReportRejected) Object.assign(error, { raw, inputTokens, outputTokens, costUsd })
+    throw error
   }
 }

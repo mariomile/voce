@@ -290,8 +290,24 @@ describe("generateReport", () => {
       expect(await generateReport(user.researchId)).toEqual({ ok: false, reason: "failed" })
     }
     expect(await getLatestReport({ id: user.researchId, workspaceId: user.workspaceId })).toBeNull()
-    const { data } = await admin.from("analyses").select("status").eq("workspace_id", user.workspaceId).eq("kind", "report")
-    expect(data).toEqual([{ status: "failed" }, { status: "failed" }])
+    const { data } = await admin
+      .from("analyses")
+      .select("status, created_at, analysis_runs (output, issues, output_tokens, cost_usd, error)")
+      .eq("workspace_id", user.workspaceId)
+      .eq("kind", "report")
+      .order("created_at")
+    expect(data!.map((a) => a.status)).toEqual(["failed", "failed"])
+    // The report left without findings keeps what the model wrote, why it was refused, and what it cost.
+    expect(data![1].analysis_runs).toMatchObject({
+      output: { findings: [{ theme: "T9" }] },
+      issues: [
+        { part: "summary", problem: "number_outside_placeholder", detail: 3 },
+        { part: "findings", problem: "unknown_theme", detail: 1 },
+      ],
+      output_tokens: 3_000,
+      cost_usd: 0.054,
+      error: "ReportRejected: report_incomplete",
+    })
     expect((await getUsage(user.workspaceId, new Date())).analysesThisMonth).toBe(before.analysesThisMonth)
     expect(analytics.trackEvent).not.toHaveBeenCalledWith(user.workspaceId, expect.objectContaining({ event: "report_generated" }))
   })

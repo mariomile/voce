@@ -44,7 +44,8 @@ export function reportMarkdown(report: LatestReport, t: ReportT) {
   const quote = (feedbackId: string, highlight: string, prefix = "") => {
     const f = feedback[feedbackId]
     if (!f) return []
-    const parts = quoteParts(f.text, highlight)
+    // One line: a feedback with line breaks would leave the blockquote, or add headings to the memo.
+    const parts = quoteParts(f.text.replace(/\s*\n\s*/g, " "), highlight.replace(/\s*\n\s*/g, " "))
     return [`> ${prefix}“${parts.before}${parts.highlight}${parts.after}” (${t("quoteSource", { channel: f.channel, date: date(f.receivedAt) })})`, ""]
   }
   const lines = [
@@ -104,7 +105,7 @@ export function reportMarkdown(report: LatestReport, t: ReportT) {
     "",
     "---",
     "",
-    `_${t("footer", { date: date(report.createdAt), count: report.feedbackCount })}_`
+    `_${t("footer", { date: date(report.createdAt), count: content.synthesis.feedbackRead })}_`
   )
   return lines.join("\n")
 }

@@ -35,11 +35,13 @@ export default async function ReportPage({ params }: PageProps<"/research/[id]/r
   const path = `/research/${research.id}`
   const source = report ? null : await getReportSource(research)
 
+  // No synthesis yet, or one whose themes were all discarded or emptied: the report has nothing to start from.
+  const empty = source ? "noThemes" : "noSynthesis"
   if (!report && (!source || source.themes.length === 0))
     return (
       <div className="py-6">
-        <h2 className="mb-4 max-w-[24ch] font-serif text-5xl leading-snug font-normal tracking-snug">{t("noSynthesis.title")}</h2>
-        <p className="mb-8 max-w-[58ch] text-lg leading-relaxed text-ink-muted">{t("noSynthesis.text")}</p>
+        <h2 className="mb-4 max-w-[24ch] font-serif text-5xl leading-snug font-normal tracking-snug">{t(`${empty}.title`)}</h2>
+        <p className="mb-8 max-w-[58ch] text-lg leading-relaxed text-ink-muted">{t(`${empty}.text`)}</p>
         <Link href={path} className={buttonVariants()}>
           {t("noSynthesis.action")}
         </Link>

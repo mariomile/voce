@@ -134,7 +134,7 @@ export function ReportDocument({ report, t }: { report: LatestReport; t: ReportT
       </Section>
 
       <p className="mt-12 max-w-[72ch] border-t border-line pt-4 text-sm text-ink-muted">
-        {t("footer", { date: date(report.createdAt), count: report.feedbackCount })}
+        {t("footer", { date: date(report.createdAt), count: content.synthesis.feedbackRead })}
       </p>
     </article>
   )

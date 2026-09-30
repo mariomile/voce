@@ -50,8 +50,8 @@ grant select on public.research_reports to authenticated;
 -- On a 'report' row of analyses still running: fails with research_deleted when its Research is gone, with
 -- invalid_source when source is not a done themes analysis of the same Research. content: the report already
 -- checked by the server; its quotes ($.findings[*].quotes[*] and $.hypotheses[*].quotes[*], each
--- {"feedbackId", "highlight"}) are checked again against the saved feedback text: a quote not in its feedback,
--- or of a feedback of another Research, fails the save (quote_not_in_feedback). A feedback deleted meanwhile is
+-- {"feedbackId", "highlight"}) are checked again against the saved feedback text: a quote without either key, not
+-- in its feedback, or of a feedback of another Research, fails the save (quote_not_in_feedback). A feedback deleted meanwhile is
 -- skipped: the report leaves it out when it is shown. run: {"output", "issues", "input_tokens",
 -- "output_tokens", "duration_ms", "cost_usd"}. Returns the id of the report. One transaction.
 create function public.finish_report(
@@ -84,6 +84,21 @@ begin
     where s.id = source and s.workspace_id = ws and s.research_id = res and s.kind = 'themes' and s.status = 'done'
   ) then
     raise exception 'invalid_source' using errcode = '22023';
+  end if;
+
+  -- Every quote names a feedback and a phrase.
+  if exists (
+    select 1
+    from (
+      select q.value from jsonb_path_query(content, '$.findings[*].quotes[*]') q(value)
+      union all
+      select q.value from jsonb_path_query(content, '$.hypotheses[*].quotes[*]') q(value)
+    ) quote
+    where jsonb_typeof(quote.value) <> 'object'
+      or coalesce(quote.value ->> 'feedbackId', '') = ''
+      or coalesce(quote.value ->> 'highlight', '') = ''
+  ) then
+    raise exception 'quote_not_in_feedback' using errcode = '22023';
   end if;
 
   -- The server checked the quotes against the texts it sent. Check again against the saved texts.

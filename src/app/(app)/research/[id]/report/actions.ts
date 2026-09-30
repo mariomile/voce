@@ -7,7 +7,7 @@ import { analysisLanguageModel, analysisModel, estimateCost } from "@/lib/analys
 import { trackEvent } from "@/lib/analytics"
 import { getReportSource, getResearch } from "@/lib/data"
 import { isoDateOf } from "@/lib/format"
-import { buildReportPrompt, reportInstructions, runReport } from "@/lib/report"
+import { buildReportPrompt, ReportRejected, reportInstructions, runReport } from "@/lib/report"
 import { failAnalysis, finishReport, startAnalysis } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
 
@@ -51,33 +51,42 @@ export async function generateReport(researchId: string): Promise<ReportResult> 
   const analysisId = start.analyses.report!
 
   const started = performance.now()
+  // Kept for the log when the save fails after the model answered.
+  let result: Awaited<ReturnType<typeof runReport>> | null = null
   try {
-    const result = await runReport({ model: analysisLanguageModel(), modelId, source, locale })
+    result = await runReport({ model: analysisLanguageModel(), modelId, source, locale })
     await finishReport({
       analysisId,
       sourceAnalysisId: source.synthesis.analysisId,
       locale,
       content: result.content,
       feedbackCount: source.feedbackTotal,
-      run: {
-        output: result.raw,
-        issues: result.issues,
-        input_tokens: result.inputTokens,
-        output_tokens: result.outputTokens,
-        duration_ms: result.durationMs,
-        cost_usd: result.costUsd,
-      },
+      run: runLog(result),
     })
   } catch (error) {
     // Only the error name reaches the logs: messages can carry feedback text.
     console.error(`Report ${analysisId} failed:`, error instanceof Error ? error.name : "unknown")
     const failed = NoObjectGeneratedError.isInstance(error) ? error : null
+    const rejected = error instanceof ReportRejected ? error : null
+    const run = result
+      ? runLog(result)
+      : rejected
+        ? {
+            output: rejected.raw,
+            issues: rejected.issues,
+            input_tokens: rejected.inputTokens,
+            output_tokens: rejected.outputTokens,
+            cost_usd: rejected.costUsd,
+          }
+        : {
+            output: failed?.text ?? null,
+            input_tokens: failed?.usage?.inputTokens,
+            output_tokens: failed?.usage?.outputTokens,
+            cost_usd: failed ? estimateCost(modelId, failed.usage?.inputTokens, failed.usage?.outputTokens) : null,
+          }
     await failAnalysis(analysisId, errorMessage(error), {
-      output: failed?.text ?? null,
-      input_tokens: failed?.usage?.inputTokens,
-      output_tokens: failed?.usage?.outputTokens,
+      ...run,
       duration_ms: Math.round(performance.now() - started),
-      cost_usd: failed ? estimateCost(modelId, failed.usage?.inputTokens, failed.usage?.outputTokens) : null,
     }).catch(() => {
       // The report stays "running" and is closed as stale after 10 minutes.
       console.error(`Report ${analysisId} could not be marked as failed`)
@@ -95,6 +104,17 @@ export async function generateReport(researchId: string): Promise<ReportResult> 
   })
   revalidatePath(`/research/${research.id}/report`)
   return { ok: true }
+}
+
+function runLog(result: Awaited<ReturnType<typeof runReport>>) {
+  return {
+    output: result.raw,
+    issues: result.issues,
+    input_tokens: result.inputTokens,
+    output_tokens: result.outputTokens,
+    duration_ms: result.durationMs,
+    cost_usd: result.costUsd,
+  }
 }
 
 // A database error (research_deleted, quote_not_in_feedback) comes as a plain object with a message.

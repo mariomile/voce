@@ -38,6 +38,10 @@
       "session": "La sessione è scaduta. Accedi di nuovo per generare il report.",
       "sessionLink": "Accedi",
       "network": "Non riesco a raggiungere Voce. Se il report era già partito, compare qui quando è pronto: ricarica la pagina tra un minuto."
+    },
+    "noThemes": {
+      "title": "La sintesi non ha temi da mettere nel report.",
+      "text": "I temi dell'ultima sintesi sono stati scartati o non hanno più feedback. Analizza di nuovo nella Sintesi, poi torna qui."
     }
   },
   "document": {
@@ -85,7 +89,7 @@
     "evidenceTheme": "{title}: {count} feedback",
     "evidenceHypothesis": "{text}: {verdict}",
     "quoteSource": "{channel}, {date}",
-    "footer": "Generato da Voce il {date} su {count} feedback della Research. I numeri li calcola Voce dai dati; le citazioni sono verificate parola per parola sui feedback.",
+    "footer": "Generato da Voce il {date} dai {count} feedback letti dalla sintesi. I numeri li calcola Voce dai dati; le citazioni sono verificate parola per parola sui feedback.",
     "markdownTitle": "Report: {question}"
   }
 }
