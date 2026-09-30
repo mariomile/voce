@@ -70,6 +70,7 @@ test("/f/phc26 stays in Italian for an English browser that chose English", asyn
       await expect(phone.getByRole("heading", { name: /^Cosa vuoi dire al team di / })).toBeVisible()
       // Validation, submission and the success state stay Italian too.
       await phone.getByLabel("Il tuo feedback").fill("Il report in PDF mi serve ogni mese.")
+      await phone.getByRole("button", { name: "Vuoi essere ricontattato? Lascia la tua email" }).click()
       await phone.getByLabel(/^Email/).fill("non-una-email")
       await phone.getByRole("button", { name: "Invia" }).click()
       await expect(phone.getByText("Questa email sembra incompleta. Correggila o lasciala vuota.")).toBeVisible()

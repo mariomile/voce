@@ -18,7 +18,11 @@ export default defineConfig({
     locale: "it-IT",
     trace: "retain-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    // The public form is opened on phones: its mobile test also runs in Safari's engine, with an iPhone profile.
+    { name: "webkit-iphone", use: { ...devices["iPhone 14"] }, testMatch: /public-form-mobile\.spec\.ts/ },
+  ],
   webServer: [
     {
       command: "node e2e/fake-anthropic.mts",

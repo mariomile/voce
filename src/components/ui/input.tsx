@@ -11,7 +11,8 @@ const inputVariants = cva(
       variant: {
         default:
           "rounded-sm bg-veil px-3 py-2 aria-invalid:shadow-[inset_0_0_0_1.5px_var(--color-problem)]",
-        line: "rounded-none border-b-[1.5px] border-line bg-transparent px-0 py-2 focus:border-ink aria-invalid:border-problem",
+        // Like the line textarea: the focus is the line turning ink. 44 px tall, a comfortable tap.
+        line: "rounded-none border-b-2 border-line bg-transparent px-0 py-2.5 placeholder:text-ink-muted focus:border-ink focus-visible:outline-none aria-invalid:border-problem",
       },
     },
     defaultVariants: { variant: "default" },
