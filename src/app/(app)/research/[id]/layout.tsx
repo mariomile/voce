@@ -43,7 +43,7 @@ export default async function ResearchLayout({ children, params }: LayoutProps<"
       </header>
       <AppTabs
         label={t("tabs.label")}
-        className="mb-10 flex h-12 gap-6 border-b border-line"
+        className="mb-10 flex h-12 gap-6 overflow-x-auto border-b border-line"
         tabs={[
           // The Sintesi holds the themes: it stays current on the page of a theme.
           { href: path, label: t("tabs.synthesis"), exact: true, also: [`${path}/themes/`] },
