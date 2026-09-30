@@ -8,9 +8,10 @@ import { createServer } from "node:http"
 // with LENTA gets its answer after 20 seconds. It answers every verdict (a prompt with <hypotheses_data>)
 // by confirming each hypothesis with the first feedback, linked and quoted in full, so the output passes
 // the checks in src/lib/verdict.ts; a hypothesis with FUORI_SCHEMA gets text that is not JSON for the whole
-// verdict. It answers every report (a prompt with <report_data>) with the three biggest themes, each quoting the
-// start of its first quoted feedback, numbers only as placeholders, and one decision on the first theme, so the
-// output passes the checks in src/lib/report.ts. No real model is ever called.
+// verdict, and so do the themes of feedback with TEMI_FUORI_SCHEMA. It answers every report (a prompt with
+// <report_data>) with the three biggest themes, each quoting the start of its first quoted feedback, numbers only
+// as placeholders, and one decision on the first theme, so the output passes the checks in src/lib/report.ts.
+// No real model is ever called.
 // Both calls ask for structured output (output_config.format): a request without it is rejected,
 // so the test notices if the provider stops sending the schema.
 // GET /calls?marker=X counts how many prompts received so far contain X: how a test proves the
@@ -142,7 +143,9 @@ createServer((req, res) => {
     const question = text.match(/<question_data>([\s\S]*)<\/question_data>/)?.[1] ?? ""
     const hypotheses = text.match(/<hypotheses_data>([\s\S]*)<\/hypotheses_data>/)?.[1] ?? ""
     const output =
-      question.includes("FUORI_SCHEMA") || hypotheses.includes("FUORI_SCHEMA")
+      question.includes("FUORI_SCHEMA") ||
+      hypotheses.includes("FUORI_SCHEMA") ||
+      (!question && !hypotheses && text.includes("TEMI_FUORI_SCHEMA"))
         ? "Ecco la risposta, senza JSON."
         : JSON.stringify(
             question

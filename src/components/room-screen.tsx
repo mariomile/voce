@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition, type 
 import Link from "next/link"
 import { cn } from "cn"
 import { useLocale, useTranslations } from "next-intl"
-import { roomThemes } from "@/app/research/[id]/sala/actions"
+import { roomThemes, roomVerdicts } from "@/app/research/[id]/sala/actions"
 import { synthesize } from "@/app/(app)/research/[id]/actions"
 import { failureMessage, type AnalysisFailure } from "@/components/analyze-button"
 import { Logo } from "@/components/logo"
@@ -12,7 +12,7 @@ import { RoomDots } from "@/components/room-dots"
 import { Badge } from "@/components/ui/badge"
 import type { Locale } from "@/i18n/locale"
 import { formatNumber } from "@/lib/format"
-import type { RoomStatus, RoomTheme } from "@/lib/room"
+import type { RoomStatus, RoomTheme, RoomVerdict } from "@/lib/room"
 import {
   dotOrderByX,
   LABEL_DELAY,
@@ -34,17 +34,27 @@ const LONG_QUESTION = 70
 // The live status, plus "deleted" once /sala/status answers 404: the Research is gone (R1).
 type ScreenStatus = { responses: number; form: RoomStatus["form"] | "deleted" }
 
-// The themes, the count when they arrived, and the pile's dots from left to right at that moment.
-type Analysis = { themes: RoomTheme[]; responses: number; order: number[] }
+// The verdict of this click: the hypotheses with their verdict, or why it did not come (failed, or only one
+// analysis was left in the month and it went to the themes).
+export type VerdictOutcome = { state: "done"; hypotheses: RoomVerdict[] } | { state: "failed" | "limit" }
+// The themes (none when they failed or none is open, with a verdict), the count when they arrived, the
+// pile's dots from left to right at that moment, and the verdict, null when the Research has no hypotheses.
+type Analysis = {
+  themes: RoomTheme[]
+  themesFailed: boolean
+  responses: number
+  order: number[]
+  verdict: VerdictOutcome | null
+}
 type Failure = AnalysisFailure | "no_open_themes"
-type View = "bubbles" | "list"
+type View = "bubbles" | "list" | "verdict"
 // The act on screen: the pile, with the last analysis failure if any, or the themes.
 type Screen = { act: "pile"; failure: Failure | null } | { act: "themes"; analysis: Analysis; view: View }
 
 // Kit: the landing's poster scale, classes l-* and room-* in src/app/landing.css.
-// Shows counts and theme titles only: no feedback text ever reaches this component.
-// Two acts on one canvas (room-dots.tsx): each response is a dot that falls onto the pile above
-// the count; the analysis sorts the dots into one bubble per theme.
+// Shows counts, theme titles, and the PM's hypotheses with the word of their verdict: no feedback text ever
+// reaches this component. Two acts on one canvas (room-dots.tsx): each response is a dot that falls onto
+// the pile above the count; the analysis sorts the dots into one bubble per theme.
 export function RoomScreen({
   researchId,
   workspaceName,
@@ -62,7 +72,7 @@ export function RoomScreen({
   qrCode: ReactNode
   initialStatus: RoomStatus
   limitNote?: string
-  // "Analizza le risposte" runs the themes alone: the screen says where the verdict is.
+  // "Analizza le risposte" also runs the verdict of the hypotheses: the pile says so.
   hasHypotheses: boolean
 }) {
   const status = useRoomStatus(initialStatus, `/research/${researchId}/sala/status`)
@@ -104,19 +114,34 @@ export function RoomScreen({
     if (pending || limitNote || status.responses === 0) return
     setScreen({ act: "pile", failure: null })
     startTransition(async () => {
-      const result = await synthesize(researchId, "room")
+      // The same analysis as the Sintesi: the themes and, with hypotheses, their verdict.
+      const result = await synthesize(researchId)
       if (!result.ok) return setScreen({ act: "pile", failure: result.reason })
-      const themes = await roomThemes(researchId)
+      // Never the themes of before: without this click's themes (they failed, or none is open) the verdict
+      // shows alone, and without a verdict either the pile says why.
+      const themesDone = result.themes === "done"
+      const themes = themesDone ? await roomThemes(researchId) : []
+      const verdict: VerdictOutcome | null =
+        result.verdict === "skipped"
+          ? null
+          : result.verdict === "done"
+            ? { state: "done", hypotheses: await roomVerdicts(researchId) }
+            : { state: result.verdict }
+      if (themes.length === 0 && verdict?.state !== "done") {
+        return setScreen({ act: "pile", failure: themesDone ? "no_open_themes" : result.themes === "no_themes" ? "no_themes" : "failed" })
+      }
       const responses = responsesRef.current
-      setScreen(
-        themes.length === 0
-          ? { act: "pile", failure: "no_open_themes" }
-          : {
-              act: "themes",
-              view: "bubbles",
-              analysis: { themes, responses, order: dotOrderByX(placesRef.current?.points.slice(0, responses) ?? []) },
-            }
-      )
+      setScreen({
+        act: "themes",
+        view: themes.length === 0 ? "verdict" : "bubbles",
+        analysis: {
+          themes,
+          themesFailed: !themesDone,
+          responses,
+          order: dotOrderByX(placesRef.current?.points.slice(0, responses) ?? []),
+          verdict,
+        },
+      })
     })
   }
 
@@ -128,7 +153,7 @@ export function RoomScreen({
         screen.act === "themes" ? "bg-paper" : "bg-highlight"
       )}
     >
-      <RoomDots scene={scene} alive={pending} hidden={screen.act === "themes" && screen.view === "list"} />
+      <RoomDots scene={scene} alive={pending} hidden={screen.act === "themes" && screen.view !== "bubbles"} />
 
       {screen.act === "themes" ? (
         <ThemesView
@@ -137,6 +162,10 @@ export function RoomScreen({
           groups={groups}
           labels={layout?.labels ?? null}
           responses={status.responses}
+          verdict={screen.analysis.verdict}
+          themesNote={
+            screen.analysis.themes.length > 0 ? null : screen.analysis.themesFailed ? "themesFailed" : "noOpenThemes"
+          }
           view={screen.view}
           onView={(view) => setScreen({ ...screen, view })}
           onBack={() => setScreen({ act: "pile", failure: null })}
@@ -405,6 +434,8 @@ function ThemesView({
   groups,
   labels,
   responses,
+  verdict,
+  themesNote,
   view,
   onView,
   onBack,
@@ -415,6 +446,9 @@ function ThemesView({
   groups: RoomGroup[]
   labels: Label[] | null
   responses: number
+  verdict: VerdictOutcome | null
+  // Why the verdict shows without themes.
+  themesNote: "themesFailed" | "noOpenThemes" | null
   view: View
   onView: (view: View) => void
   onBack: () => void
@@ -431,26 +465,40 @@ function ThemesView({
   return (
     <>
       <RoomHeader workspaceName={workspaceName} exitHref={collectHref} onPaper>
-        <div className="flex items-center rounded-full border border-line p-[0.2em]" role="group" aria-label={t("themesView.modeGroupLabel")}>
-          <button type="button" aria-pressed={view === "bubbles"} onClick={() => onView("bubbles")} className={toggle}>
-            {t("themesView.bubbles")}
-          </button>
-          <button type="button" aria-pressed={view === "list"} onClick={() => onView("list")} className={toggle}>
-            {t("themesView.list")}
-          </button>
-        </div>
+        {!themesNote && (
+          <div className="flex items-center rounded-full border border-line p-[0.2em]" role="group" aria-label={t("themesView.modeGroupLabel")}>
+            <button type="button" aria-pressed={view === "bubbles"} onClick={() => onView("bubbles")} className={toggle}>
+              {t("themesView.bubbles")}
+            </button>
+            <button type="button" aria-pressed={view === "list"} onClick={() => onView("list")} className={toggle}>
+              {t("themesView.list")}
+            </button>
+            {verdict && (
+              <button type="button" aria-pressed={view === "verdict"} onClick={() => onView("verdict")} className={toggle}>
+                {t("themesView.verdict")}
+              </button>
+            )}
+          </div>
+        )}
         <button type="button" onClick={onBack} className="room-lede font-extrabold underline underline-offset-4">
           {t("themesView.back")}
         </button>
       </RoomHeader>
       <div className="l-wrap flex flex-wrap items-end justify-between gap-x-[3vw] gap-y-2 pb-[2svh]">
         <h1 ref={heading} tabIndex={-1} className="room-panel-title outline-none">
-          {t("themesView.heading")}
+          {view === "verdict" ? t("verdictView.heading") : t("themesView.heading")}
         </h1>
-        <p className="room-lede text-ink">{themesSummary(responses, themes, t, tCommon, locale)}</p>
+        {view !== "verdict" && <p className="room-lede text-ink">{themesSummary(responses, themes, t, tCommon, locale)}</p>}
+        {themesNote && (
+          <p className="room-lede max-w-[40ch] text-ink">
+            {themesNote === "themesFailed" ? t("verdictView.themesFailed") : t("pile.noOpenThemes")}
+          </p>
+        )}
       </div>
 
-      {view === "bubbles" ? (
+      {view === "verdict" && verdict ? (
+        <VerdictView verdict={verdict} />
+      ) : view === "bubbles" ? (
         <div className="l-wrap flex flex-1 flex-col pb-[3svh]">
           <div ref={stageRef} className="relative min-h-0 flex-1">
             {labels && (
@@ -536,5 +584,52 @@ function ThemeLabel({
         <p className={bubble ? "room-bubble-title" : "room-theme-title"}>{title}</p>
       </div>
     </>
+  )
+}
+
+// The word of a verdict with its sign, as in the Sintesi: ink, no colour, the sign is decorative.
+const VERDICT_WORDS = {
+  confirmed: { sign: "✓", key: "confirmed" },
+  refuted: { sign: "✕", key: "refuted" },
+  to_review: { sign: "?", key: "toReview" },
+} as const
+
+// Act 2, third view: each hypothesis the PM wrote, then the word of its verdict and the counts. Never the
+// reasoning or the quotes, which are feedback text; without this click's verdict, why.
+export function VerdictView({ verdict }: { verdict: VerdictOutcome }) {
+  const t = useTranslations("room.verdictView")
+  const tVerdict = useTranslations("research.verdict")
+  const locale = useLocale()
+  if (verdict.state !== "done" || verdict.hypotheses.length === 0) {
+    return (
+      <div className="l-wrap flex flex-1 flex-col justify-center py-[2svh]">
+        <p className="room-theme-title max-w-[28ch]">{t(verdict.state === "done" ? "none" : verdict.state)}</p>
+      </div>
+    )
+  }
+  // One hypothesis, the usual case on stage, is the punchline: its word at poster scale, the counts under it.
+  const single = verdict.hypotheses.length === 1
+  const n = (count: number) => formatNumber(count, locale)
+  return (
+    <ol className="l-wrap flex flex-1 flex-col justify-center py-[2svh]">
+      {verdict.hypotheses.map((h) => {
+        const word = VERDICT_WORDS[h.verdict]
+        return (
+          <li key={h.id} className="flex flex-col gap-[1.6svh] border-b border-line py-[2.4svh] last:border-b-0">
+            <p className="room-theme-title max-w-[40ch] wrap-anywhere">{h.text}</p>
+            <p className={cn("flex gap-x-[2vw] gap-y-[1svh]", single ? "flex-col" : "flex-wrap items-baseline")}>
+              <span className={single ? "room-verdict" : "room-panel-title"}>
+                <span aria-hidden="true">{word.sign}</span> {tVerdict(word.key)}
+              </span>
+              <span className={single ? "room-theme-title" : "room-lede text-ink"}>
+                {h.supporting + h.contradicting > 0
+                  ? tVerdict("counts", { supporting: n(h.supporting), contradicting: n(h.contradicting), read: n(h.feedbackRead) })
+                  : tVerdict("noEvidence", { read: n(h.feedbackRead) })}
+              </span>
+            </p>
+          </li>
+        )
+      })}
+    </ol>
   )
 }

@@ -26,15 +26,23 @@
     "theme": "{count, plural, one {tema} other {temi}}"
   },
   "themesView": {
-    "modeGroupLabel": "Come mostrare i temi",
+    "modeGroupLabel": "Cosa mostrare",
     "bubbles": "Bolle",
     "list": "Elenco",
+    "verdict": "Verdetto",
     "back": "Torna al QR code",
     "heading": "Cosa dice la sala",
     "summary": "{responses}, {themes}: {kinds}.",
     "other": "Altro"
   },
-  "hypothesesNote": "Il verdetto delle ipotesi lo trovi nella Research.",
+  "hypothesesNote": "Con i temi arriva anche il verdetto delle ipotesi.",
+  "verdictView": {
+    "heading": "Il verdetto",
+    "failed": "Il verdetto non è arrivato e non conta nel limite del mese. Si rifà dalla Research, con «Solo il verdetto».",
+    "limit": "Era rimasta una sola analisi del mese ed è andata ai temi: il verdetto non è stato fatto.",
+    "none": "Nessuna ipotesi ha ricevuto un verdetto. I dettagli sono nella Research.",
+    "themesFailed": "I temi non sono arrivati e non contano nel limite del mese: il verdetto sì."
+  },
   "deleted": {
     "title": "Questa Research non c'è più.",
     "text": "Il modulo non accetta risposte.",

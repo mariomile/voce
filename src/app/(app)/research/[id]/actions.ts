@@ -28,7 +28,7 @@ export type VerdictCounts = { confirmed: number; refuted: number; toReview: numb
 const NO_VERDICTS: VerdictCounts = { confirmed: 0, refuted: 0, toReview: 0 }
 
 // The browser sends the mode: anything else is refused before a read or a reservation.
-const synthesizeMode = z.enum(["full", "verdict", "room"])
+const synthesizeMode = z.enum(["full", "verdict"])
 
 export type SynthesizeResult =
   | {
@@ -47,14 +47,13 @@ export type SynthesizeResult =
 
 // One click on "Analizza": the themes of this Research and, when it has hypotheses, their verdict, two model
 // calls that run together. With only 1 analysis left in the month, the themes alone (S4), whatever the page
-// showed. mode "verdict" is "Solo il verdetto": the verdict of every hypothesis, 1 analysis, no themes. mode
-// "room" is "Analizza le risposte" of the room screen: the themes alone, even with hypotheses, because a verdict
-// is never shown on the projector. Reads run as the signed-in user, so RLS limits them to their workspace: a
-// Research of another workspace is not found, and nothing is sent to the model. The database reserves both
-// analyses (quota, one at a time per workspace) before the model is called, and locks the hypotheses until
-// they are closed; the themes and verdicts of before stay until the new ones are saved in full. Used by the
-// Sintesi and by the room screen.
-export async function synthesize(researchId: string, mode: "full" | "verdict" | "room" = "full"): Promise<SynthesizeResult> {
+// showed. mode "verdict" is "Solo il verdetto": the verdict of every hypothesis, 1 analysis, no themes. Reads
+// run as the signed-in user, so RLS limits them to their workspace: a Research of another workspace is not
+// found, and nothing is sent to the model. The database reserves both analyses (quota, one at a time per
+// workspace) before the model is called, and locks the hypotheses until they are closed; the themes and
+// verdicts of before stay until the new ones are saved in full. Used by the Sintesi and, in full mode, by the
+// room screen's "Analizza le risposte".
+export async function synthesize(researchId: string, mode: "full" | "verdict" = "full"): Promise<SynthesizeResult> {
   if (!synthesizeMode.safeParse(mode).success) return { ok: false, reason: "failed" }
   const verdictOnly = mode === "verdict"
   const supabase = await createClient()
@@ -97,9 +96,7 @@ export async function synthesize(researchId: string, mode: "full" | "verdict" | 
     createdAt: f.created_at,
   }))
   if (feedback.length === 0) return { ok: false, reason: "no_feedback" }
-  // The room never runs the verdict: as if the Research had no hypotheses.
-  const hypotheses: VerdictHypothesis[] =
-    mode === "room" ? [] : hypothesisRows.data.map((h) => ({ id: h.id, text: h.text, writtenAt: h.written_at }))
+  const hypotheses: VerdictHypothesis[] = hypothesisRows.data.map((h) => ({ id: h.id, text: h.text, writtenAt: h.written_at }))
   if (verdictOnly && hypotheses.length === 0) return { ok: false, reason: "failed" }
 
   let existingTitles: string[] = []

@@ -26,15 +26,23 @@
     "theme": "{count, plural, one {theme} other {themes}}"
   },
   "themesView": {
-    "modeGroupLabel": "How to show the themes",
+    "modeGroupLabel": "What to show",
     "bubbles": "Bubbles",
     "list": "List",
+    "verdict": "Verdict",
     "back": "Back to the QR code",
     "heading": "What the room is saying",
     "summary": "{responses}, {themes}: {kinds}.",
     "other": "Other"
   },
-  "hypothesesNote": "You'll find the verdict of the hypotheses in the Research.",
+  "hypothesesNote": "The verdict of the hypotheses comes with the themes.",
+  "verdictView": {
+    "heading": "The verdict",
+    "failed": "The verdict didn't come through and doesn't count toward the monthly limit. Run it again from the Research, with “Verdict only”.",
+    "limit": "Only one analysis was left this month and it went to the themes: the verdict wasn't run.",
+    "none": "No hypothesis got a verdict. The details are in the Research.",
+    "themesFailed": "The themes didn't come through and don't count toward the monthly limit: the verdict did."
+  },
   "deleted": {
     "title": "This Research is gone.",
     "text": "The form doesn't accept responses.",

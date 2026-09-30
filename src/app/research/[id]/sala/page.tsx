@@ -19,8 +19,8 @@ export async function generateMetadata(): Promise<Metadata> {
 export const maxDuration = 300
 
 // Projected during a live session: the question of the Research's form, its QR code and the live
-// count, then the themes. Never the text of a feedback, never a verdict: the screen gets counts and theme
-// titles only, and its analysis runs the themes alone.
+// count, then the themes and the verdict of the hypotheses. Never the text of a feedback: the screen gets
+// counts, theme titles, and the PM's hypotheses with the word of their verdict.
 // Outside the app layout: no app bar on the projector.
 export default async function RoomPage({ params }: PageProps<"/research/[id]/sala">) {
   const research = await getResearch((await params).id)

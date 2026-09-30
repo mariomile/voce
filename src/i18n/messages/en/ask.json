@@ -60,7 +60,7 @@
     "writtenAll": "What they wrote",
     "writtenPartial": "What they wrote: {quotes} of {total} feedback",
     "perimeterPartial": "Read the {considered} most recent feedback of this Research, out of {total}: older ones aren't part of the answer.",
-    "of": "out of {count} read",
+    "share": "{percent} of {count} read",
     "readAll": "Read the whole feedback",
     "readLess": "Show the key phrase only",
     "copy": "Copy",
