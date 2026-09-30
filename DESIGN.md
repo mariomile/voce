@@ -101,12 +101,14 @@ Ogni componente è in `design/kit.css` e in `design/kit.html` con tutti i suoi s
 
 ### Pulsanti
 
-`.btn` primario (inchiostro) · `.btn-secondary` (velo; su una card diventa bianco da solo) · `.btn-highlight` (giallo) · `:disabled` · taglie `.btn-lg` e `.btn-block` · `.link` per le azioni testuali.
+`.btn` primario (inchiostro) · `.btn-secondary` (velo; su una card diventa bianco da solo) · `.btn-highlight` (giallo) · `:disabled` · taglie `.btn-lg` e `.btn-block` · `.link` e `.link-text` per le azioni testuali (nell'app: varianti `link` e `text` del Button).
 
 - Un solo pulsante primario per zona dello schermo.
 - `.btn-highlight` solo per spingere un'azione di valore quando il primario è già usato (per esempio "Passa a Pro"). Mai dentro una superficie gialla.
 - Il testo del pulsante dice cosa succede, con il numero se c'è: "Analizza 37 feedback", non "Continua".
-- `.link` per azioni che portano altrove ("Leggi tutti i 58 feedback"), non per azioni che cambiano dati.
+- `.link` (sottolineatura gialla) per azioni che portano altrove ("Leggi tutti i 58 feedback"), non per azioni che cambiano dati.
+- `.link-text` (sottolineatura `--color-line-strong`, inchiostro al passaggio del mouse) per le azioni sul posto: Modifica, Elimina, Annulla, Esci, "Spegni il link". Così il giallo resta un segnale: una pagina con 50 "Elimina" non diventa gialla.
+- Un pulsante primario che rifarebbe lo stesso lavoro scende a secondario e dice perché: "Analizza" quando dall'ultima analisi non è arrivato nessun feedback.
 
 ### Filtri
 
@@ -176,7 +178,11 @@ Composti dai componenti sopra, servono alle schermate della B.
 
 - **Barra dell'app**: `.appbar`, `.appbar-brand` con `.logo` (il marchio di Voce), `.tabs` con `.tab` (`aria-current="page"` per la pagina attiva), `.appbar-meta` con piano e quote.
 - **Pagina**: `.page`, `.page-header` con `.page-title` e `.page-lede`, `.page-section`, `.page-more`.
-- **Tema**: `.theme` a tre colonne (numero e andamento, contenuto, controlli). `.theme-compact` dal quarto tema in poi: niente sintesi, una citazione. `.stat-value`/`.stat-label` per il numero, `.trend` per l'andamento a 13 settimane (le ultime 2 in inchiostro) con `.trend-note`, `.theme-controls` per priorità e stato.
+- **Sezione di una Research** (`SectionHeading` in `src/components/page.tsx`): titolo 24 px in peso 800, accanto la riga di sintesi in `--color-ink-muted` (per esempio "2 ipotesi: 1 confermata, 1 smentita"), sotto una linea inchiostro di 2 px. Ipotesi, Temi e i passi di una Research vuota usano lo stesso titolo.
+- **Passi di una Research vuota** (`StepNumber`): un cerchio inchiostro con il numero in giallo prima del titolo. Solo dove l'ordine è l'informazione: 1 Ipotesi (facoltative), 2 Raccogli i feedback, 3 Analizza.
+- **Fascia dell'analisi**: in cima alla Sintesi, lo stato a sinistra e "Analizza" a destra su `--color-highlight-soft` quando c'è qualcosa da leggere (prima analisi, feedback arrivati dopo l'ultima); senza fondo quando è tutto analizzato.
+- **Verdetto**: la risposta della Research, quindi il testo più pesante dell'app: parola in peso 900 a 20 px, sopra un cerchio inchiostro con l'icona in giallo (Lucide `Check`, `X`); "Da rivedere" in `--color-ink-muted` su velo. Sotto la frase dell'ipotesi, il ragionamento e la prima citazione a favore e contro affiancate (una colonna sotto i 1024 px); le altre dietro "Mostra altre N citazioni" (`aria-expanded`).
+- **Tema**: `.theme` a tre colonne (numero e andamento, contenuto, controlli); su telefono numero e andamento stanno su una riga. `.theme-compact` dal quarto tema in poi: niente sintesi, una citazione. Il tono ("Tono negativo") compare solo quando il tipo non lo dice già; la nota dell'andamento solo sul primo tema della lista. `.stat-value`/`.stat-label` per il numero, `.trend` per l'andamento a 13 settimane (le ultime 2 in inchiostro) con `.trend-note`, `.theme-controls` per priorità e stato.
 - **Modulo pubblico**: `.form-page`; `.form-ask` con `.form-brand` (`.avatar` con l'iniziale del workspace), `.form-ask-title` e `.form-ask-text` su `.surface-highlight`; `.form-body` con i campi a riga e il pulsante in fondo; `.form-foot`. `.form-message` per inviato e non disponibile, `.form-message-title.is-long` quando il messaggio è lungo.
   - La domanda (`.form-ask-title`) la sceglie il PM, con default "Cosa vuoi dire al team di …?". Va a capo su qualsiasi lunghezza; mentre si scrive, `.form-ask.is-compact` la riduce e nasconde il sottotitolo.
   - La domanda è testo scritto dal PM e mostrato a sconosciuti: sempre come testo, mai come HTML. Massimo 140 caratteri.
