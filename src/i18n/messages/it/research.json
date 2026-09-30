@@ -53,7 +53,8 @@
     "synthesis": "Sintesi",
     "ask": "Chiedi",
     "feedback": "Feedback",
-    "collect": "Raccolta"
+    "collect": "Raccolta",
+    "report": "Report"
   },
   "notFound": {
     "title": "Non trovo questa Research.",

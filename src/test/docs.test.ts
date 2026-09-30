@@ -148,6 +148,8 @@ describe("the Research files", () => {
         .filter((f) => f.endsWith(".ts") || f.endsWith(".tsx"))
         .map((f) => `src/app/(app)/research/${f}`),
       "src/components/hypothesis-list.tsx",
+      "src/components/report-document.tsx",
+      "src/components/report-controls.tsx",
     ]
     expect(files.length).toBeGreaterThanOrEqual(20)
     for (const file of files) expect(readFileSync(file, "utf8"), file).not.toContain("dangerouslySetInnerHTML")
