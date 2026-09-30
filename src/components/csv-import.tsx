@@ -2,6 +2,7 @@
 
 import { useLocale, useTranslations } from "next-intl"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useRef, useState, useTransition } from "react"
 import { importCsv, previewCsv, type CsvImportResult, type CsvPreview } from "@/app/(app)/research/[id]/collect/actions"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -24,6 +25,7 @@ export function CsvImport({ researchId }: { researchId: string }) {
   const [result, setResult] = useState<CsvImportResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+  const router = useRouter()
 
   function reset() {
     setFile(null)
@@ -55,6 +57,9 @@ export function CsvImport({ researchId }: { researchId: string }) {
       if (response.ok) {
         setPreview(null)
         setResult(response)
+        // The header of the Research counts the feedback: in production it kept "Ancora nessun feedback"
+        // after an import until a reload, although the action revalidates. Refresh the whole route.
+        if (response.imported > 0) router.refresh()
       } else setError(response.error)
     })
   }
