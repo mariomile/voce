@@ -42,7 +42,8 @@
     "failed": "Il verdetto non è arrivato e non conta nel limite del mese. Si rifà dalla Research, con «Solo il verdetto».",
     "limit": "Era rimasta una sola analisi del mese ed è andata ai temi: il verdetto non è stato fatto.",
     "none": "Nessuna ipotesi ha ricevuto un verdetto. I dettagli sono nella Research.",
-    "themesFailed": "I temi non sono arrivati e non contano nel limite del mese: il verdetto sì."
+    "themesFailed": "I temi non sono arrivati e non contano nel limite del mese: il verdetto sì.",
+    "noThemes": "Nessun tema: le risposte sono ancora poche o troppo diverse tra loro. Non conta nel limite del mese: il verdetto sì."
   },
   "deleted": {
     "title": "Questa Research non c'è più.",

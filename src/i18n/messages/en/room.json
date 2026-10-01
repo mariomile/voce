@@ -42,7 +42,8 @@
     "failed": "The verdict didn't come through and doesn't count toward the monthly limit. Run it again from the Research, with “Verdict only”.",
     "limit": "Only one analysis was left this month and it went to the themes: the verdict wasn't run.",
     "none": "No hypothesis got a verdict. The details are in the Research.",
-    "themesFailed": "The themes didn't come through and don't count toward the monthly limit: the verdict did."
+    "themesFailed": "The themes didn't come through and don't count toward the monthly limit: the verdict did.",
+    "noThemes": "No themes yet: the answers are too few or too different from each other. That doesn't count toward the monthly limit: the verdict does."
   },
   "deleted": {
     "title": "This Research is gone.",

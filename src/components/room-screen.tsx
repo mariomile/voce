@@ -41,7 +41,8 @@ export type VerdictOutcome = { state: "done"; hypotheses: RoomVerdict[] } | { st
 // pile's dots from left to right at that moment, and the verdict, null when the Research has no hypotheses.
 type Analysis = {
   themes: RoomTheme[]
-  themesFailed: boolean
+  // Why no theme of this click: the call failed, or the answers gave none (too few, or all different).
+  themesMissing: "failed" | "no_themes" | null
   responses: number
   order: number[]
   verdict: VerdictOutcome | null
@@ -50,7 +51,7 @@ type Analysis = {
 type Failure = AnalysisFailure | "no_open_themes" | "network"
 type View = "bubbles" | "list" | "verdict"
 // What a click of "Analizza le risposte" brings: why the pile stays, or what the themes act shows.
-type RoomAnalysis = { failure: Failure } | Pick<Analysis, "themes" | "themesFailed" | "verdict">
+type RoomAnalysis = { failure: Failure } | Pick<Analysis, "themes" | "themesMissing" | "verdict">
 
 // The same analysis as the Sintesi: the themes and, with hypotheses, their verdict. Never throws: a call
 // that rejects is a network failure, so the projected screen keeps the pile instead of the error page.
@@ -71,7 +72,7 @@ export async function analyzeRoom(researchId: string): Promise<RoomAnalysis> {
     if (themes.length === 0 && verdict?.state !== "done") {
       return { failure: themesDone ? "no_open_themes" : result.themes === "no_themes" ? "no_themes" : "failed" }
     }
-    return { themes, themesFailed: !themesDone, verdict }
+    return { themes, themesMissing: themesDone ? null : result.themes === "no_themes" ? "no_themes" : "failed", verdict }
   } catch {
     return { failure: "network" }
   }
@@ -176,7 +177,13 @@ export function RoomScreen({
           responses={status.responses}
           verdict={screen.analysis.verdict}
           themesNote={
-            screen.analysis.themes.length > 0 ? null : screen.analysis.themesFailed ? "themesFailed" : "noOpenThemes"
+            screen.analysis.themes.length > 0
+              ? null
+              : screen.analysis.themesMissing === "no_themes"
+                ? "noThemes"
+                : screen.analysis.themesMissing === "failed"
+                  ? "themesFailed"
+                  : "noOpenThemes"
           }
           view={screen.view}
           onView={(view) => setScreen({ ...screen, view })}
@@ -462,7 +469,7 @@ function ThemesView({
   responses: number
   verdict: VerdictOutcome | null
   // Why the verdict shows without themes.
-  themesNote: "themesFailed" | "noOpenThemes" | null
+  themesNote: "themesFailed" | "noThemes" | "noOpenThemes" | null
   view: View
   onView: (view: View) => void
   onBack: () => void
@@ -505,7 +512,7 @@ function ThemesView({
         {view !== "verdict" && <p className="room-lede text-ink">{themesSummary(responses, themes, t, tCommon, locale)}</p>}
         {themesNote && (
           <p className="room-lede max-w-[40ch] text-ink">
-            {themesNote === "themesFailed" ? t("verdictView.themesFailed") : t("pile.noOpenThemes")}
+            {themesNote === "noOpenThemes" ? t("pile.noOpenThemes") : t(`verdictView.${themesNote}`)}
           </p>
         )}
       </div>

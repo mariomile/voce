@@ -67,7 +67,17 @@ describe("analyzeRoom", () => {
     const theme = { id: "t1", kind: "opportunity" as const, title: "PDF", count: 2 }
     vi.mocked(synthesize).mockResolvedValueOnce(done as never)
     vi.mocked(roomThemes).mockResolvedValueOnce([theme] as never)
-    await expect(analyzeRoom(props.researchId)).resolves.toEqual({ themes: [theme], themesFailed: false, verdict: null })
+    await expect(analyzeRoom(props.researchId)).resolves.toEqual({ themes: [theme], themesMissing: null, verdict: null })
+  })
+
+  it("tells answers that gave no theme apart from themes that failed, when the verdict arrived", async () => {
+    vi.mocked(synthesize).mockResolvedValueOnce({ ...done, themes: "no_themes", verdict: "done" } as never)
+    vi.mocked(roomVerdicts).mockResolvedValueOnce([])
+    await expect(analyzeRoom(props.researchId)).resolves.toMatchObject({ themes: [], themesMissing: "no_themes" })
+
+    vi.mocked(synthesize).mockResolvedValueOnce({ ...done, themes: "failed", verdict: "done" } as never)
+    vi.mocked(roomVerdicts).mockResolvedValueOnce([])
+    await expect(analyzeRoom(props.researchId)).resolves.toMatchObject({ themes: [], themesMissing: "failed" })
   })
 })
 
