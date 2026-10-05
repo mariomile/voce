@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { connection } from "next/server"
 import { getTranslations } from "next-intl/server"
+import { AccessContact } from "@/components/access-contact"
 import { GoogleSignIn } from "@/components/google-sign-in"
 import { PageLede, PageTitle } from "@/components/page"
 import { buttonVariants } from "@/components/ui/button"
@@ -21,9 +22,11 @@ export default async function SignupPage() {
   return (
     <>
       <PageTitle>{t(open ? "title" : "closedTitle")}</PageTitle>
-      <PageLede className="mb-8">
-        {t(open ? "lede" : "closedLede")}
-      </PageLede>
+      {open ? (
+        <PageLede className="mb-8">{t("lede")}</PageLede>
+      ) : (
+        <AccessContact withClosed={false} className="mb-8 text-lg text-ink-muted" />
+      )}
       {open && (
         <>
           <GoogleSignIn />

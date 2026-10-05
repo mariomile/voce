@@ -49,5 +49,10 @@
     "text": "Forse è caduta la connessione, o è un problema passeggero. Riprova: se non si risolve, torna alle Research.",
     "retry": "Riprova",
     "back": "Tutte le Research"
+  },
+  "access": {
+    "closed": "Gli accessi sono chiusi per ora.",
+    "contact": "Per provare Voce scrivi a Mario: <email>mario@buildrs.xyz</email> o su <linkedin>LinkedIn</linkedin>.",
+    "cta": "Chiedi l'accesso"
   }
 }
