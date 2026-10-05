@@ -2,6 +2,7 @@ import type { CSSProperties } from "react"
 import { ArrowRight } from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
+import { ACCESS_MAILTO, AccessContact } from "@/components/access-contact"
 import { InView } from "@/components/in-view"
 import { Logo } from "@/components/logo"
 import { Quote } from "@/components/quote"
@@ -25,20 +26,20 @@ function Count({ value, className }: { value: number; className?: string }) {
   )
 }
 
+// Access is closed: the call to action writes to Mario instead of opening sign-up.
 function Cta() {
-  const t = useTranslations("landing.hero")
+  const t = useTranslations("common.access")
   return (
-    <Link href="/signup" className="l-cta">
+    <a href={ACCESS_MAILTO} className="l-cta">
       {t("cta")}
       <ArrowRight aria-hidden className="size-[1.1em]" strokeWidth={2.5} />
-    </Link>
+    </a>
   )
 }
 
 export default function LandingPage() {
   const t = useTranslations("landing")
   const common = useTranslations("common")
-  const freeNote = t("hero.freeNote", { feedback: PLAN_LIMITS.free.feedback! })
   const plans = [
     {
       name: "Free",
@@ -51,7 +52,6 @@ export default function LandingPage() {
         t("pricing.free.questions", { count: PLAN_LIMITS.free.questionsPerMonth }),
         t("pricing.free.sources"),
       ],
-      cta: t("pricing.free.cta"),
     },
     {
       name: "Pro",
@@ -64,7 +64,6 @@ export default function LandingPage() {
         t("pricing.pro.questions", { count: PLAN_LIMITS.pro.questionsPerMonth }),
         t("pricing.pro.everything"),
       ],
-      cta: t("pricing.pro.cta"),
     },
   ]
   return (
@@ -81,9 +80,6 @@ export default function LandingPage() {
               <a href="#prezzi" className="hidden underline-offset-4 hover:underline sm:inline">
                 {t("nav.pricing")}
               </a>
-              <Link href="/login" className="underline-offset-4 hover:underline">
-                {t("nav.login")}
-              </Link>
             </nav>
           </header>
 
@@ -97,7 +93,7 @@ export default function LandingPage() {
               </p>
               <div className="flex flex-col items-start gap-3">
                 <Cta />
-                <p className="text-md font-medium text-on-highlight">{freeNote}</p>
+                <AccessContact className="max-w-[34ch] text-md font-medium text-on-highlight" />
               </div>
             </div>
           </div>
@@ -244,14 +240,14 @@ export default function LandingPage() {
                       </li>
                     ))}
                   </ul>
-                  <Link
-                    href="/signup"
+                  <a
+                    href={ACCESS_MAILTO}
                     className={`mt-auto self-start rounded-full px-7 py-4 text-lg font-bold ${
                       pro ? "bg-ink text-paper hover:bg-ink-hover" : "bg-paper text-ink hover:bg-line"
                     }`}
                   >
-                    {plan.cta}
-                  </Link>
+                    {common("access.cta")}
+                  </a>
                 </div>
               )
             })}
@@ -265,7 +261,7 @@ export default function LandingPage() {
             </h2>
             <div className="flex flex-col items-start gap-4">
               <Cta />
-              <p className="text-md font-medium text-on-highlight">{freeNote}</p>
+              <AccessContact className="max-w-[34ch] text-md font-medium text-on-highlight" />
             </div>
           </div>
         </section>

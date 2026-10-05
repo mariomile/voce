@@ -17,11 +17,13 @@ describe("the sign-up page", () => {
     expect(html).toContain('id="email"')
   })
 
-  it("says sign-ups are closed, with no form, and leads to log in", async () => {
+  it("says access is closed, with no form, and how to ask Mario for it", async () => {
     auth.open = false
     const html = renderToStaticMarkup(await SignupPage())
-    expect(html).toContain("Le registrazioni sono chiuse")
+    expect(html).toContain("Gli accessi sono chiusi")
     expect(html).not.toContain("<form")
+    expect(html).toContain('href="mailto:mario@buildrs.xyz?subject=Voce"')
+    expect(html).toContain('href="https://www.linkedin.com/in/mariomiletta"')
     expect(html).toContain('href="/login"')
   })
 })

@@ -1,13 +1,10 @@
 {
   "nav": {
-    "pricing": "Prezzi",
-    "login": "Accedi"
+    "pricing": "Prezzi"
   },
   "hero": {
     "title": "Chi si lamenta più forte <mark>non decide la roadmap.</mark>",
-    "lede": "Voce raggruppa i feedback dei clienti in temi con l'AI e li conta.",
-    "cta": "Crea il tuo workspace",
-    "freeNote": "Gratis fino a {feedback} feedback. Non serve una carta."
+    "lede": "Voce raggruppa i feedback dei clienti in temi con l'AI e li conta."
   },
   "example": {
     "countLabel": "feedback, un tema solo",
@@ -86,8 +83,7 @@
       "analyses": "{count} analisi AI al mese",
       "verdict": "Il verdetto delle ipotesi usa 1 analisi",
       "questions": "{count} domande ai feedback al mese",
-      "sources": "Modulo pubblico, CSV e inserimento manuale",
-      "cta": "Inizia gratis"
+      "sources": "Modulo pubblico, CSV e inserimento manuale"
     },
     "pro": {
       "price": "19 €",
@@ -96,8 +92,7 @@
       "analyses": "{count} analisi AI al mese",
       "verdict": "Il verdetto delle ipotesi usa 1 analisi",
       "questions": "{count} domande ai feedback al mese",
-      "everything": "Tutto quello che c'è in Free",
-      "cta": "Prova Pro"
+      "everything": "Tutto quello che c'è in Free"
     }
   },
   "closing": {

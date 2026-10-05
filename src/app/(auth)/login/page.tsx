@@ -1,11 +1,13 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { getTranslations } from "next-intl/server"
+import { AccessContact } from "@/components/access-contact"
 import { GoogleSignIn } from "@/components/google-sign-in"
 import { LoginForm } from "@/components/login-form"
 import { PageTitle } from "@/components/page"
 import { buttonVariants } from "@/components/ui/button"
 import { FieldError } from "@/components/ui/field"
+import { areSignupsOpen } from "@/lib/auth"
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("auth.login")
@@ -18,6 +20,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const { error, confirmed } = await searchParams
   const t = await getTranslations("auth.login")
   const linkError = LINK_ERRORS.find((e) => e === error)
+  const signupsOpen = await areSignupsOpen()
   return (
     <>
       <PageTitle className="mb-8">{t("title")}</PageTitle>
@@ -33,12 +36,16 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
       )}
       <GoogleSignIn />
       <LoginForm />
-      <p className="mt-8 text-base text-ink-muted">
-        {t("noAccount")}{" "}
-        <Link href="/signup" className={buttonVariants({ variant: "link" })}>
-          {t("signupLink")}
-        </Link>
-      </p>
+      {signupsOpen ? (
+        <p className="mt-8 text-base text-ink-muted">
+          {t("noAccount")}{" "}
+          <Link href="/signup" className={buttonVariants({ variant: "link" })}>
+            {t("signupLink")}
+          </Link>
+        </p>
+      ) : (
+        <AccessContact className="mt-8 text-base text-ink-muted" />
+      )}
     </>
   )
 }
