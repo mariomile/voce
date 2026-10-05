@@ -11,10 +11,14 @@ test.describe("an English browser", () => {
     await page.goto("/")
     await expect(page.locator("html")).toHaveAttribute("lang", "en")
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("The loudest customer doesn't set the roadmap.")
-    await expect(page.getByText("Free up to 100 feedback. No card needed.").first()).toBeVisible()
+    await expect(page.getByText("Access is closed for now.").first()).toBeVisible()
+    await expect(page.getByRole("link", { name: "Request access" }).first()).toHaveAttribute(
+      "href",
+      "mailto:mario@buildrs.xyz?subject=Voce",
+    )
 
-    await page.getByRole("link", { name: "Log in" }).click()
-    await expect(page).toHaveURL(/\/login$/)
+    // Access is closed: the landing no longer links the login, which stays at its address.
+    await page.goto("/login")
     await expect(page).toHaveTitle("Log in to Voce")
     await expect(page.getByRole("heading", { name: "Log in to Voce" })).toBeVisible()
     await page.getByLabel("Email").fill("nobody@test.voce")
