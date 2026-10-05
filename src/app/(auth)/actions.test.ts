@@ -1,13 +1,17 @@
 import { describe, expect, it, vi } from "vitest"
 
 // Only what Supabase Auth answers matters here: the client returns a chosen error.
-const auth = vi.hoisted(() => ({ error: null as { code: string } | null, signUpArgs: [] as unknown[] }))
+const auth = vi.hoisted(() => ({
+  error: null as { code: string } | null,
+  session: null as { user: { id: string } } | null,
+  signUpArgs: [] as unknown[],
+}))
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({
     auth: {
       signUp: async (args: unknown) => {
         auth.signUpArgs.push(args)
-        return { error: auth.error }
+        return { data: { session: auth.error ? null : auth.session }, error: auth.error }
       },
       signInWithPassword: async () =>
         auth.error ? { data: { user: null }, error: auth.error } : { data: { user: { id: "u-1" } }, error: null },
@@ -109,5 +113,20 @@ describe("signUp", () => {
   it("sends the email when sign-ups are open", async () => {
     auth.error = null
     expect(await signUp(form())).toEqual({ sentTo: "nuovo@test.voce" })
+  })
+
+  // Email confirmation off in Supabase Auth: signUp returns a session and the account starts now.
+  it("counts the sign-up and lands in the app when Supabase signs the user in", async () => {
+    auth.error = null
+    auth.session = { user: { id: "u-1" } }
+    tracked.length = 0
+    await expect(signUp(form())).rejects.toThrow("redirect /research")
+    expect(tracked).toEqual([{ event: "signed_up", properties: { method: "email" } }])
+    auth.session = null
+  })
+
+  it("sends an address that already has an account to log in, with confirmation off", async () => {
+    auth.error = { code: "user_already_exists" }
+    expect(await signUp(form())).toEqual({ error: "Esiste già un account con questa email: accedi.", field: "email" })
   })
 })

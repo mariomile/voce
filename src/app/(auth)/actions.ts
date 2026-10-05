@@ -54,7 +54,7 @@ export async function signUp(formData: FormData): Promise<AuthState> {
   // The workspace is created by a database trigger, with this name. Supabase's default email template
   // links to its verify endpoint, which sends the user to emailRedirectTo with a code: without it, to the
   // landing page. The custom template links to /auth/confirm instead.
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
@@ -65,6 +65,8 @@ export async function signUp(formData: FormData): Promise<AuthState> {
   // Turned off in Supabase Auth: all sign-ups, or the email ones.
   if (error?.code === "signup_disabled" || error?.code === "email_provider_disabled")
     return { error: t("signupsClosed") }
+  // With email confirmation off, an address that already has an account is refused instead.
+  if (error?.code === "user_already_exists") return { error: t("alreadyRegistered"), field: "email" }
   // Supabase refuses to send to an address with no mail server behind it.
   if (error?.code === "email_address_invalid") return { error: t("checkEmail"), field: "email" }
   if (error?.code === "weak_password")
@@ -72,6 +74,12 @@ export async function signUp(formData: FormData): Promise<AuthState> {
   if (error?.code === "over_email_send_rate_limit")
     return { error: t("rateLimited") }
   if (error) return { error: t("generic") }
+  // With email confirmation off in Supabase Auth, the account starts here, already signed in.
+  if (data.session) {
+    const userId = data.session.user.id
+    trackMilestone(() => workspaceOfUser(userId), { event: "signed_up", properties: { method: "email" } })
+    redirect("/research")
+  }
   // Same answer whether or not the email already had an account, so nobody can probe for users.
   return { sentTo: parsed.data.email }
 }
